@@ -9,6 +9,7 @@ import {
   Settings,
   Home,
   ShieldCheck,
+  FileUp,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -26,6 +27,7 @@ export function Sidebar({ user = { name: 'Sarah Johnson', role: 'HR Administrato
   const navItems = [
     { href: "/", label: "Dashboard", icon: <Home className="sidebar-icon" /> },
     { href: "/directory", label: "Staff Directory", icon: <Users className="sidebar-icon" /> },
+    { href: "/staff-import", label: "Import Staff", icon: <FileUp className="sidebar-icon" /> },
     { href: "/tickets", label: "Tickets", icon: <Ticket className="sidebar-icon" /> },
     { href: "/access-management", label: "Compliance", icon: <Key className="sidebar-icon" /> },
     { href: "/permissions", label: "Permissions", icon: <ShieldCheck className="sidebar-icon" /> },

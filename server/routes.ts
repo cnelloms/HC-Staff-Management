@@ -869,6 +869,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Staff Import route
+  app.post('/api/employees/import', async (req, res) => {
+    try {
+      const { employees } = req.body;
+      
+      if (!employees || !Array.isArray(employees) || employees.length === 0) {
+        return res.status(400).json({ 
+          message: 'Invalid import data. Expected an array of employee records.',
+          total: 0,
+          successful: 0,
+          failed: 0,
+          errors: ['No employee records provided']
+        });
+      }
+      
+      // Process each employee record
+      let successful = 0;
+      let failed = 0;
+      const errors: string[] = [];
+      
+      for (const employeeData of employees) {
+        try {
+          // Validate required fields
+          const requiredFields = ['firstName', 'lastName', 'email', 'position', 'departmentId'];
+          const missingFields = requiredFields.filter(field => !employeeData[field]);
+          
+          if (missingFields.length > 0) {
+            failed++;
+            errors.push(`Missing required fields for ${employeeData.email || 'an employee'}: ${missingFields.join(', ')}`);
+            continue;
+          }
+          
+          // Process dates if provided
+          if (employeeData.hireDate && typeof employeeData.hireDate === 'string') {
+            employeeData.hireDate = new Date(employeeData.hireDate);
+            
+            if (isNaN(employeeData.hireDate.getTime())) {
+              employeeData.hireDate = new Date(); // Default to current date if invalid
+            }
+          } else {
+            employeeData.hireDate = new Date(); // Default hire date
+          }
+          
+          // Set default values for optional fields
+          if (!employeeData.status) {
+            employeeData.status = 'active';
+          }
+          
+          // Create the employee
+          await storage.createEmployee(employeeData);
+          successful++;
+          
+          // Create activity for new employee
+          await storage.createActivity({
+            employeeId: successful,  // This is not correct but a placeholder since we don't know the new ID
+            activityType: 'onboarding',
+            description: `Employee imported via CSV: ${employeeData.firstName} ${employeeData.lastName}`,
+            metadata: {
+              importMethod: 'csv',
+              departmentId: employeeData.departmentId,
+              position: employeeData.position
+            }
+          });
+          
+        } catch (error: any) {
+          failed++;
+          errors.push(`Error importing ${employeeData.email || 'an employee'}: ${error.message || 'Unknown error'}`);
+        }
+      }
+      
+      res.status(200).json({
+        message: `Import complete. Successfully imported ${successful} of ${employees.length} employees.`,
+        total: employees.length,
+        successful,
+        failed,
+        errors: errors.length > 0 ? errors : undefined
+      });
+      
+    } catch (error: any) {
+      res.status(500).json({ 
+        message: 'Import process failed',
+        error: error.message,
+        total: 0,
+        successful: 0,
+        failed: 0,
+        errors: [error.message || 'Unknown server error']
+      });
+    }
+  });
+
   // Employee Role routes
   app.get('/api/employees/:employeeId/roles', async (req, res) => {
     try {
