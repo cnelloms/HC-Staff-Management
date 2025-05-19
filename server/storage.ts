@@ -617,6 +617,182 @@ export class MemStorage implements IStorage {
       };
     });
   }
+
+  // Permission operations
+  async getPermissions(): Promise<Permission[]> {
+    return Array.from(this.permissions.values());
+  }
+
+  async getPermissionById(id: number): Promise<Permission | undefined> {
+    return this.permissions.get(id);
+  }
+
+  async getPermissionsByResource(resource: string): Promise<Permission[]> {
+    return Array.from(this.permissions.values())
+      .filter(permission => permission.resource === resource);
+  }
+
+  async createPermission(permission: InsertPermission): Promise<Permission> {
+    const id = this.permissionId++;
+    const newPermission: Permission = { id, ...permission };
+    this.permissions.set(id, newPermission);
+    return newPermission;
+  }
+
+  async updatePermission(id: number, permission: Partial<InsertPermission>): Promise<Permission | undefined> {
+    const existingPermission = this.permissions.get(id);
+    if (!existingPermission) {
+      return undefined;
+    }
+    
+    const updatedPermission: Permission = { ...existingPermission, ...permission };
+    this.permissions.set(id, updatedPermission);
+    return updatedPermission;
+  }
+
+  async deletePermission(id: number): Promise<boolean> {
+    return this.permissions.delete(id);
+  }
+
+  // Role operations
+  async getRoles(): Promise<Role[]> {
+    return Array.from(this.roles.values());
+  }
+
+  async getRoleById(id: number): Promise<Role | undefined> {
+    return this.roles.get(id);
+  }
+
+  async createRole(role: InsertRole): Promise<Role> {
+    const id = this.roleId++;
+    const newRole: Role = { id, ...role };
+    this.roles.set(id, newRole);
+    return newRole;
+  }
+
+  async updateRole(id: number, role: Partial<InsertRole>): Promise<Role | undefined> {
+    const existingRole = this.roles.get(id);
+    if (!existingRole) {
+      return undefined;
+    }
+    
+    const updatedRole: Role = { ...existingRole, ...role };
+    this.roles.set(id, updatedRole);
+    return updatedRole;
+  }
+
+  async deleteRole(id: number): Promise<boolean> {
+    return this.roles.delete(id);
+  }
+
+  // Role Permission operations
+  async getRolePermissions(roleId: number): Promise<Permission[]> {
+    const rolePerm = Array.from(this.rolePermissions.values())
+      .filter(rp => rp.roleId === roleId);
+    
+    const permissions: Permission[] = [];
+    for (const rp of rolePerm) {
+      const permission = this.permissions.get(rp.permissionId);
+      if (permission) {
+        permissions.push(permission);
+      }
+    }
+    
+    return permissions;
+  }
+
+  async addPermissionToRole(rolePermission: InsertRolePermission): Promise<RolePermission> {
+    const id = this.rolePermissionId++;
+    const newRolePermission: RolePermission = { id, ...rolePermission };
+    this.rolePermissions.set(id, newRolePermission);
+    return newRolePermission;
+  }
+
+  async removePermissionFromRole(roleId: number, permissionId: number): Promise<boolean> {
+    const entries = Array.from(this.rolePermissions.entries());
+    for (const [key, rolePermission] of entries) {
+      if (rolePermission.roleId === roleId && rolePermission.permissionId === permissionId) {
+        return this.rolePermissions.delete(key);
+      }
+    }
+    return false;
+  }
+
+  // Employee Role operations
+  async getEmployeeRoles(employeeId: number): Promise<Role[]> {
+    const employeeRolesEntries = Array.from(this.employeeRoles.values())
+      .filter(er => er.employeeId === employeeId);
+    
+    const roles: Role[] = [];
+    for (const er of employeeRolesEntries) {
+      const role = this.roles.get(er.roleId);
+      if (role) {
+        roles.push(role);
+      }
+    }
+    
+    return roles;
+  }
+
+  async addRoleToEmployee(employeeRole: InsertEmployeeRole): Promise<EmployeeRole> {
+    const id = this.employeeRoleId++;
+    const newEmployeeRole: EmployeeRole = { id, ...employeeRole };
+    this.employeeRoles.set(id, newEmployeeRole);
+    return newEmployeeRole;
+  }
+
+  async removeRoleFromEmployee(employeeId: number, roleId: number): Promise<boolean> {
+    const entries = Array.from(this.employeeRoles.entries());
+    for (const [key, employeeRole] of entries) {
+      if (employeeRole.employeeId === employeeId && employeeRole.roleId === roleId) {
+        return this.employeeRoles.delete(key);
+      }
+    }
+    return false;
+  }
+
+  // Permission check operations
+  async hasPermission(employeeId: number, resource: string, action: string): Promise<boolean> {
+    // Get all roles assigned to the employee
+    const employeeRoles = await this.getEmployeeRoles(employeeId);
+    
+    // Check if any of the roles have the requested permission
+    for (const role of employeeRoles) {
+      const rolePermissions = await this.getRolePermissions(role.id);
+      for (const permission of rolePermissions) {
+        if (permission.resource === resource && permission.action === action) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  }
+
+  async getFieldLevelPermissions(employeeId: number, resource: string): Promise<Record<string, boolean>> {
+    const result: Record<string, boolean> = {};
+    const employeeRoles = await this.getEmployeeRoles(employeeId);
+    
+    // Get all permissions from all roles
+    const allPermissions: Permission[] = [];
+    for (const role of employeeRoles) {
+      const permissions = await this.getRolePermissions(role.id);
+      allPermissions.push(...permissions);
+    }
+    
+    // Filter permissions for the specific resource and extract field-level permissions
+    const resourcePermissions = allPermissions.filter(p => p.resource === resource);
+    for (const permission of resourcePermissions) {
+      if (permission.fieldLevel) {
+        const fieldLevel = permission.fieldLevel as Record<string, boolean>;
+        for (const [field, access] of Object.entries(fieldLevel)) {
+          result[field] = access;
+        }
+      }
+    }
+    
+    return result;
+  }
 }
 
 export const storage = new MemStorage();
