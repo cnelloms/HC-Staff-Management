@@ -79,14 +79,14 @@ export function AccessTable() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/system-access'] });
       toast({
-        title: "Access granted",
-        description: "System access has been successfully granted.",
+        title: "Training verified",
+        description: "Staff member's training has been successfully verified.",
       });
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to grant access. Please try again.",
+        description: error.message || "Failed to verify training. Please try again.",
         variant: "destructive",
       });
     },
@@ -102,14 +102,14 @@ export function AccessTable() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/system-access'] });
       toast({
-        title: "Access revoked",
-        description: "System access has been successfully revoked.",
+        title: "Training marked expired",
+        description: "Staff member's training has been marked as expired.",
       });
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to revoke access. Please try again.",
+        description: error.message || "Failed to mark training as expired. Please try again.",
         variant: "destructive",
       });
     },
@@ -123,7 +123,7 @@ export function AccessTable() {
             <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search users or systems..."
+              placeholder="Search staff or trainings..."
               className="pl-8 w-[300px]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -131,10 +131,10 @@ export function AccessTable() {
           </div>
           <Select value={systemFilter} onValueChange={setSystemFilter}>
             <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="All Systems" />
+              <SelectValue placeholder="All Trainings" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Systems</SelectItem>
+              <SelectItem value="all">All Trainings</SelectItem>
               {systems.map(system => (
                 <SelectItem key={system.id} value={system.id.toString()}>
                   {system.name}
@@ -148,15 +148,15 @@ export function AccessTable() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="revoked">Revoked</SelectItem>
+              <SelectItem value="pending">Pending Verification</SelectItem>
+              <SelectItem value="active">Completed</SelectItem>
+              <SelectItem value="revoked">Expired</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <Button>
           <PlusIcon className="mr-2 h-4 w-4" />
-          New Access Request
+          New Training Request
         </Button>
       </div>
       
@@ -164,12 +164,12 @@ export function AccessTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>System</TableHead>
-              <TableHead>Access Level</TableHead>
+              <TableHead>Staff Member</TableHead>
+              <TableHead>Training</TableHead>
+              <TableHead>Completion Level</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Granted By</TableHead>
-              <TableHead>Granted Date</TableHead>
+              <TableHead>Verified By</TableHead>
+              <TableHead>Completion Date</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
