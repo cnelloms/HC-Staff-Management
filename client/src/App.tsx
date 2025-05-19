@@ -27,6 +27,7 @@ function Router() {
       <Route path="/tickets/new" component={NewTicket} />
       <Route path="/tickets/:id" component={TicketDetail} />
       <Route path="/access-management" component={AccessManagement} />
+      <Route path="/permissions" component={Permissions} />
       <Route path="/reports" component={Reports} />
       <Route path="/settings" component={Settings} />
       <Route path="/employee/new" component={NewEmployee} />
