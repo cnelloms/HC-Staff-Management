@@ -275,7 +275,19 @@ export class MemStorage implements IStorage {
   
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
     const id = this.employeeId++;
-    const newEmployee: Employee = { id, ...employee };
+    const newEmployee: Employee = { 
+      id,
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      email: employee.email,
+      position: employee.position,
+      departmentId: employee.departmentId,
+      hireDate: employee.hireDate,
+      status: employee.status || "active",
+      phone: employee.phone || null,
+      managerId: employee.managerId || null,
+      avatar: employee.avatar || null
+    };
     this.employees.set(id, newEmployee);
     return newEmployee;
   }
@@ -300,7 +312,12 @@ export class MemStorage implements IStorage {
   
   async createSystem(system: InsertSystem): Promise<System> {
     const id = this.systemId++;
-    const newSystem: System = { id, ...system };
+    const newSystem: System = { 
+      id, 
+      name: system.name,
+      description: system.description || null,
+      category: system.category || null
+    };
     this.systems.set(id, newSystem);
     return newSystem;
   }
