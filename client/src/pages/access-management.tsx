@@ -19,18 +19,18 @@ export default function AccessManagement() {
   const totalPending = accessStats?.reduce((sum, stat) => sum + stat.pendingRequests, 0) || 0;
 
   return (
-    <Layout title="Access Management">
+    <Layout title="Compliance">
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight mb-2">System Access Management</h2>
+            <h2 className="text-2xl font-bold tracking-tight mb-2">Compliance Dashboard</h2>
             <p className="text-muted-foreground">
-              Manage and monitor system access permissions across the organization.
+              Track staff compliance with required trainings and system access verification.
             </p>
           </div>
           <Button asChild>
             <Link href="/access-management/new">
-              <a>Request New Access</a>
+              <a>Request Verification</a>
             </Link>
           </Button>
         </div>
@@ -39,7 +39,7 @@ export default function AccessManagement() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Overall Access Rate</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Training Completion Rate</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center">
@@ -49,7 +49,7 @@ export default function AccessManagement() {
                 <div>
                   <div className="text-2xl font-bold">{overallAccessRate}%</div>
                   <p className="text-xs text-muted-foreground">
-                    {totalActive} active users out of {totalUsers} total
+                    {totalActive} compliant staff out of {totalUsers} total
                   </p>
                 </div>
               </div>
@@ -57,7 +57,7 @@ export default function AccessManagement() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Pending Requests</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Pending Verifications</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center">
@@ -67,7 +67,7 @@ export default function AccessManagement() {
                 <div>
                   <div className="text-2xl font-bold">{totalPending}</div>
                   <p className="text-xs text-muted-foreground">
-                    Awaiting approval
+                    Awaiting administrative approval
                   </p>
                 </div>
               </div>
@@ -75,7 +75,7 @@ export default function AccessManagement() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Systems Managed</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Required Trainings</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center">
@@ -85,7 +85,7 @@ export default function AccessManagement() {
                 <div>
                   <div className="text-2xl font-bold">{accessStats?.length || 0}</div>
                   <p className="text-xs text-muted-foreground">
-                    Active systems in platform
+                    Mandatory compliance trainings
                   </p>
                 </div>
               </div>
