@@ -17,12 +17,14 @@ import TicketDetail from "@/pages/ticket-detail";
 import NewEmployee from "@/pages/new-employee";
 import NewTicket from "@/pages/new-ticket";
 import Permissions from "@/pages/permissions";
+import StaffImportPage from "@/pages/staff-import";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/directory" component={Directory} />
+      <Route path="/staff-import" component={StaffImportPage} />
       <Route path="/tickets" component={Tickets} />
       <Route path="/tickets/new" component={NewTicket} />
       <Route path="/tickets/:id" component={TicketDetail} />
