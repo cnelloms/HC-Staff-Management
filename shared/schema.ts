@@ -127,6 +127,69 @@ export const insertActivitySchema = createInsertSchema(activities).pick({
   metadata: true,
 });
 
+// Permission table
+export const permissions = pgTable("permissions", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  resource: text("resource").notNull(), // The resource type (e.g., "employee", "ticket", "system")
+  action: text("action").notNull(), // The action (e.g., "view", "create", "update", "delete")
+  scope: text("scope").notNull(), // The scope (e.g., "all", "own", "department")
+  fieldLevel: json("field_level"), // Field-level permissions (e.g., { "salary": false, "ssn": false })
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertPermissionSchema = createInsertSchema(permissions).pick({
+  name: true,
+  description: true,
+  resource: true,
+  action: true,
+  scope: true,
+  fieldLevel: true,
+});
+
+// Role table
+export const roles = pgTable("roles", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertRoleSchema = createInsertSchema(roles).pick({
+  name: true,
+  description: true,
+  isDefault: true,
+});
+
+// Role Permission junction table
+export const rolePermissions = pgTable("role_permissions", {
+  id: serial("id").primaryKey(),
+  roleId: integer("role_id").notNull(),
+  permissionId: integer("permission_id").notNull(),
+});
+
+export const insertRolePermissionSchema = createInsertSchema(rolePermissions).pick({
+  roleId: true,
+  permissionId: true,
+});
+
+// Employee Role junction table
+export const employeeRoles = pgTable("employee_roles", {
+  id: serial("id").primaryKey(),
+  employeeId: integer("employee_id").notNull(),
+  roleId: integer("role_id").notNull(),
+  assignedBy: integer("assigned_by").notNull(),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+});
+
+export const insertEmployeeRoleSchema = createInsertSchema(employeeRoles).pick({
+  employeeId: true,
+  roleId: true,
+  assignedBy: true,
+});
+
 // Type exports
 export type Department = typeof departments.$inferSelect;
 export type InsertDepartment = z.infer<typeof insertDepartmentSchema>;
@@ -145,3 +208,15 @@ export type InsertTicket = z.infer<typeof insertTicketSchema>;
 
 export type Activity = typeof activities.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
+
+export type Permission = typeof permissions.$inferSelect;
+export type InsertPermission = z.infer<typeof insertPermissionSchema>;
+
+export type Role = typeof roles.$inferSelect;
+export type InsertRole = z.infer<typeof insertRoleSchema>;
+
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
+
+export type EmployeeRole = typeof employeeRoles.$inferSelect;
+export type InsertEmployeeRole = z.infer<typeof insertEmployeeRoleSchema>;

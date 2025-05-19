@@ -5,7 +5,12 @@ import {
   SystemAccess, InsertSystemAccess, 
   Ticket, InsertTicket, 
   Activity, InsertActivity,
-  employees, departments, systems, systemAccess, tickets, activities
+  Permission, InsertPermission,
+  Role, InsertRole,
+  RolePermission, InsertRolePermission,
+  EmployeeRole, InsertEmployeeRole,
+  employees, departments, systems, systemAccess, tickets, activities,
+  permissions, roles, rolePermissions, employeeRoles
 } from "@shared/schema";
 
 export interface IStorage {
@@ -49,6 +54,35 @@ export interface IStorage {
   // Dashboard data operations
   getDashboardStats(): Promise<DashboardStats>;
   getSystemAccessStats(): Promise<SystemAccessStat[]>;
+  
+  // Permission operations
+  getPermissions(): Promise<Permission[]>;
+  getPermissionById(id: number): Promise<Permission | undefined>;
+  getPermissionsByResource(resource: string): Promise<Permission[]>;
+  createPermission(permission: InsertPermission): Promise<Permission>;
+  updatePermission(id: number, permission: Partial<InsertPermission>): Promise<Permission | undefined>;
+  deletePermission(id: number): Promise<boolean>;
+  
+  // Role operations
+  getRoles(): Promise<Role[]>;
+  getRoleById(id: number): Promise<Role | undefined>;
+  createRole(role: InsertRole): Promise<Role>;
+  updateRole(id: number, role: Partial<InsertRole>): Promise<Role | undefined>;
+  deleteRole(id: number): Promise<boolean>;
+  
+  // Role Permission operations
+  getRolePermissions(roleId: number): Promise<Permission[]>;
+  addPermissionToRole(rolePermission: InsertRolePermission): Promise<RolePermission>;
+  removePermissionFromRole(roleId: number, permissionId: number): Promise<boolean>;
+  
+  // Employee Role operations
+  getEmployeeRoles(employeeId: number): Promise<Role[]>;
+  addRoleToEmployee(employeeRole: InsertEmployeeRole): Promise<EmployeeRole>;
+  removeRoleFromEmployee(employeeId: number, roleId: number): Promise<boolean>;
+  
+  // Permission check operations
+  hasPermission(employeeId: number, resource: string, action: string): Promise<boolean>;
+  getFieldLevelPermissions(employeeId: number, resource: string): Promise<Record<string, boolean>>;
 }
 
 export interface DashboardStats {
@@ -78,6 +112,10 @@ export class MemStorage implements IStorage {
   private systemAccess: Map<number, SystemAccess>;
   private tickets: Map<number, Ticket>;
   private activities: Map<number, Activity>;
+  private permissions: Map<number, Permission>;
+  private roles: Map<number, Role>;
+  private rolePermissions: Map<number, RolePermission>;
+  private employeeRoles: Map<number, EmployeeRole>;
   
   private departmentId: number;
   private employeeId: number;
@@ -85,6 +123,10 @@ export class MemStorage implements IStorage {
   private systemAccessId: number;
   private ticketId: number;
   private activityId: number;
+  private permissionId: number;
+  private roleId: number;
+  private rolePermissionId: number;
+  private employeeRoleId: number;
   
   constructor() {
     this.departments = new Map();
@@ -93,6 +135,10 @@ export class MemStorage implements IStorage {
     this.systemAccess = new Map();
     this.tickets = new Map();
     this.activities = new Map();
+    this.permissions = new Map();
+    this.roles = new Map();
+    this.rolePermissions = new Map();
+    this.employeeRoles = new Map();
     
     this.departmentId = 1;
     this.employeeId = 1;
@@ -100,6 +146,10 @@ export class MemStorage implements IStorage {
     this.systemAccessId = 1;
     this.ticketId = 1;
     this.activityId = 1;
+    this.permissionId = 1;
+    this.roleId = 1;
+    this.rolePermissionId = 1;
+    this.employeeRoleId = 1;
     
     // Initialize with sample data
     this.initSampleData();
@@ -126,6 +176,98 @@ export class MemStorage implements IStorage {
     ];
     
     systems.forEach(sys => this.createSystem(sys));
+    
+    // Create sample permissions
+    const basePermissions = [
+      { 
+        name: "View Employees", 
+        description: "Allows viewing employee directory",
+        resource: "employee",
+        action: "view",
+        scope: "all", 
+        fieldLevel: { 
+          salary: false, 
+          ssn: false, 
+          personalNotes: false 
+        }
+      },
+      { 
+        name: "Edit Employees", 
+        description: "Allows editing employee information",
+        resource: "employee",
+        action: "edit",
+        scope: "all", 
+        fieldLevel: null
+      },
+      { 
+        name: "Create Employees", 
+        description: "Allows creating new employees",
+        resource: "employee",
+        action: "create",
+        scope: "all", 
+        fieldLevel: null
+      },
+      { 
+        name: "View Tickets", 
+        description: "Allows viewing all tickets",
+        resource: "ticket",
+        action: "view",
+        scope: "all", 
+        fieldLevel: null
+      },
+      { 
+        name: "Edit Tickets", 
+        description: "Allows editing tickets",
+        resource: "ticket",
+        action: "edit",
+        scope: "all", 
+        fieldLevel: null
+      },
+      { 
+        name: "Manage System Access", 
+        description: "Allows managing system access permissions",
+        resource: "system_access",
+        action: "manage",
+        scope: "all", 
+        fieldLevel: null
+      },
+      { 
+        name: "View Reports", 
+        description: "Allows viewing reports",
+        resource: "report",
+        action: "view",
+        scope: "all", 
+        fieldLevel: null
+      }
+    ];
+    
+    const permissions = basePermissions.map(p => this.createPermission(p));
+    
+    // Create roles
+    const roles = [
+      {
+        name: "Administrator",
+        description: "Full system access",
+        isDefault: false
+      },
+      {
+        name: "HR Manager",
+        description: "Manages employee information and permissions",
+        isDefault: false
+      },
+      {
+        name: "Department Manager",
+        description: "Manages department employees and tickets",
+        isDefault: false
+      },
+      {
+        name: "Staff",
+        description: "Basic access to tickets and employee directory",
+        isDefault: true
+      }
+    ];
+    
+    roles.forEach(role => this.createRole(role));
     
     // Create sample employees
     const date = new Date();
