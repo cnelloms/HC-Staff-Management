@@ -16,6 +16,7 @@ import EmployeeProfile from "@/pages/employee-profile";
 import TicketDetail from "@/pages/ticket-detail";
 import NewEmployee from "@/pages/new-employee";
 import NewTicket from "@/pages/new-ticket";
+import Permissions from "@/pages/permissions";
 
 function Router() {
   return (
