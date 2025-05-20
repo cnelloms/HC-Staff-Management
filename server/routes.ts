@@ -227,6 +227,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Auth routes - get current user
+  // Server-side login utility for emergency use
+  app.get('/server-login', (req: Request, res: Response) => {
+    const errorMessage = req.query.error || '';
+    
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Server Login</title>
+        <style>
+          body { font-family: system-ui, sans-serif; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f5f5f5; }
+          .container { width: 100%; max-width: 400px; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+          h1 { margin-top: 0; color: #333; }
+          input { display: block; width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+          button { width: 100%; padding: 10px; background: #0070f3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+          .error { color: red; margin-bottom: 15px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>Emergency Server Login</h1>
+          <div id="errorMessage" class="error" ${!errorMessage ? 'style="display:none"' : ''}>
+            ${errorMessage}
+          </div>
+          <form action="/server-login-submit" method="POST">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+          </form>
+        </div>
+      </body>
+      </html>
+    `);
+  });
+  
+  // Process the server login form
+  app.post('/server-login-submit', async (req: Request, res: Response) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.redirect('/server-login?error=Username and password are required');
+      }
+      
+      // Get credentials by username
+      const userCredentialsList = await db.select()
+        .from(credentials)
+        .where(eq(credentials.username, username))
+        .limit(1);
+      
+      const [userCredentials] = userCredentialsList;
+      
+      if (!userCredentials) {
+        return res.redirect('/server-login?error=Invalid username or password');
+      }
+      
+      if (userCredentials.isEnabled === false) {
+        return res.redirect('/server-login?error=This account is disabled');
+      }
+      
+      // Verify password
+      const isPasswordValid = await bcrypt.compare(password, userCredentials.passwordHash);
+      
+      if (!isPasswordValid) {
+        return res.redirect('/server-login?error=Invalid username or password');
+      }
+      
+      // Get user from database
+      const user = await storage.getUser(userCredentials.userId);
+      
+      if (!user) {
+        return res.redirect('/server-login?error=User not found');
+      }
+      
+      // Update last login time
+      await db.update(credentials)
+        .set({ 
+          lastLoginAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(credentials.id, userCredentials.id));
+      
+      // Store user in session
+      req.session.directUser = {
+        id: user.id,
+        username: userCredentials.username,
+        isAdmin: user.isAdmin === true,
+      };
+      
+      // Save session and redirect to home
+      req.session.save((err) => {
+        if (err) {
+          console.error('Error saving session:', err);
+          return res.redirect('/server-login?error=Error during authentication');
+        }
+        
+        // Successful login - redirect to home
+        console.log('Server login successful, redirecting to home');
+        return res.redirect('/');
+      });
+    } catch (error) {
+      console.error('Server login error:', error);
+      return res.redirect('/server-login?error=Server error during login');
+    }
+  });
+  
+  // Auth user endpoint
   app.get('/api/auth/user', async (req: Request, res: Response) => {
     try {
       // Check if user is authenticated through direct login

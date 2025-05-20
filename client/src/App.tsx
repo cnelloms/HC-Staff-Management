@@ -81,6 +81,7 @@ function Router() {
     <Switch>
       <Route path="/login" component={SimpleLoginPage} />
       <Route path="/emergency-login" component={EmergencyLoginPage} />
+      <Route path="/direct-login" component={DirectLoginPage} />
       
       {/* Protected Routes - require authentication */}
       <Route path="/">
