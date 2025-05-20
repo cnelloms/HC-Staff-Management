@@ -95,12 +95,27 @@ function UserManagement() {
   const { toast } = useToast();
   const [isCreateUserDialogOpen, setIsCreateUserDialogOpen] = useState(false);
   
+  // Define a user type to properly type the API response
+  type User = {
+    id: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    authProvider: string;
+    isAdmin: boolean;
+    isEnabled: boolean;
+  };
+
   // Fetch users with React Query
-  const { data: users = [], isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery<User[]>({
     queryKey: ['/api/users'],
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: false
   });
+  
+  // Ensure users is always an array
+  const users = data || [];
   
   // Show error toast if fetching users fails
   useEffect(() => {
