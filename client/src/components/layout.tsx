@@ -23,7 +23,6 @@ const pageMap = {
   "/": "Dashboard",
   "/directory": "Staff Directory",
   "/tickets": "Tickets",
-  "/access-management": "Access Management",
   "/reports": "Reports",
   "/settings": "Settings",
 };

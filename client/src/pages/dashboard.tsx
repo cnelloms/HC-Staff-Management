@@ -2,13 +2,11 @@ import Layout from "@/components/layout";
 import { SummaryCard } from "@/components/dashboard/summary-card";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { TicketOverview } from "@/components/dashboard/ticket-overview";
-import { SystemAccessTable } from "@/components/dashboard/system-access-table";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardStats } from "@/types";
 import { 
   Users, 
   Ticket, 
-  Key, 
   CheckCircle
 } from "lucide-react";
 
@@ -42,15 +40,7 @@ export default function Dashboard() {
             iconColor="text-accent"
             link={{ href: "/tickets", label: "View all tickets" }}
           />
-          <SummaryCard
-            title="System Access"
-            value={isLoading ? "-" : `${stats?.systemAccessRate}%` || "0%"}
-            change={stats?.systemAccessGrowth}
-            icon={<Key />}
-            iconBgColor="bg-secondary/10"
-            iconColor="text-secondary"
-            link={{ href: "/access-management", label: "View access details" }}
-          />
+
           <SummaryCard
             title="Onboarding"
             value={isLoading ? "-" : stats?.onboardingCount.toString() || "0"}
@@ -67,10 +57,7 @@ export default function Dashboard() {
           <TicketOverview />
         </div>
 
-        {/* System Access Section */}
-        <div className="mt-2">
-          <SystemAccessTable />
-        </div>
+
       </div>
     </Layout>
   );
