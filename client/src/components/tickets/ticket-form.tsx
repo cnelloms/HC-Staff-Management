@@ -224,7 +224,7 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
           // Only 3 specific tasks for onboarding workflow
           { task: "Create work email for new staff", completed: false, category: "accounts" },
           { task: "Generate a secure 12-character password (letters and numbers, human-readable)", completed: false, category: "accounts" },
-          { task: "Send login information to reporting manager", completed: false, category: "communication" }
+          { task: "Provide login information with copy button for manual sharing", completed: false, category: "accounts" }
         ],
         progress: 0,
         status: "pending"
@@ -278,9 +278,9 @@ ${metadata.phone ? `- Phone: ${metadata.phone}` : ''}
 Onboarding Tasks (IT Department):
 1. Create work email for new staff (with validation for email format)
 2. Generate a secure 12-character password (letters and numbers, human-readable)
-3. Send login information to reporting manager (with email template)
+3. Copy login information using the provided button for manual sharing
 
-Note: When all tasks are completed, the ticket will automatically close.
+Note: All tasks must be manually marked as complete by the assignee. When all tasks are completed, the ticket will automatically close.
 `;
     
     form.setValue('description', description.trim());

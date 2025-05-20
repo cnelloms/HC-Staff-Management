@@ -5,8 +5,7 @@ import {
   CardContent, 
   CardHeader, 
   CardTitle,
-  CardDescription,
-  CardFooter
+  CardDescription
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
@@ -14,16 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -33,26 +23,23 @@ import {
   Briefcase, 
   Calendar, 
   Mail, 
-  Phone,
-  UserPlus,
-  CheckCircle,
-  AlertCircle,
-  Clock,
-  CheckSquare,
   Laptop,
   Copy,
   Eye,
   EyeOff,
-  MessageSquare
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  CheckSquare,
+  AlertTriangle
 } from 'lucide-react';
 
 interface NewStaffRequestDetailsProps {
   ticketId: number;
   metadata: any;
-  ticket?: any;
 }
 
-export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffRequestDetailsProps) {
+export function NewStaffRequestDetails({ ticketId, metadata }: NewStaffRequestDetailsProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -60,27 +47,27 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
   const [workEmail, setWorkEmail] = useState(metadata?.workEmail || '');
   const [password, setPassword] = useState(metadata?.password || '');
   const [showPassword, setShowPassword] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [copySuccess, setCopySuccess] = useState('');
   
   // Track completion status of the three tasks
   const [tasks, setTasks] = useState([
     { 
       id: 1, 
-      title: "Create and provide email for new staff", 
-      completed: !!metadata?.workEmail,
+      title: "Create work email for new staff", 
+      completed: metadata?.emailCreated || false,
       icon: <Mail className="h-5 w-5" />
     },
     { 
       id: 2, 
-      title: "Generate secure password", 
-      completed: !!metadata?.password,
+      title: "Generate a secure 12-character password", 
+      completed: metadata?.passwordGenerated || false,
       icon: <Laptop className="h-5 w-5" />
     },
     { 
       id: 3, 
-      title: "Send login information to reporting manager", 
-      completed: metadata?.notificationSent || false,
-      icon: <MessageSquare className="h-5 w-5" />
+      title: "Provide login information with copy button for manual sharing", 
+      completed: metadata?.loginInfoProvided || false,
+      icon: <Copy className="h-5 w-5" />
     }
   ]);
   
@@ -92,11 +79,19 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
     const completedTasks = tasks.filter(task => task.completed).length;
     const progressValue = Math.round((completedTasks / tasks.length) * 100);
     setProgress(progressValue);
+    
+    // Check if all tasks are completed, then auto-close ticket
+    if (completedTasks === tasks.length && !metadata?.allTasksCompleted) {
+      updateTicketMutation.mutate({ 
+        allTasksCompleted: true
+      });
+    }
   }, [tasks]);
   
   // Function to generate a random password
   const generatePassword = () => {
-    const readableChars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    // Only include human-readable characters (no 0/O, 1/I/l confusion)
+    const readableChars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
     let result = '';
     for (let i = 0; i < 12; i++) {
       result += readableChars.charAt(Math.floor(Math.random() * readableChars.length));
@@ -109,8 +104,30 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
     return /\S+@\S+\.\S+/.test(email);
   };
   
+  // Handle copying to clipboard
+  const copyToClipboard = (text: string, type: string) => {
+    navigator.clipboard.writeText(text).then(
+      () => {
+        setCopySuccess(`${type} copied!`);
+        setTimeout(() => setCopySuccess(''), 2000);
+        toast({
+          title: "Copied!",
+          description: `${type} has been copied to clipboard.`,
+        });
+      },
+      (err) => {
+        console.error('Could not copy text: ', err);
+        toast({
+          title: "Error",
+          description: "Failed to copy to clipboard",
+          variant: "destructive"
+        });
+      }
+    );
+  };
+  
   // Update metadata mutation
-  const updateTicketMutation = useMutation<Response, Error, any>({
+  const updateTicketMutation = useMutation({
     mutationFn: async (updatedData: any) => {
       // Create a deep copy of metadata and merge updates
       const updatedMetadata = {
@@ -126,6 +143,7 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
       // If all tasks are completed, close the ticket
       if (updatedData.allTasksCompleted) {
         payload.status = "closed";
+        payload.closedAt = new Date().toISOString();
       }
       
       return apiRequest("PATCH", `/api/tickets/${ticketId}`, payload);
@@ -160,7 +178,7 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
     // Update metadata
     updateTicketMutation.mutate({ 
       password: newPassword,
-      allTasksCompleted: updatedTasks.every(task => task.completed)
+      passwordGenerated: true
     });
   };
   
@@ -183,59 +201,32 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
     // Update metadata
     updateTicketMutation.mutate({ 
       workEmail,
-      allTasksCompleted: updatedTasks.every(task => task.completed)
+      emailCreated: true
     });
   };
   
-  // Handle notification to manager
-  const handleSendNotification = () => {
-    if (!workEmail || !password) {
-      toast({
-        title: "Missing information",
-        description: "Both email and password must be created first.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setIsDialogOpen(true);
-  };
-  
-  // Confirm sending notification
-  const confirmSendNotification = () => {
-    // Update tasks state
+  // Handle task completion
+  const handleTaskCompletion = (taskId: number, completed: boolean) => {
     const updatedTasks = [...tasks];
-    updatedTasks[2].completed = true;
+    const taskIndex = updatedTasks.findIndex(t => t.id === taskId);
+    
+    if (taskIndex === -1) return;
+    
+    updatedTasks[taskIndex].completed = completed;
     setTasks(updatedTasks);
     
-    // Update metadata and close the ticket
-    try {
-      // First update the ticket metadata
-      updateTicketMutation.mutate({ 
-        notificationSent: true,
-        allTasksCompleted: true
-      });
-      
-      // Simple direct call to complete the ticket
-      setTimeout(() => {
-        apiRequest("PATCH", `/api/tickets/${ticketId}`, {
-          status: "closed"
-          // Let the server handle adding the closedAt timestamp
-        })
-        .then(() => {
-          queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticketId}`] });
-          queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-          toast({
-            title: "Ticket Closed",
-            description: "All tasks completed, ticket has been closed successfully."
-          });
-        });
-      }, 500);
-    } catch (error) {
-      console.error("Error closing ticket:", error);
+    // Update metadata based on which task was completed
+    const updates: any = {};
+    
+    if (taskId === 1) {
+      updates.emailCreated = completed;
+    } else if (taskId === 2) {
+      updates.passwordGenerated = completed;
+    } else if (taskId === 3) {
+      updates.loginInfoProvided = completed;
     }
     
-    setIsDialogOpen(false);
+    updateTicketMutation.mutate(updates);
   };
   
   // Fetch necessary data
@@ -258,7 +249,9 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
     positionId,
     departmentId,
     reportingManagerId,
-    startDate
+    startDate,
+    email: personalEmail,
+    phone
   } = metadata || {};
   
   // Find position
@@ -290,16 +283,27 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
     return <Badge className="bg-blue-500"><AlertCircle className="h-3 w-3 mr-1" /> Pending</Badge>;
   };
   
+  // Generate login credentials text for copying
+  const getLoginCredentialsText = () => {
+    return `
+Login Information for ${firstName} ${lastName}
+-------------------------
+Email: ${workEmail}
+Password: ${password}
+Start Date: ${formattedStartDate}
+Department: ${department}
+Position: ${position}
+Reporting To: ${managerName}
+    `.trim();
+  };
+  
   return (
     <div className="space-y-6">
       {/* Employee Information Card */}
       <Card>
-        <CardHeader className="bg-muted/50">
+        <CardHeader className="bg-muted/30">
           <div className="flex justify-between items-center">
-            <CardTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5" />
-              <span>New Staff Request</span>
-            </CardTitle>
+            <CardTitle className="text-xl">Staff Details</CardTitle>
             {getStatusBadge()}
           </div>
           <CardDescription>
@@ -352,12 +356,22 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
                 </div>
               </div>
               
-              {workEmail && (
+              {personalEmail && (
                 <div className="flex items-start space-x-3">
                   <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium">Work Email</p>
-                    <p className="text-sm text-muted-foreground">{workEmail}</p>
+                    <p className="text-sm font-medium">Personal Email</p>
+                    <p className="text-sm text-muted-foreground">{personalEmail}</p>
+                  </div>
+                </div>
+              )}
+              
+              {phone && (
+                <div className="flex items-start space-x-3">
+                  <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium">Phone</p>
+                    <p className="text-sm text-muted-foreground">{phone}</p>
                   </div>
                 </div>
               )}
@@ -368,63 +382,42 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
       
       {/* Tasks Card */}
       <Card>
-        <CardHeader className="bg-muted/50">
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="text-base flex items-center">
-                <CheckSquare className="h-5 w-5 mr-2" />
-                Onboarding Tasks
-              </CardTitle>
-              <CardDescription>
-                Complete these tasks to onboard {firstName} {lastName}
-              </CardDescription>
-            </div>
-            <div>
-              <Button 
-                onClick={() => {
-                  // Direct API call to close the ticket
-                  apiRequest("PATCH", `/api/tickets/${ticketId}`, {
-                    status: "closed"
-                  })
-                  .then(() => {
-                    queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticketId}`] });
-                    queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-                    toast({
-                      title: "Ticket Closed",
-                      description: "Ticket has been successfully closed."
-                    });
-                  })
-                  .catch(error => {
-                    toast({
-                      title: "Error",
-                      description: "Failed to close ticket. " + (error.message || ""),
-                      variant: "destructive"
-                    });
-                  });
-                }}
-                variant="outline"
-              >
-                Complete Ticket
-              </Button>
-            </div>
-          </div>
+        <CardHeader className="bg-muted/30">
+          <CardTitle className="text-xl flex items-center">
+            <CheckSquare className="h-5 w-5 mr-2" />
+            Onboarding Tasks
+          </CardTitle>
+          <CardDescription>
+            Complete these tasks to onboard {firstName} {lastName}
+          </CardDescription>
         </CardHeader>
         <CardContent className="pt-6 space-y-6">
           {/* Task 1: Create Email */}
           <div className="border rounded-md p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Mail className="h-5 w-5 text-primary" />
-                <h3 className="font-medium">Task 1: Create Email Account</h3>
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start gap-4">
+                <Checkbox 
+                  id="task-1"
+                  checked={tasks[0].completed}
+                  onCheckedChange={(checked) => handleTaskCompletion(1, checked as boolean)}
+                />
+                <div>
+                  <Label htmlFor="task-1" className="text-base font-medium">
+                    Create work email for new staff
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Create a corporate email account for the new staff member
+                  </p>
+                </div>
               </div>
               {tasks[0].completed ? (
                 <Badge className="bg-green-600">Completed</Badge>
               ) : (
-                <Badge>Pending</Badge>
+                <Badge variant="outline">Pending</Badge>
               )}
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-4 ml-8">
               <div className="grid gap-2">
                 <Label htmlFor="email">Work Email</Label>
                 <div className="flex gap-2">
@@ -434,9 +427,12 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
                     placeholder="employee@company.com"
                     value={workEmail}
                     onChange={(e) => setWorkEmail(e.target.value)}
-                    disabled={tasks[0].completed}
                   />
-                  <Button onClick={handleSaveEmail} disabled={tasks[0].completed || !workEmail}>
+                  <Button 
+                    onClick={handleSaveEmail} 
+                    disabled={!workEmail}
+                    variant="secondary"
+                  >
                     Save
                   </Button>
                 </div>
@@ -446,19 +442,30 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
           
           {/* Task 2: Generate Password */}
           <div className="border rounded-md p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Laptop className="h-5 w-5 text-primary" />
-                <h3 className="font-medium">Task 2: Generate Password</h3>
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start gap-4">
+                <Checkbox 
+                  id="task-2"
+                  checked={tasks[1].completed}
+                  onCheckedChange={(checked) => handleTaskCompletion(2, checked as boolean)}
+                />
+                <div>
+                  <Label htmlFor="task-2" className="text-base font-medium">
+                    Generate a secure 12-character password
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Create a strong, human-readable password using letters and numbers
+                  </p>
+                </div>
               </div>
               {tasks[1].completed ? (
                 <Badge className="bg-green-600">Completed</Badge>
               ) : (
-                <Badge>Pending</Badge>
+                <Badge variant="outline">Pending</Badge>
               )}
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-4 ml-8">
               <div className="grid gap-2">
                 <Label htmlFor="password">Secure Password</Label>
                 <div className="flex gap-2">
@@ -479,24 +486,7 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
-                  {password && (
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        navigator.clipboard.writeText(password);
-                        toast({
-                          title: "Copied",
-                          description: "Password copied to clipboard"
-                        });
-                      }}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <Button 
-                    onClick={handleGeneratePassword} 
-                    disabled={tasks[1].completed}
-                  >
+                  <Button onClick={handleGeneratePassword} variant="secondary">
                     Generate
                   </Button>
                 </div>
@@ -504,81 +494,81 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
             </div>
           </div>
           
-          {/* Task 3: Send Login Information */}
+          {/* Task 3: Copy Login Information */}
           <div className="border rounded-md p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-primary" />
-                <h3 className="font-medium">Task 3: Notify Manager</h3>
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start gap-4">
+                <Checkbox 
+                  id="task-3"
+                  checked={tasks[2].completed}
+                  onCheckedChange={(checked) => handleTaskCompletion(3, checked as boolean)}
+                />
+                <div>
+                  <Label htmlFor="task-3" className="text-base font-medium">
+                    Copy login information for manual sharing
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Use the copy button to copy login credentials for sharing
+                  </p>
+                </div>
               </div>
               {tasks[2].completed ? (
                 <Badge className="bg-green-600">Completed</Badge>
               ) : (
-                <Badge>Pending</Badge>
+                <Badge variant="outline">Pending</Badge>
               )}
             </div>
             
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Send the login credentials to {managerName} for the new employee.
-              </p>
-              
-              <div className="bg-muted p-3 rounded-md">
-                <p className="text-sm font-medium mb-2">Email Template:</p>
-                <div className="text-sm">
-                  <p>Hello {managerName},</p>
-                  <p className="mt-2">
-                    The login credentials for {firstName} {lastName} have been created. Please share these with them on their first day:
-                  </p>
-                  <p className="mt-2">
-                    <strong>Email:</strong> {workEmail || '[Not created yet]'}<br />
-                    <strong>Password:</strong> {password || '[Not generated yet]'}<br />
-                    <strong>Start Date:</strong> {formattedStartDate}
-                  </p>
-                  <p className="mt-2">
-                    Please remind them to change their password upon first login.
-                  </p>
-                  <p className="mt-2">
-                    Regards,<br />
-                    IT Department
-                  </p>
+            <div className="space-y-4 ml-8">
+              <div className="grid gap-2">
+                <div className="flex justify-between items-center">
+                  <Label>Login Credentials</Label>
+                  {copySuccess && (
+                    <Badge variant="outline" className="text-green-600">
+                      {copySuccess}
+                    </Badge>
+                  )}
+                </div>
+                
+                <div className="bg-muted p-3 rounded-md">
+                  <p className="font-medium">Login Information for {firstName} {lastName}</p>
+                  <div className="text-sm space-y-1 mt-2">
+                    {workEmail && <p><span className="font-medium">Email:</span> {workEmail}</p>}
+                    {password && <p><span className="font-medium">Password:</span> {showPassword ? password : '••••••••••••'}</p>}
+                    <p><span className="font-medium">Start Date:</span> {formattedStartDate}</p>
+                    <p><span className="font-medium">Department:</span> {department}</p>
+                    <p><span className="font-medium">Position:</span> {position}</p>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end mt-2">
+                  <Button 
+                    onClick={() => copyToClipboard(getLoginCredentialsText(), 'Login information')}
+                    disabled={!workEmail || !password}
+                    className="gap-2"
+                  >
+                    <Copy className="h-4 w-4" />
+                    Copy All Details
+                  </Button>
                 </div>
               </div>
-              
-              <Button 
-                className="w-full" 
-                onClick={handleSendNotification} 
-                disabled={tasks[2].completed || !workEmail || !password}
-              >
-                Send Login Information
-              </Button>
+            </div>
+          </div>
+          
+          {/* Instructions and Notes */}
+          <div className="mt-6 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="font-medium text-amber-800 dark:text-amber-400">Important Note</h4>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                  Please mark each task as complete after you've finished it. When all tasks are completed, the system will automatically close this ticket.
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>
-        <CardFooter className="bg-muted/20 flex justify-between">
-          <div className="text-sm">Overall Progress: {tasks.filter(t => t.completed).length} of {tasks.length} completed</div>
-          <Progress className="w-1/3 h-2" value={progress} />
-        </CardFooter>
       </Card>
-      
-      {/* Confirmation Dialog */}
-      <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Notification</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to send the login credentials to {managerName}?
-              This will mark the onboarding process as complete.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmSendNotification}>
-              Send Notification
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
