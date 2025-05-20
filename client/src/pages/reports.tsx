@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import Layout from "@/components/layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -6,7 +7,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
@@ -14,7 +15,7 @@ import {
   Legend
 } from "recharts";
 import { useQuery } from "@tanstack/react-query";
-import { Employee, Ticket, SystemAccess } from "@/types";
+import { Employee, Ticket } from "@/types";
 
 export default function Reports() {
   // Get data for reports
@@ -26,12 +27,8 @@ export default function Reports() {
     queryKey: ['/api/tickets'],
   });
 
-  const { data: systemAccess } = useQuery<SystemAccess[]>({
-    queryKey: ['/api/system-access'],
-  });
-
   // Processing data for department distribution
-  const departmentData = React.useMemo(() => {
+  const departmentData = useMemo(() => {
     if (!employees) return [];
     
     const deptCount = employees.reduce((acc, employee) => {
@@ -50,7 +47,7 @@ export default function Reports() {
   }, [employees]);
 
   // Processing data for ticket status
-  const ticketStatusData = React.useMemo(() => {
+  const ticketStatusData = useMemo(() => {
     if (!tickets) return [];
     
     const statusCount = tickets.reduce((acc, ticket) => {
@@ -68,45 +65,48 @@ export default function Reports() {
     }));
   }, [tickets]);
 
-  // Processing data for system access levels
-  const accessLevelData = React.useMemo(() => {
-    if (!systemAccess) return [];
+  // Processing data for ticket types
+  const ticketTypeData = useMemo(() => {
+    if (!tickets) return [];
     
-    const levelCount = systemAccess.reduce((acc, access) => {
-      if (!acc[access.accessLevel]) {
-        acc[access.accessLevel] = 0;
+    const typeCount = tickets.reduce((acc, ticket) => {
+      if (!acc[ticket.type]) {
+        acc[ticket.type] = 0;
       }
       
-      acc[access.accessLevel]++;
+      acc[ticket.type]++;
       return acc;
     }, {} as Record<string, number>);
     
-    return Object.entries(levelCount).map(([name, value]) => ({ 
+    return Object.entries(typeCount).map(([name, value]) => ({ 
+      name: name === 'new_staff_request' ? 'New Staff Request' : 
+            name === 'system_access' ? 'System Access' :
+            name === 'in_progress' ? 'In Progress' : 
+            name.charAt(0).toUpperCase() + name.slice(1), 
+      value 
+    }));
+  }, [tickets]);
+
+  // Processing data for onboarding status
+  const onboardingData = useMemo(() => {
+    if (!employees) return [];
+    
+    const statusCount = employees.reduce((acc, employee) => {
+      const status = employee.status || 'unknown';
+      
+      if (!acc[status]) {
+        acc[status] = 0;
+      }
+      
+      acc[status]++;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return Object.entries(statusCount).map(([name, value]) => ({ 
       name: name.charAt(0).toUpperCase() + name.slice(1), 
       value 
     }));
-  }, [systemAccess]);
-
-  // Processing data for system usage
-  const systemUsageData = React.useMemo(() => {
-    if (!systemAccess) return [];
-    
-    const systemCount = systemAccess.reduce((acc, access) => {
-      const systemName = access.system?.name || `System ${access.systemId}`;
-      
-      if (!acc[systemName]) {
-        acc[systemName] = 0;
-      }
-      
-      acc[systemName]++;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    return Object.entries(systemCount)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 5); // Top 5 systems
-  }, [systemAccess]);
+  }, [employees]);
 
   // Chart colors
   const COLORS = ['#0052CC', '#36B37E', '#FF5630', '#6554C0', '#FFAB00'];
@@ -115,9 +115,9 @@ export default function Reports() {
     <Layout title="Reports">
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-6">Analytics & Reports</h2>
+          <h2 className="text-2xl font-bold tracking-tight mb-6">Staff Onboarding Analytics</h2>
           <p className="text-muted-foreground mb-6">
-            View key metrics and reports on staff distribution, system usage, and ticket management.
+            View key metrics and reports on staff onboarding progress and ticket management.
           </p>
         </div>
 
@@ -149,7 +149,7 @@ export default function Reports() {
                       ))}
                     </Pie>
                     <Legend />
-                    <Tooltip formatter={(value) => [`${value} employees`, 'Count']} />
+                    <RechartsTooltip formatter={(value) => [`${value} employees`, 'Count']} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
@@ -173,7 +173,7 @@ export default function Reports() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
-                    <Tooltip />
+                    <RechartsTooltip />
                     <Bar dataKey="value" name="Tickets" fill="#0052CC" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -185,18 +185,18 @@ export default function Reports() {
             </CardContent>
           </Card>
 
-          {/* System Access Levels */}
+          {/* Ticket Types */}
           <Card>
             <CardHeader>
-              <CardTitle>Access Level Distribution</CardTitle>
-              <CardDescription>Distribution of system access levels</CardDescription>
+              <CardTitle>Ticket Types</CardTitle>
+              <CardDescription>Distribution of different ticket types</CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">
-              {accessLevelData.length > 0 ? (
+              {ticketTypeData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={accessLevelData}
+                      data={ticketTypeData}
                       cx="50%"
                       cy="50%"
                       outerRadius={80}
@@ -204,46 +204,46 @@ export default function Reports() {
                       dataKey="value"
                       label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                     >
-                      {accessLevelData.map((entry, index) => (
+                      {ticketTypeData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => [`${value} users`, 'Count']} />
+                    <RechartsTooltip formatter={(value) => [`${value} tickets`, 'Count']} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex h-full items-center justify-center">
-                  <p className="text-muted-foreground">No access level data available</p>
+                  <p className="text-muted-foreground">No ticket type data available</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Top Systems by Usage */}
+          {/* Staff Onboarding Status */}
           <Card>
             <CardHeader>
-              <CardTitle>Top Systems by Usage</CardTitle>
-              <CardDescription>Most accessed systems in the organization</CardDescription>
+              <CardTitle>Staff Onboarding Status</CardTitle>
+              <CardDescription>Current status of employee onboarding</CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">
-              {systemUsageData.length > 0 ? (
+              {onboardingData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    data={systemUsageData}
+                    data={onboardingData}
                     layout="vertical"
                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" />
                     <YAxis dataKey="name" type="category" width={150} />
-                    <Tooltip />
-                    <Bar dataKey="value" name="Users" fill="#36B37E" />
+                    <RechartsTooltip />
+                    <Bar dataKey="value" name="Employees" fill="#36B37E" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex h-full items-center justify-center">
-                  <p className="text-muted-foreground">No system usage data available</p>
+                  <p className="text-muted-foreground">No onboarding status data available</p>
                 </div>
               )}
             </CardContent>
