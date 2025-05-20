@@ -52,9 +52,11 @@ export default function Layout({ children, title }: LayoutProps) {
                 />
               </div>
               
-              <Button variant="default">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                New Employee
+              <Button variant="default" asChild>
+                <Link href="/tickets/new">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  New Staff Ticket
+                </Link>
               </Button>
               
               <Button variant="ghost" size="icon" className="text-muted-foreground">
