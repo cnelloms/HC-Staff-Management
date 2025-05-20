@@ -208,11 +208,32 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
     updatedTasks[2].completed = true;
     setTasks(updatedTasks);
     
-    // Update metadata
-    updateTicketMutation.mutate({ 
-      notificationSent: true,
-      allTasksCompleted: true // This is the last task, so all tasks are complete
-    });
+    // Update metadata and close the ticket
+    try {
+      // First update the ticket metadata
+      updateTicketMutation.mutate({ 
+        notificationSent: true,
+        allTasksCompleted: true
+      });
+      
+      // Simple direct call to complete the ticket
+      setTimeout(() => {
+        apiRequest("PATCH", `/api/tickets/${ticketId}`, {
+          status: "closed",
+          closedAt: new Date().toISOString()
+        })
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticketId}`] });
+          queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+          toast({
+            title: "Ticket Closed",
+            description: "All tasks completed, ticket has been closed successfully."
+          });
+        });
+      }, 500);
+    } catch (error) {
+      console.error("Error closing ticket:", error);
+    }
     
     setIsDialogOpen(false);
   };
