@@ -112,10 +112,10 @@ export function setupMicrosoftAuth(app: Express) {
       state: cryptoProvider.createNewGuid(),
     };
 
-    const authCodeUrlParameters = {
+    const authCodeUrlParameters: AuthorizationUrlRequest = {
       scopes: ['openid', 'profile', 'email', 'User.Read'],
       redirectUri: process.env.MICROSOFT_REDIRECT_URI!,
-      responseMode: 'form_post',
+      responseMode: ResponseMode.FORM_POST,
       prompt: 'select_account',
       codeChallengeMethod: 'S256',
       codeChallenge: challenge,
@@ -158,7 +158,7 @@ export function setupMicrosoftAuth(app: Express) {
         idToken: tokenResponse.idToken,
         accessToken: tokenResponse.accessToken,
         account: tokenResponse.account,
-        expiresOn: tokenResponse.expiresOn,
+        expiresOn: new Date(Date.now() + 3600 * 1000), // Default 1 hour expiration
       };
 
       // Upsert user in database
@@ -166,19 +166,21 @@ export function setupMicrosoftAuth(app: Express) {
         const { name, username, localAccountId } = tokenResponse.account;
         
         // Get email from claims or account
-        const email = tokenResponse.account.idTokenClaims?.email || username;
+        const email = tokenResponse.account.idTokenClaims?.email || 
+                      username || 
+                      `user-${localAccountId}@example.com`; // Fallback email if none provided
         
         // Split name into first and last name
-        const nameParts = name?.split(' ') || ['', ''];
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
+        const nameParts = name?.split(' ') || ['User', 'Account'];
+        const firstName = nameParts[0] || 'User';
+        const lastName = nameParts.slice(1).join(' ') || 'Account';
         
         await storage.upsertUser({
           id: localAccountId,
           email,
           firstName, 
           lastName,
-          profileImageUrl: null, // Microsoft doesn't provide profile image in standard tokens
+          profileImageUrl: '', // Microsoft doesn't provide profile image in standard tokens
           authProvider: 'microsoft'
         });
       }
