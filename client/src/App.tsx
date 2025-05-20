@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { UserProvider } from "@/context/user-context";
 import NotFound from "@/pages/not-found";
 import { ProtectedRoute } from "./components/auth/protected-route";
+import { AdminRoute } from "./components/auth/admin-route";
 
 // Pages
 import Dashboard from "@/pages/dashboard";
@@ -103,9 +104,9 @@ function Router() {
       </Route>
       <Route path="/user-management">
         {() => (
-          <ProtectedRoute>
+          <AdminRoute>
             <UserManagementPage />
-          </ProtectedRoute>
+          </AdminRoute>
         )}
       </Route>
       <Route path="/profile">

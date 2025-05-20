@@ -53,27 +53,8 @@ import {
 import { queryClient } from "../lib/queryClient";
 
 export default function UserManagementPage() {
-  const { isAuthenticated, isAdmin } = useAuth();
-  const [, navigate] = useLocation();
-  const { toast } = useToast();
-  
-  // Redirect if not authenticated or not an admin
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/login");
-    } else if (!isAdmin) {
-      toast({
-        title: "Access Denied",
-        description: "You don't have permission to access this page",
-        variant: "destructive"
-      });
-      navigate("/");
-    }
-  }, [isAuthenticated, isAdmin, navigate, toast]);
-  
-  if (!isAuthenticated || !isAdmin) {
-    return null;
-  }
+  // We can simplify this since AdminRoute handles the auth check
+  const { isAdmin } = useAuth();
   
   return (
     <Layout>

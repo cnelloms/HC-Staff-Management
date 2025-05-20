@@ -277,19 +277,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.session && req.session.directUser) {
         console.log('User authenticated with direct login:', req.session.directUser);
         const userId = req.session.directUser.id;
-        const userDetails = await storage.getUserDetails(userId);
         
-        if (!userDetails) {
-          return res.status(404).json({ message: "User not found" });
-        }
-        
-        // Determine which employee data to return based on impersonation state
-        const responseData = userDetails.impersonatingEmployee 
-          ? {
-              ...userDetails,
-              currentEmployee: userDetails.impersonatingEmployee,
-              isImpersonating: true
-            }
+        // Return basic user info with admin status
+        return res.json({
+          id: userId,
+          username: req.session.directUser.username,
+          isAdmin: req.session.directUser.isAdmin === true,
+          authProvider: 'direct'
+        });
+      } else if (req.user && req.user.claims) {
+        // Handle Replit auth case
+        console.log('User authenticated with Replit:', req.user.claims);
+        return res.json({
+          id: req.user.claims.sub,
+          email: req.user.claims.email,
+          firstName: req.user.claims.first_name,
+          lastName: req.user.claims.last_name,
+          profileImageUrl: req.user.claims.profile_image_url,
+          isAdmin: req.user.isAdmin === true,
+          authProvider: 'replit'
+        });
+      } else {
+        // No authentication found
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+    } catch (error) {
+      console.error('Error in auth user route:', error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
           : {
               ...userDetails,
               currentEmployee: userDetails.employee,
