@@ -263,11 +263,8 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
   // Get the current ticket type
   const ticketType = form.watch('type');
   
-  // Only show system selection for system_access ticket type
-  const showSystemField = ticketType === 'system_access';
-  
-  // Show new staff request fields
-  const showNewStaffFields = ticketType === 'new_staff_request';
+  // Always show new staff request fields since it's the only option
+  const showNewStaffFields = true;
 
   // When ticket type changes, handle metadata fields appropriately
   React.useEffect(() => {
@@ -437,39 +434,6 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
             </div>
 
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ticket Type</FormLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        // Clear systemId if not system_access
-                        if (value !== 'system_access') {
-                          form.setValue('systemId', undefined);
-                        }
-                      }}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="system_access">System Access</SelectItem>
-                        <SelectItem value="onboarding">Onboarding</SelectItem>
-                        <SelectItem value="issue">Technical Issue</SelectItem>
-                        <SelectItem value="request">General Request</SelectItem>
-                        <SelectItem value="new_staff_request">New Staff Request</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <FormField
                 control={form.control}
