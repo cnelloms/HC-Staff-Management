@@ -8,6 +8,7 @@ import { useCurrentUser } from "@/context/user-context";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { AdminDatabaseSettings } from "@/components/settings/admin-database";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, parse } from "date-fns";
 import { Link } from "wouter";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Loader2, ShieldAlert } from "lucide-react";
 
 // Define the form schema for user settings
 const userSettingsSchema = z.object({
@@ -169,10 +170,11 @@ export default function UserSettings() {
 
         {/* Settings Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-3 w-full max-w-md">
+          <TabsList className="grid grid-cols-4 w-full max-w-md">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="account">Account</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            <TabsTrigger value="admin">Admin</TabsTrigger>
           </TabsList>
 
           {/* Profile Settings */}
@@ -360,6 +362,24 @@ export default function UserSettings() {
                     </p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Admin Settings */}
+          <TabsContent value="admin">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShieldAlert className="h-5 w-5" />
+                  Admin Settings
+                </CardTitle>
+                <CardDescription>
+                  Manage system-wide database entries and configurations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AdminDatabaseSettings />
               </CardContent>
             </Card>
           </TabsContent>
