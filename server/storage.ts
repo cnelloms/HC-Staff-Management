@@ -160,12 +160,63 @@ export class DatabaseStorage implements IStorage {
 
   // Employee operations
   async getEmployees(): Promise<Employee[]> {
-    return await db.select().from(employees);
+    // Get all employees
+    const allEmployees = await db.select().from(employees);
+    
+    // Get all tickets
+    const allTickets = await db.select().from(tickets);
+    
+    // Map tickets to employees
+    return allEmployees.map(employee => {
+      // Get tickets assigned to this employee
+      const assignedTickets = allTickets.filter(ticket => ticket.assigneeId === employee.id);
+      
+      // Get tickets created by this employee
+      const requestedTickets = allTickets.filter(ticket => ticket.requestorId === employee.id);
+      
+      // Combine all tickets related to this employee (avoiding duplicates)
+      const employeeTickets = [...assignedTickets, ...requestedTickets.filter(
+        requestedTicket => !assignedTickets.some(
+          assignedTicket => assignedTicket.id === requestedTicket.id
+        )
+      )];
+      
+      // Return employee with tickets
+      return {
+        ...employee,
+        tickets: employeeTickets
+      };
+    });
   }
 
   async getEmployeeById(id: number): Promise<Employee | undefined> {
+    // First get the employee
     const [employee] = await db.select().from(employees).where(eq(employees.id, id));
-    return employee || undefined;
+    
+    if (!employee) return undefined;
+    
+    // Get tickets assigned to this employee
+    const assignedTickets = await db.select()
+      .from(tickets)
+      .where(eq(tickets.assigneeId, id));
+    
+    // Get tickets created by this employee
+    const requestedTickets = await db.select()
+      .from(tickets)
+      .where(eq(tickets.requestorId, id));
+    
+    // Combine all tickets related to this employee
+    const employeeTickets = [...assignedTickets, ...requestedTickets.filter(
+      requestedTicket => !assignedTickets.some(
+        assignedTicket => assignedTicket.id === requestedTicket.id
+      )
+    )];
+    
+    // Return employee with tickets
+    return {
+      ...employee,
+      tickets: employeeTickets
+    };
   }
 
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
