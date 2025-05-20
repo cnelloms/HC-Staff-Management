@@ -219,8 +219,8 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
       // Simple direct call to complete the ticket
       setTimeout(() => {
         apiRequest("PATCH", `/api/tickets/${ticketId}`, {
-          status: "closed",
-          closedAt: new Date().toISOString()
+          status: "closed"
+          // Let the server handle adding the closedAt timestamp
         })
         .then(() => {
           queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticketId}`] });
