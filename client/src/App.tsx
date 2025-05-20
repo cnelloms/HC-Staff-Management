@@ -27,6 +27,7 @@ import NewTicket from "@/pages/new-ticket";
 import Permissions from "@/pages/permissions";
 import StaffImportPage from "@/pages/staff-import";
 import SimpleLoginPage from "@/pages/simple-login";
+import EmergencyLoginPage from "@/pages/emergency-login";
 import UserManagementPage from "@/pages/user-management";
 
 function Router() {
@@ -78,6 +79,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={SimpleLoginPage} />
+      <Route path="/emergency-login" component={EmergencyLoginPage} />
       
       {/* Protected Routes - require authentication */}
       <Route path="/">
