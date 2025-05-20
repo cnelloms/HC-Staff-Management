@@ -2,14 +2,17 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { UserIcon, LogOutIcon } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { AuthOptions } from "./auth-options";
 
 export function LoginButton({ className }: { className?: string }) {
   const { isAuthenticated } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  const handleLogin = () => {
-    window.location.href = "/api/login";
-  };
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
 
   const handleLogout = () => {
     setIsLoggingOut(true);
@@ -31,13 +34,19 @@ export function LoginButton({ className }: { className?: string }) {
   }
 
   return (
-    <Button 
-      variant="default" 
-      onClick={handleLogin}
-      className={className}
-    >
-      <UserIcon className="mr-2 h-4 w-4" />
-      Login
-    </Button>
+    <Dialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
+      <DialogTrigger asChild>
+        <Button 
+          variant="default" 
+          className={className}
+        >
+          <UserIcon className="mr-2 h-4 w-4" />
+          Login
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <AuthOptions />
+      </DialogContent>
+    </Dialog>
   );
 }

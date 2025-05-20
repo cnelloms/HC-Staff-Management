@@ -260,6 +260,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  authProvider: varchar("auth_provider").default('replit'), // 'replit', 'microsoft', etc.
   employeeId: integer("employee_id").references(() => employees.id, { onDelete: 'set null' }),
   isAdmin: boolean("is_admin").default(false),
   impersonatingId: integer("impersonating_id").references(() => employees.id, { onDelete: 'set null' }),
