@@ -11,6 +11,7 @@ import { z } from "zod";
 import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
 import { setupMicrosoftAuth, isMicrosoftAuthenticated } from "./microsoftAuth";
 import { setupDirectAuth, isAuthenticatedWithDirect, isAdmin as isDirectAdmin } from "./directAuth";
+import { deleteUser } from "./user-delete-route";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
@@ -748,6 +749,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete user endpoint
+  app.delete('/api/users/:userId', deleteUser);
+  
   // Employee routes
   // Get all employees 
   app.get('/api/employees', async (req: Request, res: Response) => {
