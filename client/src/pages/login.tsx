@@ -57,8 +57,13 @@ export default function LoginPage() {
       console.log("Login successful:", data);
       
       // Force a full page reload to the dashboard after login
-      // This ensures all sessions are properly established
-      window.location.href = "/";
+      // We use replace instead of href to avoid browser history issues
+      window.location.replace("/");
+      
+      // If the redirect doesn't happen immediately, try again after a short delay
+      setTimeout(() => {
+        window.location.replace("/");
+      }, 500);
       return;
     } catch (err: any) {
       console.error("Login error:", err);
