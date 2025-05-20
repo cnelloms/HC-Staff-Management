@@ -84,6 +84,7 @@ export function TicketTable() {
               <SelectItem value="onboarding">Onboarding</SelectItem>
               <SelectItem value="issue">Issue</SelectItem>
               <SelectItem value="request">Request</SelectItem>
+              <SelectItem value="new_staff_request">New Staff Request</SelectItem>
             </SelectContent>
           </Select>
         </div>
