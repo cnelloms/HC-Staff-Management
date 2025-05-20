@@ -16,10 +16,10 @@ async function createSampleData() {
     // 1. Create some additional users with different roles (with unique timestamps to avoid duplicates)
     const timestamp = Date.now();
     const users = [
-      { username: 'jsmith', firstName: 'John', lastName: 'Smith', email: `john.smith.${timestamp}@example.com`, isAdmin: false },
-      { username: 'mwilliams', firstName: 'Maria', lastName: 'Williams', email: `maria.williams.${timestamp}@example.com`, isAdmin: false },
-      { username: 'rjohnson', firstName: 'Robert', lastName: 'Johnson', email: `robert.johnson.${timestamp}@example.com`, isAdmin: false },
-      { username: 'jdoe', firstName: 'Jane', lastName: 'Doe', email: `jane.doe.${timestamp}@example.com`, isAdmin: true }
+      { username: `jsmith${timestamp}`, firstName: 'John', lastName: 'Smith', email: `john.smith.${timestamp}@example.com`, isAdmin: false },
+      { username: `mwilliams${timestamp}`, firstName: 'Maria', lastName: 'Williams', email: `maria.williams.${timestamp}@example.com`, isAdmin: false },
+      { username: `rjohnson${timestamp}`, firstName: 'Robert', lastName: 'Johnson', email: `robert.johnson.${timestamp}@example.com`, isAdmin: false },
+      { username: `jdoe${timestamp}`, firstName: 'Jane', lastName: 'Doe', email: `jane.doe.${timestamp}@example.com`, isAdmin: true }
     ];
     
     console.log("Creating users...");
