@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Sidebar } from "./ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Bell, PlusCircle, Search, User } from "lucide-react";
+import { Bell, PlusCircle, User } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
   DropdownMenu,
@@ -43,15 +43,6 @@ export default function Layout({ children, title }: LayoutProps) {
             </div>
             
             <div className="flex items-center space-x-4">
-              <div className="relative w-64">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  type="search"
-                  placeholder="Search staff or tickets..."
-                  className="pl-8"
-                />
-              </div>
-              
               <Button variant="default" asChild>
                 <Link href="/tickets/new">
                   <PlusCircle className="mr-2 h-4 w-4" />
