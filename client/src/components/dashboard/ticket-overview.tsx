@@ -100,34 +100,45 @@ export function TicketOverview() {
               ) : (
                 recentTickets?.map((ticket) => (
                   <li key={ticket.id}>
-                    <Link href={`/tickets/${ticket.id}`}>
-                      <a className="block px-4 py-4 hover:bg-muted/50">
+                    <Link href={`/tickets/${ticket.id}`} className="block px-4 py-4 hover:bg-muted/50">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium text-primary truncate">
-                            {ticket.title}
+                            {ticket.title || "Untitled Ticket"}
                           </p>
                           <div className="ml-2 flex-shrink-0">
-                            <StatusBadge status={ticket.status} className="text-xs" />
+                            <StatusBadge status={ticket.status || "open"} label={ticket.status || "Open"} className="text-xs" />
                           </div>
                         </div>
                         <div className="mt-2 sm:flex sm:justify-between">
                           <div className="sm:flex">
                             <p className="flex items-center text-sm text-muted-foreground">
                               <UserIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-muted-foreground" />
-                              {ticket.requestor?.name}
+                              {ticket.requestor ? 
+                                `${ticket.requestor.firstName} ${ticket.requestor.lastName}` : 
+                                "User"}
                             </p>
                           </div>
                           <div className="mt-2 flex items-center text-sm text-muted-foreground sm:mt-0">
                             <CalendarIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-muted-foreground" />
                             <p>
                               {ticket.status === 'closed' ? 'Closed on ' : 'Opened on '}
-                              <time dateTime={ticket.status === 'closed' ? ticket.closedAt : ticket.createdAt}>
-                                {format(new Date(ticket.status === 'closed' ? ticket.closedAt! : ticket.createdAt), 'MMM d, yyyy')}
+                              <time dateTime={
+                                ticket.status === 'closed' && ticket.closedAt 
+                                  ? ticket.closedAt 
+                                  : ticket.createdAt || new Date().toISOString()
+                              }>
+                                {format(
+                                  new Date(
+                                    ticket.status === 'closed' && ticket.closedAt 
+                                      ? ticket.closedAt 
+                                      : ticket.createdAt || new Date()
+                                  ), 
+                                  'MMM d, yyyy'
+                                )}
                               </time>
                             </p>
                           </div>
                         </div>
-                      </a>
                     </Link>
                   </li>
                 ))
@@ -137,10 +148,8 @@ export function TicketOverview() {
         </div>
       </CardContent>
       <CardFooter className="bg-muted pt-2 pb-2">
-        <Link href="/tickets">
-          <a className="text-sm font-medium text-primary hover:text-primary/80">
-            View all tickets
-          </a>
+        <Link href="/tickets" className="text-sm font-medium text-primary hover:text-primary/80">
+          View all tickets
         </Link>
       </CardFooter>
     </Card>

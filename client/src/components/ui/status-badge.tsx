@@ -15,10 +15,11 @@ type StatusType =
 
 interface StatusBadgeProps {
   status: StatusType;
+  label?: string;
   className?: string;
 }
 
-export function StatusBadge({ status, className }: StatusBadgeProps) {
+export function StatusBadge({ status, label, className }: StatusBadgeProps) {
   const badgeClasses = {
     pending: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
     open: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
@@ -54,7 +55,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
         className
       )}
     >
-      {badgeLabels[status]}
+      {label || badgeLabels[status]}
     </Badge>
   );
 }
