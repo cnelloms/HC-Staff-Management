@@ -19,6 +19,7 @@ import Settings from "@/pages/settings";
 import EmployeeProfile from "@/pages/employee-profile";
 import UserProfile from "@/pages/profile";
 import TicketDetail from "@/pages/ticket-detail";
+import EditTicket from "@/pages/edit-ticket";
 import NewEmployee from "@/pages/new-employee";
 import NewTicket from "@/pages/new-ticket";
 import Permissions from "@/pages/permissions";
@@ -71,6 +72,13 @@ function Router() {
         {() => (
           <ProtectedRoute>
             <NewTicket />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/tickets/:id/edit">
+        {(params) => (
+          <ProtectedRoute>
+            <EditTicket />
           </ProtectedRoute>
         )}
       </Route>
