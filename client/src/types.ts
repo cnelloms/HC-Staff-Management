@@ -78,17 +78,22 @@ export interface Ticket {
   metadata?: any;
   requestor?: {
     id: number;
-    name: string;
+    firstName: string;
+    lastName: string;
+    position?: string;
     avatar?: string;
   };
   assignee?: {
     id: number;
-    name: string;
+    firstName: string;
+    lastName: string;
+    position?: string;
     avatar?: string;
   };
   system?: {
     id: number;
     name: string;
+    description?: string;
   };
 }
 

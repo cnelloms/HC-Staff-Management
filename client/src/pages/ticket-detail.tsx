@@ -327,17 +327,17 @@ export default function TicketDetail() {
                   {ticket.requestor ? (
                     <div className="flex items-center space-x-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={ticket.requestor.avatar} alt={ticket.requestor.name} />
+                        <AvatarImage src={ticket.requestor.avatar} alt={`${ticket.requestor.firstName} ${ticket.requestor.lastName}`} />
                         <AvatarFallback>
-                          {ticket.requestor.name.split(' ').map(n => n[0]).join('')}
+                          {ticket.requestor.firstName?.[0]}{ticket.requestor.lastName?.[0]}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="text-sm font-medium">
-                          <Link href={`/employee/${ticket.requestorId}`}>
-                            <a className="hover:underline">{ticket.requestor.name}</a>
-                          </Link>
-                        </p>
+                        <Link href={`/employee/${ticket.requestorId}`}>
+                          <p className="text-sm font-medium hover:underline">
+                            {ticket.requestor.firstName} {ticket.requestor.lastName}
+                          </p>
+                        </Link>
                       </div>
                     </div>
                   ) : (
@@ -350,17 +350,17 @@ export default function TicketDetail() {
                     <label className="text-sm font-medium">Assignee</label>
                     <div className="flex items-center space-x-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={ticket.assignee.avatar} alt={ticket.assignee.name} />
+                        <AvatarImage src={ticket.assignee.avatar} alt={`${ticket.assignee.firstName} ${ticket.assignee.lastName}`} />
                         <AvatarFallback>
-                          {ticket.assignee.name.split(' ').map(n => n[0]).join('')}
+                          {ticket.assignee.firstName?.[0]}{ticket.assignee.lastName?.[0]}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="text-sm font-medium">
-                          <Link href={`/employee/${ticket.assigneeId}`}>
-                            <a className="hover:underline">{ticket.assignee.name}</a>
-                          </Link>
-                        </p>
+                        <Link href={`/employee/${ticket.assigneeId}`}>
+                          <p className="text-sm font-medium hover:underline">
+                            {ticket.assignee.firstName} {ticket.assignee.lastName}
+                          </p>
+                        </Link>
                       </div>
                     </div>
                   </div>
