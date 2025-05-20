@@ -50,12 +50,12 @@ export function setupDirectAuth(app: Express) {
         return res.status(401).json({ message: 'Invalid username or password' });
       }
       
-      if (!userCredentials.isEnabled) {
+      if (userCredentials.isEnabled === false) {
         return res.status(403).json({ message: 'This account is disabled' });
       }
       
       // Verify password
-      const isPasswordValid = await bcrypt.compare(password, userCredentials.password_hash);
+      const isPasswordValid = await bcrypt.compare(password, userCredentials.password);
       
       if (!isPasswordValid) {
         return res.status(401).json({ message: 'Invalid username or password' });
