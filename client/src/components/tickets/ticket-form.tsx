@@ -131,7 +131,7 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
       requestorId: undefined,
       assigneeId: undefined,
       status: "open",
-      priority: "medium",
+      priority: "low",
       type: "new_staff_request",
       systemId: undefined,
     },
@@ -565,6 +565,8 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                                   ...form.getValues().metadata,
                                   startDate: dateValue
                                 });
+                                // Close the popover after date selection
+                                document.body.click();
                               }}
                               disabled={(date) => date < new Date()}
                               initialFocus
