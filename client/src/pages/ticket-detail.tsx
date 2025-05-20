@@ -76,13 +76,17 @@ export default function TicketDetail() {
   const handleStatusChange = (newStatus: string) => {
     setStatus(newStatus as 'open' | 'in_progress' | 'closed');
     
-    // If status is being changed to closed, set the closedAt date
-    const updateData: any = { status: newStatus };
-    if (newStatus === 'closed' && ticket?.status !== 'closed') {
-      updateData.closedAt = new Date().toISOString();
-    }
+    // For all status changes, we only need to update the status
+    // The backend will handle setting closedAt if status is being changed to closed
+    updateTicketMutation.mutate({ 
+      status: newStatus 
+    });
     
-    updateTicketMutation.mutate(updateData);
+    // Show toast confirmation 
+    toast({
+      title: "Status updated",
+      description: `Ticket status has been updated to ${newStatus.replace("_", " ")}.`,
+    });
   };
 
   const handleAssigneeChange = (newAssigneeId: string) => {
