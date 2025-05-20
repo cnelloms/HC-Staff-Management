@@ -20,10 +20,11 @@ export default function LoginPage() {
   const [, navigate] = useLocation();
 
   // Redirect to dashboard if already authenticated
-  if (isAuthenticated) {
-    setTimeout(() => navigate("/"), 0);
-    return null;
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/");
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleDirectLogin = async (e: React.FormEvent) => {
     e.preventDefault();

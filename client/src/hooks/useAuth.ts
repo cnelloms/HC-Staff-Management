@@ -6,21 +6,27 @@ export function useAuth() {
   const [localUser, setLocalUser] = useState<any>(null);
   
   // Try to get user from server first
-  const { data: userData, isLoading: isServerLoading } = useQuery({
+  const { data: userData, isLoading: isServerLoading, error } = useQuery({
     queryKey: ["/api/auth/user"],
     retry: false,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
   
   // Get the employee details if we have a user
   const { data: employeeData } = useQuery({
     queryKey: ["/api/employees", userData?.employeeId],
     enabled: !!userData?.employeeId,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
   
   // Get impersonated employee details if the user is impersonating
   const { data: impersonatedEmployee } = useQuery({
     queryKey: ["/api/employees", userData?.impersonatingId],
     enabled: !!userData?.impersonatingId,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
   
   // On mount, check localStorage for saved user data
@@ -36,18 +42,21 @@ export function useAuth() {
     }
   }, []);
   
+  // When user data comes from the server, save it to localStorage
+  useEffect(() => {
+    if (userData) {
+      try {
+        localStorage.setItem("auth_user", JSON.stringify(userData));
+      } catch (err) {
+        console.error("Error saving auth to localStorage:", err);
+      }
+    }
+  }, [userData]);
+  
   // Use server user if available, fall back to localStorage user
   const user = userData || localUser;
   const isLoading = isServerLoading && !localUser;
   const isImpersonating = !!user?.impersonatingId;
-  
-  // For debugging purposes, log the user details
-  console.log('Auth state:', { 
-    user, 
-    isAuthenticated: !!user,
-    isAdmin: user?.isAdmin === true,
-    rawIsAdmin: user?.isAdmin
-  });
   
   return {
     user,
