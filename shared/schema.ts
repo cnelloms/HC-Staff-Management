@@ -89,7 +89,7 @@ export const tickets = pgTable("tickets", {
   assigneeId: integer("assignee_id"),
   status: text("status").default("open").notNull(), // open, in_progress, closed
   priority: text("priority").default("medium").notNull(), // low, medium, high
-  type: text("type").notNull(), // system_access, onboarding, issue, request
+  type: text("type").notNull(), // system_access, onboarding, issue, request, new_staff_request
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   closedAt: timestamp("closed_at"),
