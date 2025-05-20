@@ -8,6 +8,7 @@ import {
   Settings,
   Home,
   FileUp,
+  Shield,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -28,6 +29,7 @@ export function Sidebar({ user = { name: 'Sarah Johnson', role: 'HR Administrato
     { href: "/staff-import", label: "Import Staff", icon: <FileUp className="sidebar-icon" /> },
     { href: "/tickets", label: "Tickets", icon: <Ticket className="sidebar-icon" /> },
     { href: "/reports", label: "Reports", icon: <BarChart2 className="sidebar-icon" /> },
+    { href: "/permissions", label: "Permissions", icon: <Shield className="sidebar-icon" /> },
     { href: "/settings", label: "Settings", icon: <Settings className="sidebar-icon" /> },
   ];
 
