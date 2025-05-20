@@ -86,7 +86,7 @@ export default function TicketDetail() {
   const handleAssigneeChange = (newAssigneeId: string) => {
     setAssigneeId(newAssigneeId);
     updateTicketMutation.mutate({ 
-      assigneeId: newAssigneeId ? parseInt(newAssigneeId) : null 
+      assigneeId: newAssigneeId === 'unassigned' ? null : parseInt(newAssigneeId)
     });
   };
 
@@ -144,7 +144,7 @@ export default function TicketDetail() {
     <Layout title={`Ticket #${ticket.id}`}>
       <div className="space-y-6">
         {/* Ticket Header */}
-        <div className="bg-white rounded-lg border shadow-sm p-6">
+        <div className="bg-background rounded-lg border shadow-sm p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <div className="flex items-center space-x-2">
@@ -289,7 +289,7 @@ export default function TicketDetail() {
                       <SelectValue placeholder="Select assignee" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
                       {!employeesLoading && employees?.map(employee => (
                         <SelectItem key={employee.id} value={employee.id.toString()}>
                           {employee.firstName} {employee.lastName}
