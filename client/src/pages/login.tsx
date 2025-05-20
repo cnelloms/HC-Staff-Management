@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate } from "wouter";
+import { useLocation } from "wouter";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -16,10 +16,12 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { isAuthenticated } = useAuth();
+  const [, navigate] = useLocation();
 
   // Redirect to dashboard if already authenticated
   if (isAuthenticated) {
-    return <Navigate to="/" />;
+    setTimeout(() => navigate("/"), 0);
+    return null;
   }
 
   const handleDirectLogin = async (e: React.FormEvent) => {

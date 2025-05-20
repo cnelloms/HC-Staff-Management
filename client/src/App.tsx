@@ -21,10 +21,12 @@ import NewEmployee from "@/pages/new-employee";
 import NewTicket from "@/pages/new-ticket";
 import Permissions from "@/pages/permissions";
 import StaffImportPage from "@/pages/staff-import";
+import LoginPage from "@/pages/login";
 
 function Router() {
   return (
     <Switch>
+      <Route path="/login" component={LoginPage} />
       <Route path="/" component={Dashboard} />
       <Route path="/directory" component={Directory} />
       <Route path="/staff-import" component={StaffImportPage} />

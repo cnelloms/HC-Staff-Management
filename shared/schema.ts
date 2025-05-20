@@ -260,7 +260,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  authProvider: varchar("auth_provider").default('replit'), // 'replit', 'microsoft', etc.
+  authProvider: varchar("auth_provider").default('replit'), // 'replit', 'microsoft', 'direct', etc.
   employeeId: integer("employee_id").references(() => employees.id, { onDelete: 'set null' }),
   isAdmin: boolean("is_admin").default(false),
   impersonatingId: integer("impersonating_id").references(() => employees.id, { onDelete: 'set null' }),
@@ -268,5 +268,45 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Credentials table for direct login
+export const credentials = pgTable("credentials", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  username: varchar("username").notNull().unique(),
+  password: varchar("password_hash").notNull(), // Stores hashed password
+  isEnabled: boolean("is_enabled").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  lastLoginAt: timestamp("last_login_at"),
+});
+
+// Authentication settings table
+export const authSettings = pgTable("auth_settings", {
+  id: serial("id").primaryKey(),
+  directLoginEnabled: boolean("direct_login_enabled").default(true),
+  microsoftLoginEnabled: boolean("microsoft_login_enabled").default(false),
+  replitLoginEnabled: boolean("replit_login_enabled").default(true),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  updatedById: varchar("updated_by_id").references(() => users.id),
+});
+
+export const insertCredentialSchema = createInsertSchema(credentials).pick({
+  userId: true,
+  username: true,
+  password: true,
+  isEnabled: true,
+});
+
+export const insertAuthSettingsSchema = createInsertSchema(authSettings).pick({
+  directLoginEnabled: true,
+  microsoftLoginEnabled: true,
+  replitLoginEnabled: true,
+  updatedById: true,
+});
+
 export type User = typeof users.$inferSelect;
 export type UpsertUser = typeof users.$inferInsert;
+export type Credential = typeof credentials.$inferSelect;
+export type InsertCredential = z.infer<typeof insertCredentialSchema>;
+export type AuthSettings = typeof authSettings.$inferSelect;
+export type InsertAuthSettings = z.infer<typeof insertAuthSettingsSchema>;
