@@ -568,6 +568,99 @@ Reporting To: ${managerName}
           </div>
         </CardContent>
       </Card>
+      
+      {/* Auto-generated User Account Info - Only shown when employee is created from completed ticket */}
+      {metadata?.employeeCreated && metadata?.userAccountCreated && (
+        <Card className="border-green-200 bg-green-50 dark:bg-green-900/10 mt-6">
+          <CardHeader className="bg-green-100 dark:bg-green-900/20 border-b border-green-200">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <CardTitle className="text-xl text-green-800 dark:text-green-400">Employee Account Created</CardTitle>
+            </div>
+            <CardDescription className="text-green-700 dark:text-green-300">
+              The system has automatically created an employee record and user account
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-4">
+            <div className="bg-white dark:bg-gray-800 border border-green-200 rounded-md p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Account Details
+                </h3>
+                <Badge className="bg-green-600">Ready to Use</Badge>
+              </div>
+              
+              <Separator />
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Username</Label>
+                  <div className="flex items-center gap-2">
+                    <div className="font-mono bg-muted p-2 rounded text-sm flex-1 overflow-x-auto">
+                      {metadata.username}
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-9 px-2"
+                      onClick={() => copyToClipboard(metadata.username, "Username")}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Password</Label>
+                  <div className="flex items-center gap-2">
+                    <div className="font-mono bg-muted p-2 rounded text-sm flex-1 overflow-x-auto relative">
+                      {showPassword ? metadata.password : '••••••••••••'}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 absolute right-2 top-1/2 transform -translate-y-1/2"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-9 px-2"
+                      onClick={() => copyToClipboard(metadata.password, "Password")}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 rounded-md p-3">
+                <div className="flex gap-2 text-yellow-800 dark:text-yellow-300">
+                  <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-medium">Important</p>
+                    <p>These credentials will only be shown once. Please save them securely and share them with the employee.</p>
+                  </div>
+                </div>
+              </div>
+              
+              <Button
+                onClick={() => copyToClipboard(
+                  `Username: ${metadata.username}\nPassword: ${metadata.password}\n\nPlease change your password after the first login.`, 
+                  "Account credentials"
+                )}
+                className="w-full"
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Copy All Account Credentials
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
