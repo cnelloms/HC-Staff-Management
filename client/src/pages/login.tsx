@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AuthOptions } from "@/components/auth/auth-options";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
+import { queryClient } from "../lib/queryClient";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -55,11 +56,10 @@ export default function LoginPage() {
       // Successful login - redirect to the home page
       console.log("Login successful:", data);
       
-      // Force a page reload to the home page after a short delay
-      // This gives time for the session to be properly established
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 1000);
+      // Force a full page reload to the dashboard after login
+      // This ensures all sessions are properly established
+      window.location.href = "/";
+      return;
     } catch (err: any) {
       console.error("Login error:", err);
       setError(err.message || "Login failed");
