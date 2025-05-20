@@ -490,15 +490,83 @@ export function RolesList() {
       ) : (
         <div className="text-center py-10 border rounded-md">
           <p className="text-muted-foreground mb-4">No roles found</p>
-          <DialogTrigger asChild>
-            <Button onClick={() => {
-              setEditingRole(null);
-              form.reset();
-              setIsAddDialogOpen(true);
-            }}>
-              Create your first role
-            </Button>
-          </DialogTrigger>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => {
+                setEditingRole(null);
+                form.reset();
+                setIsAddDialogOpen(true);
+              }}>
+                Create your first role
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Create Role</DialogTitle>
+                <DialogDescription>
+                  Fill in the details to create a new role.
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Administrator" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Role description" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="isDefault"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Default role</FormLabel>
+                          <FormDescription>
+                            This role will be assigned to new employees by default
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  <DialogFooter>
+                    <Button 
+                      type="submit" 
+                      disabled={createRoleMutation.isPending || updateRoleMutation.isPending}
+                    >
+                      Create
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
     </div>
