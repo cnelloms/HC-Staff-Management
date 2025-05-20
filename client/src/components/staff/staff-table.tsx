@@ -102,10 +102,6 @@ export function StaffTable() {
             </SelectContent>
           </Select>
         </div>
-        <Button>
-          <PlusIcon className="mr-2 h-4 w-4" />
-          Add Employee
-        </Button>
       </div>
       
       <div className="rounded-md border">
