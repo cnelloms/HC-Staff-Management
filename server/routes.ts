@@ -742,10 +742,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const ticketData = req.body;
+      const currentTicket = await storage.getTicketById(id);
+      
+      if (!currentTicket) {
+        return res.status(404).json({ message: 'Ticket not found' });
+      }
+      
+      // Update the ticket
       const updatedTicket = await storage.updateTicket(id, ticketData);
       
       if (!updatedTicket) {
-        return res.status(404).json({ message: 'Ticket not found' });
+        return res.status(404).json({ message: 'Failed to update the ticket' });
+      }
+      
+      // Check if the ticket is a new staff request and is being closed
+      if (updatedTicket.type === 'new_staff_request' && 
+          updatedTicket.status === 'closed' && 
+          currentTicket.status !== 'closed' &&
+          updatedTicket.metadata) {
+        
+        try {
+          // Extract relevant data from ticket metadata to create employee
+          const metadata = updatedTicket.metadata;
+          const positions = await storage.getPositions();
+          
+          // Find position title based on positionId
+          let positionTitle = "Staff Member";
+          if (metadata.positionId) {
+            const position = positions.find(p => p.id === metadata.positionId);
+            if (position) {
+              positionTitle = position.title;
+            }
+          }
+          
+          // Create a new employee from the ticket data
+          const newEmployeeData = {
+            firstName: metadata.firstName,
+            lastName: metadata.lastName,
+            email: metadata.workEmail || metadata.email || `${metadata.firstName.toLowerCase()}.${metadata.lastName.toLowerCase()}@example.com`,
+            phone: metadata.phone || null,
+            position: positionTitle,
+            departmentId: metadata.departmentId,
+            managerId: metadata.reportingManagerId,
+            hireDate: metadata.startDate ? new Date(metadata.startDate) : new Date(),
+            status: "active", // Start as active since onboarding is complete
+            avatar: null
+          };
+          
+          // Create the employee
+          const newEmployee = await storage.createEmployee(newEmployeeData);
+          
+          // Create an activity for the employee creation
+          await storage.createActivity({
+            type: "employee_creation",
+            description: `New employee ${newEmployee.firstName} ${newEmployee.lastName} created from ticket #${updatedTicket.id}`,
+            employeeId: newEmployee.id,
+            metadata: {
+              source: "ticket",
+              ticketId: updatedTicket.id
+            }
+          });
+          
+          // Include the newly created employee in the response
+          updatedTicket.metadata = {
+            ...updatedTicket.metadata,
+            employeeCreated: true,
+            employeeId: newEmployee.id
+          };
+        } catch (employeeError) {
+          console.error('Error creating employee from ticket:', employeeError);
+          // Continue with the process, just log the error - we don't want to fail the ticket update
+        }
       }
       
       return res.json(updatedTicket);
