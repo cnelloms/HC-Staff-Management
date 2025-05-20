@@ -13,12 +13,13 @@ async function createSampleData() {
   console.log("Creating sample data for the HR system...");
   
   try {
-    // 1. Create some additional users with different roles
+    // 1. Create some additional users with different roles (with unique timestamps to avoid duplicates)
+    const timestamp = Date.now();
     const users = [
-      { username: 'jsmith', firstName: 'John', lastName: 'Smith', email: 'john.smith@example.com', isAdmin: false },
-      { username: 'mwilliams', firstName: 'Maria', lastName: 'Williams', email: 'maria.williams@example.com', isAdmin: false },
-      { username: 'rjohnson', firstName: 'Robert', lastName: 'Johnson', email: 'robert.johnson@example.com', isAdmin: false },
-      { username: 'jdoe', firstName: 'Jane', lastName: 'Doe', email: 'jane.doe@example.com', isAdmin: true }
+      { username: 'jsmith', firstName: 'John', lastName: 'Smith', email: `john.smith.${timestamp}@example.com`, isAdmin: false },
+      { username: 'mwilliams', firstName: 'Maria', lastName: 'Williams', email: `maria.williams.${timestamp}@example.com`, isAdmin: false },
+      { username: 'rjohnson', firstName: 'Robert', lastName: 'Johnson', email: `robert.johnson.${timestamp}@example.com`, isAdmin: false },
+      { username: 'jdoe', firstName: 'Jane', lastName: 'Doe', email: `jane.doe.${timestamp}@example.com`, isAdmin: true }
     ];
     
     console.log("Creating users...");
@@ -129,13 +130,14 @@ async function createSampleData() {
       if (directorPosition) {
         const firstName = getRandomElement(firstNames);
         const lastName = getRandomElement(lastNames);
-        const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`;
+        const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${Date.now()}@example.com`;
+        const phone = `+1 (${Math.floor(Math.random() * 900) + 100}) ${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000}`;
         
         const result = await pool.query(
-          `INSERT INTO employees (first_name, last_name, email, work_email, department_id, position_id, status, employee_type, hire_date)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          `INSERT INTO employees (first_name, last_name, email, department_id, position, status, hire_date, phone)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
            RETURNING *`,
-          [firstName, lastName, email, email, dept.id, directorPosition.id, 'Active', 'Full-time', new Date(2018, 0, 1)]
+          [firstName, lastName, email, dept.id, directorPosition.title, 'Active', new Date(2018, 0, 1), phone]
         );
         
         directors[dept.id] = result.rows[0];
@@ -159,13 +161,14 @@ async function createSampleData() {
         for (let i = 0; i < managerCount; i++) {
           const firstName = getRandomElement(firstNames);
           const lastName = getRandomElement(lastNames);
-          const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`;
+          const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${Date.now()}@example.com`;
+          const phone = `+1 (${Math.floor(Math.random() * 900) + 100}) ${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000}`;
           
           const result = await pool.query(
-            `INSERT INTO employees (first_name, last_name, email, work_email, department_id, position_id, reporting_manager_id, status, employee_type, hire_date)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            `INSERT INTO employees (first_name, last_name, email, department_id, position, manager_id, status, hire_date, phone)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
              RETURNING *`,
-            [firstName, lastName, email, email, dept.id, managerPosition.id, director.id, 'Active', 'Full-time', new Date(2019, 0, 1)]
+            [firstName, lastName, email, dept.id, managerPosition.title, director.id, 'Active', new Date(2019, 0, 1), phone]
           );
           
           managers[dept.id].push(result.rows[0]);
@@ -187,7 +190,8 @@ async function createSampleData() {
         for (let i = 0; i < specialistCount; i++) {
           const firstName = getRandomElement(firstNames);
           const lastName = getRandomElement(lastNames);
-          const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${i}@example.com`;
+          const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${Date.now() + i}@example.com`;
+          const phone = `+1 (${Math.floor(Math.random() * 900) + 100}) ${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000}`;
           
           // 80% report to a manager, 20% to the director
           const manager = deptManagers.length > 0 && Math.random() < 0.8
@@ -196,12 +200,12 @@ async function createSampleData() {
           
           if (manager) {
             await pool.query(
-              `INSERT INTO employees (first_name, last_name, email, work_email, department_id, position_id, reporting_manager_id, status, employee_type, hire_date)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-              [firstName, lastName, email, email, dept.id, specialistPosition.id, manager.id, 
+              `INSERT INTO employees (first_name, last_name, email, department_id, position, manager_id, status, hire_date, phone)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+              [firstName, lastName, email, dept.id, specialistPosition.title, manager.id, 
                Math.random() < 0.9 ? 'Active' : 'On Leave', // 10% on leave
-               Math.random() < 0.8 ? 'Full-time' : 'Part-time', // 20% part-time
-               new Date(2020 + Math.floor(Math.random() * 3), Math.floor(Math.random() * 12), 1)]
+               new Date(2020 + Math.floor(Math.random() * 3), Math.floor(Math.random() * 12), 1),
+               phone]
             );
           }
         }
