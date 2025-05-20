@@ -10,11 +10,11 @@ import {
   FileUp,
   Shield,
   Inbox,
+  UserX
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { LoginButton } from "@/components/auth/login-button";
-import { ImpersonationControls } from "@/components/auth/impersonation-controls";
 
 interface SidebarProps {
   user?: {
@@ -124,9 +124,14 @@ export function Sidebar({ user: defaultUser }: SidebarProps) {
               </div>
             </div>
             
-            {/* Impersonation controls for admins */}
-            {(isAdmin || isImpersonating) && (
-              <ImpersonationControls />
+            {/* Impersonation badge - only shows when actively impersonating */}
+            {isImpersonating && impersonatingEmployee && (
+              <div className="flex items-center p-2 my-2 bg-amber-50 border border-amber-200 rounded-md text-sm">
+                <span className="text-amber-600 font-medium flex items-center">
+                  <UserX className="h-4 w-4 mr-1" />
+                  Viewing as: {impersonatingEmployee.firstName} {impersonatingEmployee.lastName}
+                </span>
+              </div>
             )}
             
             {/* Login/Logout button */}
