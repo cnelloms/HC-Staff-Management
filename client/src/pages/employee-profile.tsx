@@ -154,12 +154,6 @@ export default function EmployeeProfile() {
                   Edit Profile
                 </Link>
               </Button>
-              <Button variant="outline" asChild>
-                <Link href={`/access-management/new?employeeId=${employeeId}`}>
-                  <Key className="mr-2 h-4 w-4" />
-                  Request Access
-                </Link>
-              </Button>
 
 
               {employee.status === 'onboarding' && (
@@ -197,9 +191,8 @@ export default function EmployeeProfile() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-4 w-full max-w-md">
+          <TabsList className="grid grid-cols-3 w-full max-w-md">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="system-access">System Access</TabsTrigger>
             <TabsTrigger value="tickets">Tickets</TabsTrigger>
             <TabsTrigger value="org-chart">Org Chart</TabsTrigger>
           </TabsList>
@@ -238,65 +231,7 @@ export default function EmployeeProfile() {
             </Card>
           </TabsContent>
 
-          {/* System Access Tab */}
-          <TabsContent value="system-access">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>System Access</CardTitle>
-                  <CardDescription>Systems this employee has access to</CardDescription>
-                </div>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/access-management/new?employeeId=${employeeId}`}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Request Access
-                  </Link>
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {employee.systemAccess && employee.systemAccess.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>System</TableHead>
-                        <TableHead>Access Level</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Granted By</TableHead>
-                        <TableHead>Granted Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {employee.systemAccess.map((access: SystemAccess) => (
-                        <TableRow key={access.id}>
-                          <TableCell className="font-medium">{access.system?.name}</TableCell>
-                          <TableCell className="capitalize">{access.accessLevel}</TableCell>
-                          <TableCell>
-                            <StatusBadge status={access.status as any} />
-                          </TableCell>
-                          <TableCell>{access.grantedBy?.name || '-'}</TableCell>
-                          <TableCell>
-                            {access.grantedAt 
-                              ? format(new Date(access.grantedAt), 'MMM d, yyyy')
-                              : '-'
-                            }
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="text-center py-6">
-                    <p className="text-muted-foreground">No system access found</p>
-                    <Button variant="outline" className="mt-4" asChild>
-                      <Link href={`/access-management/new?employeeId=${employeeId}`}>
-                        Request System Access
-                      </Link>
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+
 
           {/* Tickets Tab */}
           <TabsContent value="tickets">

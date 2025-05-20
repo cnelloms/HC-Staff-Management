@@ -155,12 +155,7 @@ export default function UserProfile() {
                 </Link>
               </Button>
 
-              <Button variant="outline" asChild>
-                <Link href={`/access-management/new?employeeId=${user.id}`}>
-                  <Key className="mr-2 h-4 w-4" />
-                  Request System Access
-                </Link>
-              </Button>
+
             </div>
           </div>
         </div>
