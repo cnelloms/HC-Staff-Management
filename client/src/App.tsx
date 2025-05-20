@@ -23,6 +23,7 @@ import NewTicket from "@/pages/new-ticket";
 import Permissions from "@/pages/permissions";
 import StaffImportPage from "@/pages/staff-import";
 import LoginPage from "@/pages/login";
+import UserManagementPage from "@/pages/user-management";
 
 function Router() {
   return (
