@@ -488,49 +488,12 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
               />
             </div>
 
-            {showSystemField && (
-              <FormField
-                control={form.control}
-                name="systemId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>System</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value?.toString()}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select system for access" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">No specific system</SelectItem>
-                        {systems?.map((system) => (
-                          <SelectItem 
-                            key={system.id} 
-                            value={system.id.toString()}
-                          >
-                            {system.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Required for system access requests.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
-            {showNewStaffFields && (
-              <div className="space-y-6 border border-border rounded-md p-4 mt-4">
-                <h3 className="font-medium text-lg">New Staff Details</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Please provide the details for the new staff member.
-                </p>
+            {/* New Staff Details section - the only workflow we support */}
+            <div className="space-y-6 border border-border rounded-md p-4 mt-4">
+              <h3 className="font-medium text-lg">New Staff Details</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Please provide the details for the new staff member.
+              </p>
 
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <FormField
@@ -745,7 +708,6 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                   />
                 </div>
               </div>
-            )}
           </form>
         </Form>
       </CardContent>
