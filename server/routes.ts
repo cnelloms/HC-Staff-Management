@@ -72,17 +72,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
       
-      // Return a simple list of users
+      // Return a simple list of users with a more detailed admin profile
       const userList = [
         {
           id: "direct_admin_1",
           username: "admin",
-          firstName: "System",
-          lastName: "Administrator",
-          email: "admin@example.com",
+          firstName: "Alex",
+          lastName: "Morgan",
+          email: "alex.morgan@example.com",
           authProvider: "direct",
           isAdmin: true,
-          isEnabled: true
+          isEnabled: true,
+          title: "IT Director",
+          department: "Information Technology",
+          phone: "+1 (555) 123-4567",
+          hireDate: "2020-01-15"
         }
       ];
       
