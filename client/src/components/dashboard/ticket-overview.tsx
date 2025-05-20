@@ -8,19 +8,27 @@ import { Link } from "wouter";
 import { format } from "date-fns";
 
 export function TicketOverview() {
-  const { data: tickets, isLoading } = useQuery<Ticket[]>({
+  const { data: tickets = [], isLoading, error } = useQuery<Ticket[]>({
     queryKey: ['/api/tickets'],
   });
 
+  // Safely handle tickets data
+  const safeTickets = Array.isArray(tickets) ? tickets : [];
+
   const countByStatus = {
-    open: tickets?.filter(t => t.status === 'open').length || 0,
-    in_progress: tickets?.filter(t => t.status === 'in_progress').length || 0,
-    closed: tickets?.filter(t => t.status === 'closed').length || 0
+    open: safeTickets.filter(t => t?.status === 'open').length || 0,
+    in_progress: safeTickets.filter(t => t?.status === 'in_progress').length || 0,
+    closed: safeTickets.filter(t => t?.status === 'closed').length || 0
   };
 
   // Get the 3 most recent tickets
-  const recentTickets = tickets
-    ?.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  const recentTickets = safeTickets
+    .filter(ticket => ticket && typeof ticket === 'object')
+    .sort((a, b) => {
+      const dateA = a?.createdAt ? new Date(a.createdAt) : new Date();
+      const dateB = b?.createdAt ? new Date(b.createdAt) : new Date();
+      return dateB.getTime() - dateA.getTime();
+    })
     .slice(0, 3);
 
   return (
@@ -113,8 +121,8 @@ export function TicketOverview() {
                           <div className="sm:flex">
                             <p className="flex items-center text-sm text-muted-foreground">
                               <UserIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-muted-foreground" />
-                              {ticket.requestor ? 
-                                `${ticket.requestor.firstName} ${ticket.requestor.lastName}` : 
+                              {ticket.requestor && ticket.requestor.firstName ? 
+                                `${ticket.requestor.firstName} ${ticket.requestor.lastName || ''}` : 
                                 "User"}
                             </p>
                           </div>
@@ -124,14 +132,14 @@ export function TicketOverview() {
                               {ticket.status === 'closed' ? 'Closed on ' : 'Opened on '}
                               <time dateTime={
                                 ticket.status === 'closed' && ticket.closedAt 
-                                  ? ticket.closedAt 
-                                  : ticket.createdAt || new Date().toISOString()
+                                  ? String(ticket.closedAt) 
+                                  : String(ticket.createdAt) || new Date().toISOString()
                               }>
                                 {format(
                                   new Date(
                                     ticket.status === 'closed' && ticket.closedAt 
-                                      ? ticket.closedAt 
-                                      : ticket.createdAt || new Date()
+                                      ? new Date(ticket.closedAt) 
+                                      : ticket.createdAt ? new Date(ticket.createdAt) : new Date()
                                   ), 
                                   'MMM d, yyyy'
                                 )}
