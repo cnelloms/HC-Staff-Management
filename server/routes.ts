@@ -308,6 +308,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'Failed to update auth settings' });
     }
   });
+
+  // Employee routes
+  // Get all employees 
+  app.get('/api/employees', async (req: Request, res: Response) => {
+    try {
+      const employees = await storage.getEmployees();
+      return res.json(employees);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      return res.status(500).json({ message: 'Failed to fetch employees' });
+    }
+  });
+
+  // Get employee by ID
+  app.get('/api/employees/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid employee ID' });
+      }
+      
+      const employee = await storage.getEmployeeById(id);
+      if (!employee) {
+        return res.status(404).json({ message: 'Employee not found' });
+      }
+      
+      return res.json(employee);
+    } catch (error) {
+      console.error('Error fetching employee:', error);
+      return res.status(500).json({ message: 'Failed to fetch employee' });
+    }
+  });
+
+  // Create new employee (admin only)
+  app.post('/api/employees', isDirectAdmin, async (req: Request, res: Response) => {
+    try {
+      const employeeData = insertEmployeeSchema.parse(req.body);
+      const newEmployee = await storage.createEmployee(employeeData);
+      return res.status(201).json(newEmployee);
+    } catch (error) {
+      console.error('Error creating employee:', error);
+      return res.status(500).json({ message: 'Failed to create employee' });
+    }
+  });
+
+  // Update employee (admin only)
+  app.patch('/api/employees/:id', isDirectAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid employee ID' });
+      }
+      
+      const employeeData = req.body;
+      const updatedEmployee = await storage.updateEmployee(id, employeeData);
+      
+      if (!updatedEmployee) {
+        return res.status(404).json({ message: 'Employee not found' });
+      }
+      
+      return res.json(updatedEmployee);
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      return res.status(500).json({ message: 'Failed to update employee' });
+    }
+  });
   
   const httpServer = createServer(app);
   return httpServer;
