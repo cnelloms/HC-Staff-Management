@@ -268,208 +268,62 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
     }
   }, [form]);
 
+  // Function to auto-generate title when staff details change
+  const updateTitle = (firstName: string, lastName: string) => {
+    if (firstName && lastName) {
+      form.setValue('title', `New Staff Request for ${firstName} ${lastName}`);
+    }
+  };
+
+  // Function to auto-generate description based on staff details
+  const updateDescription = (metadata: any) => {
+    if (!metadata) return;
+    
+    const firstName = metadata.firstName || '';
+    const lastName = metadata.lastName || '';
+    const position = positions?.find(p => p.id === metadata.positionId)?.title || '';
+    const department = departments?.find(d => d.id === metadata.departmentId)?.name || '';
+    const manager = employees?.find(e => e.id === metadata.reportingManagerId);
+    const managerName = manager ? `${manager.firstName} ${manager.lastName}` : '';
+    const startDate = metadata.startDate ? format(new Date(metadata.startDate), 'PPP') : '';
+    
+    const description = `
+New Staff Request Details:
+- Name: ${firstName} ${lastName}
+- Position: ${position}
+- Department: ${department}
+- Reporting Manager: ${managerName}
+- Start Date: ${startDate}
+${metadata.email ? `- Email: ${metadata.email}` : ''}
+${metadata.phone ? `- Phone: ${metadata.phone}` : ''}
+
+This ticket is for onboarding a new staff member. The onboarding process includes:
+1. Creating a work email account
+2. Generating a secure password
+3. Sending login information to the reporting manager
+`;
+    
+    form.setValue('description', description.trim());
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{isEditing ? "Edit Ticket" : "Create New Ticket"}</CardTitle>
+        <CardTitle>{isEditing ? "Edit Ticket" : "New Staff Request"}</CardTitle>
         <CardDescription>
           {isEditing 
-            ? "Update the ticket information below." 
-            : "Enter the details to create a new support ticket."}
+            ? "Update the staff information below." 
+            : "Complete this form to request onboarding for a new staff member."}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Ticket Type</FormLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      // Always initialize with new staff request
-                      if (!field.value) {
-                        form.setValue('type', 'new_staff_request');
-                      }
-                    }}
-                    value="new_staff_request"
-                    disabled={true}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue>New Staff Request</SelectValue>
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="new_staff_request">New Staff Request</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Hidden fields for internal use */}
+            <input type="hidden" {...form.register("type")} value="new_staff_request" />
             
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter a concise title" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Provide detailed information about the issue or request" 
-                      className="min-h-32"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="requestorId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Requestor</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value?.toString()}
-                      disabled={!!employeeId} // Disable if employeeId is provided
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select requestor" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {employees?.map((employee) => (
-                          <SelectItem 
-                            key={employee.id} 
-                            value={employee.id.toString()}
-                          >
-                            {employee.firstName} {employee.lastName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="assigneeId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Assignee</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value?.toString()}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select assignee (optional)" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">Unassigned</SelectItem>
-                        {employees?.map((employee) => (
-                          <SelectItem 
-                            key={employee.id} 
-                            value={employee.id.toString()}
-                          >
-                            {employee.firstName} {employee.lastName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Leave unassigned if not yet assigned to anyone.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Priority</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select priority" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="open">Open</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="closed">Closed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* New Staff Details section - the only workflow we support */}
-            <div className="space-y-6 border border-border rounded-md p-4 mt-4">
+            {/* New Staff Details section - moved to the top */}
+            <div className="space-y-6 border border-border rounded-md p-4">
               <h3 className="font-medium text-lg">New Staff Details</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Please provide the details for the new staff member.
@@ -483,7 +337,20 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                       <FormItem>
                         <FormLabel>First Name*</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter first name" {...field} />
+                          <Input 
+                            placeholder="Enter first name" 
+                            {...field} 
+                            onChange={(e) => {
+                              field.onChange(e);
+                              // Auto-update title when first name changes
+                              const lastName = form.getValues().metadata?.lastName || '';
+                              updateTitle(e.target.value, lastName);
+                              updateDescription({
+                                ...form.getValues().metadata,
+                                firstName: e.target.value
+                              });
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -497,7 +364,20 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                       <FormItem>
                         <FormLabel>Last Name*</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter last name" {...field} />
+                          <Input 
+                            placeholder="Enter last name" 
+                            {...field} 
+                            onChange={(e) => {
+                              field.onChange(e);
+                              // Auto-update title when last name changes
+                              const firstName = form.getValues().metadata?.firstName || '';
+                              updateTitle(firstName, e.target.value);
+                              updateDescription({
+                                ...form.getValues().metadata,
+                                lastName: e.target.value
+                              });
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -556,7 +436,14 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                       <FormItem>
                         <FormLabel>Job Title/Position*</FormLabel>
                         <Select
-                          onValueChange={(value) => field.onChange(parseInt(value))}
+                          onValueChange={(value) => {
+                            field.onChange(parseInt(value));
+                            // Update description when position changes
+                            updateDescription({
+                              ...form.getValues().metadata,
+                              positionId: parseInt(value)
+                            });
+                          }}
                           defaultValue={field.value?.toString()}
                         >
                           <FormControl>
@@ -589,7 +476,14 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                       <FormItem>
                         <FormLabel>Department*</FormLabel>
                         <Select
-                          onValueChange={(value) => field.onChange(parseInt(value))}
+                          onValueChange={(value) => {
+                            field.onChange(parseInt(value));
+                            // Update description when department changes
+                            updateDescription({
+                              ...form.getValues().metadata,
+                              departmentId: parseInt(value)
+                            });
+                          }}
                           defaultValue={field.value?.toString()}
                         >
                           <FormControl>
@@ -624,7 +518,14 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                       <FormItem>
                         <FormLabel>Reporting Manager*</FormLabel>
                         <Select
-                          onValueChange={(value) => field.onChange(parseInt(value))}
+                          onValueChange={(value) => {
+                            field.onChange(parseInt(value));
+                            // Update description when reporting manager changes
+                            updateDescription({
+                              ...form.getValues().metadata,
+                              reportingManagerId: parseInt(value)
+                            });
+                          }}
                           defaultValue={field.value?.toString()}
                         >
                           <FormControl>
@@ -676,7 +577,15 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                             <Calendar
                               mode="single"
                               selected={field.value ? new Date(field.value) : undefined}
-                              onSelect={(date) => field.onChange(date ? date.toISOString() : "")}
+                              onSelect={(date) => {
+                                const dateValue = date ? date.toISOString() : "";
+                                field.onChange(dateValue);
+                                // Update description when start date changes
+                                updateDescription({
+                                  ...form.getValues().metadata,
+                                  startDate: dateValue
+                                });
+                              }}
                               disabled={(date) => date < new Date()}
                               initialFocus
                             />
@@ -687,6 +596,82 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                     )}
                   />
                 </div>
+              </div>
+              
+              {/* Hidden fields (requestor, priority, status) */}
+              <div className="mt-8 p-4 bg-muted/50 rounded-md">
+                <h3 className="font-medium text-sm mb-3">Ticket Information</h3>
+                
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="requestorId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Requestor</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value?.toString()}
+                          disabled={!!employeeId} // Disable if employeeId is provided
+                          value={field.value?.toString()}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select requestor" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Array.isArray(employees) ? employees.map((employee: any) => (
+                              <SelectItem 
+                                key={employee.id} 
+                                value={employee.id.toString()}
+                              >
+                                {employee.firstName} {employee.lastName}
+                              </SelectItem>
+                            )) : (
+                              <SelectItem value="loading">Loading employees...</SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          This is automatically set to your account.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="priority"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Priority</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select priority" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="low">Low</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                {/* Hidden form fields for title and description */}
+                <input type="hidden" {...form.register("title")} />
+                <input type="hidden" {...form.register("description")} />
+                <input type="hidden" {...form.register("status")} value="open" />
               </div>
           </form>
         </Form>
@@ -702,7 +687,7 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
           {(createMutation.isPending || updateMutation.isPending) && (
             <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
           )}
-          {isEditing ? "Update Ticket" : "Create Ticket"}
+          {isEditing ? "Update Staff Request" : "Submit Staff Request"}
         </Button>
       </CardFooter>
     </Card>
