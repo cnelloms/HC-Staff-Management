@@ -38,7 +38,14 @@ const OrgNode: React.FC<OrgNodeProps> = ({
   const nodeRequests = useMemo(() => {
     return pendingRequests.filter(request => {
       const metadata = request.metadata || {};
-      return metadata.reportingManagerId === employee.id;
+      
+      // Check multiple ways a ticket might be associated with this manager
+      return (
+        metadata.reportingManagerId === employee.id ||
+        metadata.managerId === employee.id ||
+        request.assigneeId === employee.id ||
+        (metadata.manager && metadata.manager === employee.id)
+      );
     });
   }, [pendingRequests, employee.id]);
 
