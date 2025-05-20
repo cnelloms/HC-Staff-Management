@@ -66,29 +66,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const replitAdminAccess = (req.user as any)?.isAdmin === true;
       const isAdmin = directAdminAccess || replitAdminAccess;
       
-      console.log('Admin check:', { directAdminAccess, replitAdminAccess, isAdmin, session: req.session?.directUser });
-      
       if (!isAdmin) {
         return res.status(403).json({ message: "Admin access required" });
       }
       
-      // Return a simple list of users with a more detailed admin profile
-      const userList = [
-        {
-          id: "direct_admin_1",
-          username: "admin",
-          firstName: "Alex",
-          lastName: "Morgan",
-          email: "alex.morgan@example.com",
-          authProvider: "direct",
-          isAdmin: true,
-          isEnabled: true,
-          title: "IT Director",
-          department: "Information Technology",
-          phone: "+1 (555) 123-4567",
-          hireDate: "2020-01-15"
-        }
-      ];
+      // Get all users from the database
+      const allUsers = await db.select({
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+        profileImageUrl: users.profileImageUrl,
+        isAdmin: users.isAdmin,
+        employeeId: users.employeeId,
+        authProvider: users.authProvider
+      }).from(users);
+      
+      // Get all credentials to check if users have direct auth and if they're enabled
+      const allCredentials = await db.select().from(credentials);
+      
+      // Merge the data to provide complete user information
+      const userList = allUsers.map(user => {
+        const userCredentials = allCredentials.find(cred => cred.userId === user.id);
+        return {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          username: userCredentials?.username || null,
+          authProvider: user.authProvider || 'direct',
+          isAdmin: user.isAdmin || false,
+          isEnabled: userCredentials?.isEnabled !== false, // Default to true if not specified
+          profileImageUrl: user.profileImageUrl
+        };
+      });
       
       // Return the user list
       return res.json(userList);
