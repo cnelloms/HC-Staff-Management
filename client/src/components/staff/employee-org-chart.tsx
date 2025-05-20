@@ -135,7 +135,7 @@ const OrgNode: React.FC<OrgNodeProps> = ({
             <OrgNode 
               key={subordinate.id}
               employee={subordinate}
-              subordinates={subordinate.subordinates || []}
+              subordinates={subordinate.subordinates}
               pendingRequests={pendingRequests}
               level={level + 1}
               expanded={expanded}
@@ -286,7 +286,7 @@ export function EmployeeOrgChart({ managerId }: EmployeeOrgChartProps) {
             <OrgNode 
               key={manager.id}
               employee={manager}
-              subordinates={(manager as any).subordinates || []}
+              subordinates={manager.subordinates}
               pendingRequests={pendingNewStaffRequests}
               level={0}
               expanded={expandedNodes}
