@@ -13,9 +13,13 @@ interface EmployeeOrgChartProps {
   managerId: number;
 }
 
+interface EmployeeWithSubordinates extends Employee {
+  subordinates: EmployeeWithSubordinates[];
+}
+
 interface OrgNodeProps {
-  employee: Employee;
-  subordinates: Employee[];
+  employee: EmployeeWithSubordinates;
+  subordinates: EmployeeWithSubordinates[];
   pendingRequests: Ticket[];
   level: number;
   expanded: Record<number, boolean>;
@@ -166,7 +170,7 @@ export function EmployeeOrgChart({ managerId }: EmployeeOrgChartProps) {
     if (!manager) return [];
 
     // Create a map of employees with their subordinates
-    const employeeMap = new Map<number, Employee & { subordinates: Employee[] }>();
+    const employeeMap = new Map<number, EmployeeWithSubordinates>();
     
     // Initialize the map with all employees and empty subordinates arrays
     employees.forEach(emp => {
@@ -178,13 +182,17 @@ export function EmployeeOrgChart({ managerId }: EmployeeOrgChartProps) {
       if (emp.managerId && employeeMap.has(emp.managerId)) {
         const manager = employeeMap.get(emp.managerId);
         if (manager) {
-          manager.subordinates.push(employeeMap.get(emp.id) || emp);
+          const subordinate = employeeMap.get(emp.id);
+          if (subordinate) {
+            manager.subordinates.push(subordinate);
+          }
         }
       }
     });
 
     // Return only the specified manager with their subordinates
-    return [employeeMap.get(managerId) || manager];
+    const result = employeeMap.get(managerId);
+    return result ? [result] : [];
   }, [employees, managerId]);
 
   // Filter pending new staff requests
