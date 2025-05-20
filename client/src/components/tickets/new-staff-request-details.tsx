@@ -369,13 +369,45 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
       {/* Tasks Card */}
       <Card>
         <CardHeader className="bg-muted/50">
-          <CardTitle className="text-base flex items-center">
-            <CheckSquare className="h-5 w-5 mr-2" />
-            Onboarding Tasks
-          </CardTitle>
-          <CardDescription>
-            Complete these tasks to onboard {firstName} {lastName}
-          </CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle className="text-base flex items-center">
+                <CheckSquare className="h-5 w-5 mr-2" />
+                Onboarding Tasks
+              </CardTitle>
+              <CardDescription>
+                Complete these tasks to onboard {firstName} {lastName}
+              </CardDescription>
+            </div>
+            <div>
+              <Button 
+                onClick={() => {
+                  // Direct API call to close the ticket
+                  apiRequest("PATCH", `/api/tickets/${ticketId}`, {
+                    status: "closed"
+                  })
+                  .then(() => {
+                    queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticketId}`] });
+                    queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+                    toast({
+                      title: "Ticket Closed",
+                      description: "Ticket has been successfully closed."
+                    });
+                  })
+                  .catch(error => {
+                    toast({
+                      title: "Error",
+                      description: "Failed to close ticket. " + (error.message || ""),
+                      variant: "destructive"
+                    });
+                  });
+                }}
+                variant="outline"
+              >
+                Complete Ticket
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="pt-6 space-y-6">
           {/* Task 1: Create Email */}
