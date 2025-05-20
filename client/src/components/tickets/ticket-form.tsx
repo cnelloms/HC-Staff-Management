@@ -173,7 +173,7 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
     // For new staff request tickets, validate the required metadata fields
     if (values.type === 'new_staff_request') {
       // Validate required fields for new staff request
-      const requiredFields = ['firstName', 'lastName', 'position', 'reportingManagerId', 'departmentId', 'startDate'];
+      const requiredFields = ['firstName', 'lastName', 'positionId', 'reportingManagerId', 'departmentId', 'startDate'];
       const missingFields = requiredFields.filter(field => !values.metadata?.[field]);
       
       if (missingFields.length > 0) {
@@ -189,7 +189,12 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
       if (!values.title || values.title === 'New Staff Request') {
         const firstName = values.metadata.firstName;
         const lastName = values.metadata.lastName;
-        formData.title = `New Staff Request: ${firstName} ${lastName}`;
+        
+        // Get position title from positionId
+        const positionObj = positions?.find(p => p.id === values.metadata.positionId);
+        const positionTitle = positionObj ? positionObj.title : "New Position";
+        
+        formData.title = `New Staff Request: ${firstName} ${lastName} (${positionTitle})`;
       }
       
       // Add checklist items to metadata
