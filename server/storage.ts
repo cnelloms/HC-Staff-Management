@@ -115,6 +115,25 @@ export interface SystemAccessStat {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Position operations
+  async getPositions(): Promise<Position[]> {
+    return await db.select().from(positions);
+  }
+
+  async getPositionById(id: number): Promise<Position | undefined> {
+    const [position] = await db.select().from(positions).where(eq(positions.id, id));
+    return position || undefined;
+  }
+
+  async getPositionsByDepartment(departmentId: number): Promise<Position[]> {
+    return await db.select().from(positions).where(eq(positions.departmentId, departmentId));
+  }
+
+  async createPosition(position: InsertPosition): Promise<Position> {
+    const [newPosition] = await db.insert(positions).values(position).returning();
+    return newPosition;
+  }
+
   // Department operations
   async getDepartments(): Promise<Department[]> {
     return await db.select().from(departments);

@@ -49,7 +49,7 @@ interface TicketFormProps {
 const newStaffMetadataSchema = z.object({
   firstName: z.string().min(1, { message: "First name is required" }),
   lastName: z.string().min(1, { message: "Last name is required" }),
-  position: z.string().min(1, { message: "Job title/position is required" }),
+  positionId: z.coerce.number({ required_error: "Job title/position is required" }),
   reportingManagerId: z.coerce.number({ required_error: "Reporting manager is required" }),
   startDate: z.string().min(1, { message: "Start date is required" }),
   departmentId: z.coerce.number({ required_error: "Department is required" }),
@@ -97,6 +97,10 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
   
   const { data: departments } = useQuery({
     queryKey: ['/api/departments'],
+  });
+  
+  const { data: positions } = useQuery({
+    queryKey: ['/api/positions'],
   });
 
   // If employeeId is provided (creating from employee profile), set as requestor
@@ -562,13 +566,30 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <FormField
                     control={form.control}
-                    name="metadata.position"
+                    name="metadata.positionId"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Job Title/Position*</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter job title or position" {...field} />
-                        </FormControl>
+                        <Select
+                          onValueChange={(value) => field.onChange(parseInt(value))}
+                          defaultValue={field.value?.toString()}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a position" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {positions?.map((position) => (
+                              <SelectItem 
+                                key={position.id} 
+                                value={position.id.toString()}
+                              >
+                                {position.title}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}

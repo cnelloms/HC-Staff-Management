@@ -4,7 +4,8 @@ import { storage } from "./storage";
 import { 
   insertDepartmentSchema, insertEmployeeSchema, insertSystemSchema, 
   insertSystemAccessSchema, insertTicketSchema, insertActivitySchema,
-  insertPermissionSchema, insertRoleSchema, insertRolePermissionSchema, insertEmployeeRoleSchema
+  insertPermissionSchema, insertRoleSchema, insertRolePermissionSchema, insertEmployeeRoleSchema,
+  insertPositionSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -69,6 +70,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(activitiesWithEmployee);
     } catch (error) {
       res.status(500).json({ message: 'Failed to fetch recent activities' });
+    }
+  });
+
+  // Position routes
+  app.get('/api/positions', async (req, res) => {
+    try {
+      const positions = await storage.getPositions();
+      res.json(positions);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to fetch positions' });
+    }
+  });
+
+  app.get('/api/positions/department/:departmentId', async (req, res) => {
+    try {
+      const departmentId = parseInt(req.params.departmentId);
+      const positions = await storage.getPositionsByDepartment(departmentId);
+      res.json(positions);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to fetch positions by department' });
+    }
+  });
+
+  app.post('/api/positions', async (req, res) => {
+    try {
+      const positionData = insertPositionSchema.parse(req.body);
+      const position = await storage.createPosition(positionData);
+      res.status(201).json(position);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: 'Invalid position data', errors: error.errors });
+      } else {
+        res.status(500).json({ message: 'Failed to create position' });
+      }
     }
   });
 
