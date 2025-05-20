@@ -10,8 +10,9 @@ import {
   Role, InsertRole,
   RolePermission, InsertRolePermission,
   EmployeeRole, InsertEmployeeRole,
+  User, UpsertUser,
   positions, employees, departments, systems, systemAccess, tickets, activities,
-  permissions, roles, rolePermissions, employeeRoles
+  permissions, roles, rolePermissions, employeeRoles, users
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, desc, and, asc } from "drizzle-orm";
@@ -92,6 +93,14 @@ export interface IStorage {
   // Permission check operations
   hasPermission(employeeId: number, resource: string, action: string): Promise<boolean>;
   getFieldLevelPermissions(employeeId: number, resource: string): Promise<Record<string, boolean>>;
+  
+  // User operations for authentication
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  setUserImpersonation(userId: string, employeeId: number): Promise<boolean>;
+  clearUserImpersonation(userId: string): Promise<boolean>;
+  getUserDetails(userId: string): Promise<{ user: User, employee?: Employee, impersonatingEmployee?: Employee } | undefined>;
+  makeUserAdmin(userId: string): Promise<boolean>;
 }
 
 export interface DashboardStats {
