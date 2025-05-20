@@ -93,35 +93,38 @@ export default function MyTickets() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   
-  // Fetch assigned tickets (where current user is the assignee)
+  // Fetch all tickets
   const { 
-    data: assignedTickets, 
-    isLoading: isAssignedLoading 
+    data: allTickets, 
+    isLoading: isTicketsLoading 
   } = useQuery<Ticket[]>({
-    queryKey: [`/api/tickets/assignee/${currentUser?.id}`],
+    queryKey: [`/api/tickets`],
     enabled: !!currentUser?.id,
   });
   
-  // Filter assigned tickets based on status and type
-  const filteredAssignedTickets = Array.isArray(assignedTickets) 
-    ? assignedTickets.filter(ticket => {
-        const matchesStatus = statusFilter === "all" || ticket.status === statusFilter;
-        const matchesType = typeFilter === "all" || ticket.type === typeFilter;
-        return matchesStatus && matchesType;
-      })
+  // Get tickets assigned to current user
+  const assignedTickets = Array.isArray(allTickets) 
+    ? allTickets.filter(ticket => ticket.assigneeId === currentUser?.id)
     : [];
+  
+  // Filter assigned tickets based on status and type
+  const filteredAssignedTickets = assignedTickets.filter(ticket => {
+    const matchesStatus = statusFilter === "all" || ticket.status === statusFilter;
+    const matchesType = typeFilter === "all" || ticket.type === typeFilter;
+    return matchesStatus && matchesType;
+  });
 
   // Ticket count by status for assigned tickets
   const assignedTicketCounts = {
-    total: Array.isArray(assignedTickets) ? assignedTickets.length : 0,
-    open: Array.isArray(assignedTickets) ? assignedTickets.filter(t => t.status === "open").length : 0,
-    inProgress: Array.isArray(assignedTickets) ? assignedTickets.filter(t => t.status === "in_progress").length : 0,
-    closed: Array.isArray(assignedTickets) ? assignedTickets.filter(t => t.status === "closed").length : 0,
+    total: assignedTickets.length,
+    open: assignedTickets.filter(t => t.status === "open").length,
+    inProgress: assignedTickets.filter(t => t.status === "in_progress").length,
+    closed: assignedTickets.filter(t => t.status === "closed").length,
   };
   
-  // Ticket count by status for created tickets
-  const createdTickets = Array.isArray(assignedTickets) 
-    ? assignedTickets.filter(ticket => ticket.requestorId === currentUser?.id)
+  // Get tickets created by current user
+  const createdTickets = Array.isArray(allTickets) 
+    ? allTickets.filter(ticket => ticket.requestorId === currentUser?.id)
     : [];
     
   const createdTicketCounts = {
