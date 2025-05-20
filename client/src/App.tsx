@@ -46,10 +46,12 @@ function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="staff-management-theme">
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <UserProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </UserProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );

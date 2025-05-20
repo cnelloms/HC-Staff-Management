@@ -17,24 +17,38 @@ const UserContext = createContext<UserContextType>({
   error: null,
 });
 
-export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export function UserProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<Employee | null>(null);
   
-  const { data: employee, isLoading, error } = useQuery({
-    queryKey: [`/api/employees/${DEFAULT_USER_ID}`],
+  // Fetch all employees to find the default user
+  const { data: employees, isLoading, error } = useQuery({
+    queryKey: ['/api/employees'],
   });
   
   useEffect(() => {
-    if (employee) {
-      setCurrentUser(employee as Employee);
+    if (employees && Array.isArray(employees) && employees.length > 0) {
+      // Find the default user from the employees list
+      const defaultUser = employees.find((e: Employee) => e.id === DEFAULT_USER_ID);
+      if (defaultUser) {
+        setCurrentUser(defaultUser);
+      } else if (employees.length > 0) {
+        // Fallback to the first employee if default not found
+        setCurrentUser(employees[0] as Employee);
+      }
     }
-  }, [employee]);
+  }, [employees]);
 
   return (
-    <UserContext.Provider value={{ currentUser, isLoading, error: error as Error | null }}>
+    <UserContext.Provider value={{ 
+      currentUser, 
+      isLoading, 
+      error: error as Error | null 
+    }}>
       {children}
     </UserContext.Provider>
   );
-};
+}
 
-export const useCurrentUser = () => useContext(UserContext);
+export function useCurrentUser() {
+  return useContext(UserContext);
+}

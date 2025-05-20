@@ -5,7 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
-import React from "react";
+import React, { useEffect } from "react";
+import { useCurrentUser } from "@/context/user-context";
 import { CalendarIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -89,6 +90,7 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const isEditing = !!ticketId;
+  const { currentUser } = useCurrentUser();
 
   const { data: employees } = useQuery({
     queryKey: ['/api/employees'],
@@ -106,10 +108,22 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
     queryKey: ['/api/positions'],
   });
 
-  // If employeeId is provided (creating from employee profile), set as requestor
-  const initialFormValues = employeeId 
-    ? { ...defaultValues, requestorId: employeeId } 
-    : defaultValues;
+  // Determine the initial requestor ID in this order of priority:
+  // 1. If employeeId is provided (creating from employee profile), use that
+  // 2. If currentUser is available, use that
+  // 3. Otherwise, use what's in defaultValues if available
+  let initialRequestorId = undefined;
+  
+  if (employeeId) {
+    initialRequestorId = employeeId;
+  } else if (currentUser && currentUser.id) {
+    initialRequestorId = currentUser.id;
+  }
+  
+  const initialFormValues = {
+    ...defaultValues,
+    requestorId: initialRequestorId
+  };
 
   const form = useForm<z.infer<typeof ticketFormSchema>>({
     resolver: zodResolver(ticketFormSchema),
