@@ -159,12 +159,7 @@ export default function EmployeeProfile() {
                   Request Access
                 </Link>
               </Button>
-              <Button variant="outline" asChild>
-                <Link href={`/tickets/new?employeeId=${employeeId}`}>
-                  <TicketIcon className="mr-2 h-4 w-4" />
-                  Create Ticket
-                </Link>
-              </Button>
+
 
               {employee.status === 'onboarding' && (
                 <Button 
@@ -304,17 +299,9 @@ export default function EmployeeProfile() {
           {/* Tickets Tab */}
           <TabsContent value="tickets">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Tickets</CardTitle>
-                  <CardDescription>Support tickets created by or assigned to this employee</CardDescription>
-                </div>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/tickets/new?employeeId=${employeeId}`}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Create Ticket
-                  </Link>
-                </Button>
+              <CardHeader>
+                <CardTitle>Tickets</CardTitle>
+                <CardDescription>Support tickets created by or assigned to this employee</CardDescription>
               </CardHeader>
               <CardContent>
                 {employee.tickets && employee.tickets.length > 0 ? (
@@ -351,11 +338,7 @@ export default function EmployeeProfile() {
                 ) : (
                   <div className="text-center py-6">
                     <p className="text-muted-foreground">No tickets found</p>
-                    <Button variant="outline" className="mt-4" asChild>
-                      <Link href={`/tickets/new?employeeId=${employeeId}`}>
-                        Create New Ticket
-                      </Link>
-                    </Button>
+
                   </div>
                 )}
               </CardContent>

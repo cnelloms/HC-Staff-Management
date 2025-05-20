@@ -26,13 +26,7 @@ export function TicketOverview() {
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-medium">Ticket Overview</CardTitle>
-          <Button size="sm">
-            <PlusIcon className="mr-2 h-4 w-4" />
-            New Ticket
-          </Button>
-        </div>
+        <CardTitle className="text-lg font-medium">Ticket Overview</CardTitle>
       </CardHeader>
       <CardContent className="pb-0">
         <div className="grid grid-cols-3 gap-4 mb-6">
