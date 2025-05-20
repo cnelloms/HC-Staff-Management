@@ -40,7 +40,7 @@ function Router() {
       <Route path="/profile" component={UserProfile} />
       <Route path="/employee/new" component={NewEmployee} />
       <Route path="/employee/:id" component={EmployeeProfile} />
-      <Route path="/user-management" component={() => import("./pages/user-management").then(m => <m.default />)} />
+      {/* User Management page will be added later */}
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>

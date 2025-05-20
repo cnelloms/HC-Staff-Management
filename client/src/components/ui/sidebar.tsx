@@ -28,16 +28,27 @@ export function Sidebar({ user: defaultUser }: SidebarProps) {
   const [location] = useLocation();
   const { isAuthenticated, user, employee, isAdmin, isImpersonating, impersonatingEmployee } = useAuth();
 
-  const navItems = [
+  // Basic navigation items for all users
+  const baseNavItems = [
     { href: "/", label: "Dashboard", icon: <Home className="sidebar-icon" /> },
     { href: "/directory", label: "Staff Directory", icon: <Users className="sidebar-icon" /> },
-    { href: "/staff-import", label: "Import Staff", icon: <FileUp className="sidebar-icon" /> },
     { href: "/tickets", label: "Tickets", icon: <Ticket className="sidebar-icon" /> },
     { href: "/my-tickets", label: "My Tickets", icon: <Inbox className="sidebar-icon" /> },
     { href: "/reports", label: "Reports", icon: <BarChart2 className="sidebar-icon" /> },
-    { href: "/permissions", label: "Permissions", icon: <Shield className="sidebar-icon" /> },
     { href: "/settings", label: "Settings", icon: <Settings className="sidebar-icon" /> },
   ];
+  
+  // Admin-only navigation items
+  const adminNavItems = [
+    { href: "/staff-import", label: "Import Staff", icon: <FileUp className="sidebar-icon" /> },
+    { href: "/permissions", label: "Permissions", icon: <Shield className="sidebar-icon" /> },
+    { href: "/user-management", label: "User Management", icon: <Users className="sidebar-icon" /> },
+  ];
+  
+  // Combine based on user role
+  const navItems = isAdmin 
+    ? [...baseNavItems, ...adminNavItems] 
+    : baseNavItems;
 
   return (
     <div className="flex flex-col w-64 bg-sidebar shadow-sm border-r border-border h-screen">
