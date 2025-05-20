@@ -223,7 +223,7 @@ export function setupDirectAuth(app: Express) {
       
       // For non-admin users, verify current password
       if (!sessionUser.isAdmin && userId === sessionUser.id) {
-        const isCurrentPasswordValid = await bcrypt.compare(currentPassword, userCredentials.password);
+        const isCurrentPasswordValid = await bcrypt.compare(currentPassword, userCredentials.passwordHash);
         
         if (!isCurrentPasswordValid) {
           return res.status(401).json({ message: 'Current password is incorrect' });
@@ -237,7 +237,7 @@ export function setupDirectAuth(app: Express) {
       // Update password
       await db.update(credentials)
         .set({ 
-          password: hashedPassword,
+          passwordHash: hashedPassword,
           updatedAt: new Date()
         })
         .where(eq(credentials.id, userCredentials.id));

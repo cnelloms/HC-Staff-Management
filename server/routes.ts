@@ -217,7 +217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [updatedCredential] = await db
         .update(credentials)
         .set({
-          passwordHash,
+          passwordHash: passwordHash,
           updatedAt: new Date()
         })
         .where(eq(credentials.userId, userId))
