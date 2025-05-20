@@ -24,9 +24,11 @@ export function setupDirectAuth(app: Express) {
   // Login route
   app.post('/api/login/direct', async (req, res) => {
     try {
+      console.log('Direct login attempt received:', req.body);
       const { username, password } = req.body;
       
       if (!username || !password) {
+        console.log('Missing username or password');
         return res.status(400).json({ message: 'Username and password are required' });
       }
       
@@ -41,12 +43,17 @@ export function setupDirectAuth(app: Express) {
       }
       
       // Get credentials by username
-      const [userCredentials] = await db.select()
+      console.log('Looking for credentials with username:', username);
+      const userCredentialsList = await db.select()
         .from(credentials)
         .where(eq(credentials.username, username))
         .limit(1);
       
+      console.log('Found credentials:', userCredentialsList);
+      const [userCredentials] = userCredentialsList;
+      
       if (!userCredentials) {
+        console.log('No credentials found for username:', username);
         return res.status(401).json({ message: 'Invalid username or password' });
       }
       
@@ -55,10 +62,25 @@ export function setupDirectAuth(app: Express) {
       }
       
       // Verify password
-      const isPasswordValid = await bcrypt.compare(password, userCredentials.password_hash);
+      console.log('User credentials found:', { 
+        id: userCredentials.id,
+        username: userCredentials.username,
+        hasPassword: !!userCredentials.password,
+        fields: Object.keys(userCredentials)
+      });
       
-      if (!isPasswordValid) {
-        return res.status(401).json({ message: 'Invalid username or password' });
+      try {
+        console.log('Comparing password with bcrypt');
+        const isPasswordValid = await bcrypt.compare(password, userCredentials.password);
+        console.log('Password validation result:', isPasswordValid);
+        
+        if (!isPasswordValid) {
+          console.log('Password validation failed');
+          return res.status(401).json({ message: 'Invalid username or password' });
+        }
+      } catch (err) {
+        console.error('Error comparing passwords:', err);
+        return res.status(500).json({ message: 'Authentication error' });
       }
       
       // Get user from database
