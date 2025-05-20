@@ -5,6 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
+import React from "react";
+import { CalendarIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +20,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
 import {
   Select,
   SelectContent,
@@ -41,6 +46,17 @@ interface TicketFormProps {
   employeeId?: number;
 }
 
+const newStaffMetadataSchema = z.object({
+  firstName: z.string().min(1, { message: "First name is required" }),
+  lastName: z.string().min(1, { message: "Last name is required" }),
+  position: z.string().min(1, { message: "Job title/position is required" }),
+  reportingManagerId: z.coerce.number({ required_error: "Reporting manager is required" }),
+  startDate: z.string().min(1, { message: "Start date is required" }),
+  departmentId: z.coerce.number({ required_error: "Department is required" }),
+  email: z.string().email({ message: "Invalid email address" }).optional(),
+  phone: z.string().optional(),
+}).optional();
+
 const ticketFormSchema = z.object({
   title: z.string().min(5, {
     message: "Title must be at least 5 characters.",
@@ -58,10 +74,11 @@ const ticketFormSchema = z.object({
   priority: z.enum(["low", "medium", "high"], {
     required_error: "Please select a priority.",
   }),
-  type: z.enum(["system_access", "onboarding", "issue", "request"], {
+  type: z.enum(["system_access", "onboarding", "issue", "request", "new_staff_request"], {
     required_error: "Please select a ticket type.",
   }),
   systemId: z.coerce.number().optional(),
+  metadata: z.any().optional(), // Will contain different structures based on ticket type
 });
 
 export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormProps) {
@@ -149,8 +166,36 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
     }
   }
 
+  // Get the current ticket type
+  const ticketType = form.watch('type');
+  
   // Only show system selection for system_access ticket type
-  const showSystemField = form.watch('type') === 'system_access';
+  const showSystemField = ticketType === 'system_access';
+  
+  // Show new staff request fields
+  const showNewStaffFields = ticketType === 'new_staff_request';
+
+  // When ticket type changes, handle metadata fields appropriately
+  React.useEffect(() => {
+    // If changing to new staff request, initialize metadata object
+    if (ticketType === 'new_staff_request' && !form.getValues().metadata) {
+      form.setValue('metadata', {});
+    }
+    
+    // If switching from new staff request to another type, clean up
+    if (ticketType !== 'new_staff_request' && form.getValues().metadata) {
+      // Keep other metadata for other ticket types, but remove staff-specific fields
+      const metadata = form.getValues().metadata;
+      const newMetadata = { ...metadata };
+      
+      ['firstName', 'lastName', 'position', 'reportingManagerId', 
+       'startDate', 'departmentId', 'email', 'phone'].forEach(field => {
+        delete newMetadata[field];
+      });
+      
+      form.setValue('metadata', Object.keys(newMetadata).length ? newMetadata : undefined);
+    }
+  }, [ticketType, form]);
 
   return (
     <Card>
@@ -293,6 +338,7 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                         <SelectItem value="onboarding">Onboarding</SelectItem>
                         <SelectItem value="issue">Technical Issue</SelectItem>
                         <SelectItem value="request">General Request</SelectItem>
+                        <SelectItem value="new_staff_request">New Staff Request</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
