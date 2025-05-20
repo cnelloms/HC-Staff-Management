@@ -25,6 +25,8 @@ export function setupDirectAuth(app: Express) {
   app.post('/api/login/direct', async (req, res) => {
     try {
       console.log('Direct login attempt received:', req.body);
+      console.log('Request headers:', req.headers);
+      console.log('Request body type:', typeof req.body);
       const { username, password } = req.body;
       
       if (!username || !password) {
