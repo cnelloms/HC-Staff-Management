@@ -10,6 +10,7 @@ import {
 import { z } from "zod";
 import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
 import { setupMicrosoftAuth } from "./microsoftAuth";
+import { setupDirectAuth } from "./directAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
@@ -17,6 +18,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Set up Microsoft authentication if enabled
   setupMicrosoftAuth(app);
+  
+  // Set up direct authentication
+  setupDirectAuth(app);
   
   // Authentication status route
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
