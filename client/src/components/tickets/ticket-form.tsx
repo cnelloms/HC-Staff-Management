@@ -334,7 +334,7 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Unassigned</SelectItem>
+                        <SelectItem value="none">Unassigned</SelectItem>
                         {employees?.map((employee) => (
                           <SelectItem 
                             key={employee.id} 
