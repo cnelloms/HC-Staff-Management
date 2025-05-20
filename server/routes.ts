@@ -16,6 +16,7 @@ import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  try {
   // Set up authentication
   await setupAuth(app);
   
@@ -285,11 +286,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isAdmin: req.session.directUser.isAdmin === true,
           authProvider: 'direct'
         });
-      } else if (req.user && req.user.claims) {
-        // Handle Replit auth case
+      } 
+      // Check if user is authenticated through Replit Auth
+      else if (req.isAuthenticated() && req.user && req.user.claims) {
         console.log('User authenticated with Replit:', req.user.claims);
+        const userId = req.user.claims.sub;
+        
         return res.json({
-          id: req.user.claims.sub,
+          id: userId,
           email: req.user.claims.email,
           firstName: req.user.claims.first_name,
           lastName: req.user.claims.last_name,
@@ -297,54 +301,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isAdmin: req.user.isAdmin === true,
           authProvider: 'replit'
         });
-      } else {
-        // No authentication found
+      } 
+      // No authentication found
+      else {
         return res.status(401).json({ message: "Unauthorized" });
       }
     } catch (error) {
       console.error('Error in auth user route:', error);
       return res.status(500).json({ message: "Server error" });
-    }
-  });
-          : {
-              ...userDetails,
-              currentEmployee: userDetails.employee,
-              isImpersonating: false
-            };
-        
-        return res.json(responseData);
-      }
-      
-      // Check if user is authenticated through Replit Auth
-      if (req.isAuthenticated() && req.user && req.user.claims) {
-        const userId = req.user.claims.sub;
-        const userDetails = await storage.getUserDetails(userId);
-        
-        if (!userDetails) {
-          return res.status(404).json({ message: "User not found" });
-        }
-        
-        // Determine which employee data to return based on impersonation state
-        const responseData = userDetails.impersonatingEmployee 
-          ? {
-              ...userDetails,
-              currentEmployee: userDetails.impersonatingEmployee,
-              isImpersonating: true
-            }
-          : {
-              ...userDetails,
-              currentEmployee: userDetails.employee,
-              isImpersonating: false
-            };
-        
-        return res.json(responseData);
-      }
-      
-      // If not authenticated through any method
-      return res.status(401).json({ message: "Unauthorized" });
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user details" });
     }
   });
   
@@ -1528,4 +1492,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
   return httpServer;
+  } catch (error) {
+    console.error("Error in registerRoutes:", error);
+    throw error;
+  }
 }
