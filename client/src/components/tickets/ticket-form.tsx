@@ -299,12 +299,13 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                   <Select
                     onValueChange={(value) => {
                       field.onChange(value);
-                      // Clear systemId if not system_access
-                      if (value !== 'system_access') {
-                        form.setValue('systemId', undefined);
+                      // Always initialize with new staff request
+                      if (!field.value) {
+                        form.setValue('type', 'new_staff_request');
                       }
                     }}
-                    defaultValue={field.value}
+                    value="new_staff_request"
+                    disabled={true}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -643,14 +644,16 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {positions?.map((position) => (
+                            {Array.isArray(positions) ? positions.map((position: any) => (
                               <SelectItem 
                                 key={position.id} 
                                 value={position.id.toString()}
                               >
                                 {position.title}
                               </SelectItem>
-                            ))}
+                            )) : (
+                              <SelectItem value="loading">Loading positions...</SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -674,14 +677,16 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {departments?.map((department) => (
+                            {Array.isArray(departments) ? departments.map((department: any) => (
                               <SelectItem 
                                 key={department.id} 
                                 value={department.id.toString()}
                               >
                                 {department.name}
                               </SelectItem>
-                            ))}
+                            )) : (
+                              <SelectItem value="loading">Loading departments...</SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -707,14 +712,16 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {employees?.map((employee) => (
+                            {Array.isArray(employees) ? employees.map((employee: any) => (
                               <SelectItem 
                                 key={employee.id} 
                                 value={employee.id.toString()}
                               >
                                 {employee.firstName} {employee.lastName}
                               </SelectItem>
-                            ))}
+                            )) : (
+                              <SelectItem value="loading">Loading employees...</SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />
