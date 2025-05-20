@@ -168,7 +168,7 @@ export function setupDirectAuth(app: Express) {
         .values({
           userId: user.id,
           username,
-          password: hashedPassword,
+          passwordHash: hashedPassword,
           isEnabled: true
         })
         .returning();
