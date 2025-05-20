@@ -218,15 +218,15 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
   };
   
   // Fetch necessary data
-  const { data: positions } = useQuery({
+  const { data: positions } = useQuery<any[]>({
     queryKey: ['/api/positions'],
   });
   
-  const { data: departments } = useQuery({
+  const { data: departments } = useQuery<any[]>({
     queryKey: ['/api/departments'],
   });
   
-  const { data: employees } = useQuery({
+  const { data: employees } = useQuery<any[]>({
     queryKey: ['/api/employees'],
   });
   
