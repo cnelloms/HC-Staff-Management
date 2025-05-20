@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/layout";
-import { Employee, SystemAccess, Ticket, Activity } from "@/types";
+import { Employee, Ticket, Activity } from "@/types";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { EmployeeOrgChart } from "@/components/staff/employee-org-chart";
@@ -29,7 +29,6 @@ import {
   User,
   Calendar,
   Briefcase,
-  Key,
   TicketIcon,
   PlusCircle,
   Clock,

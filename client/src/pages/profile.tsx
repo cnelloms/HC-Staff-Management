@@ -162,9 +162,8 @@ export default function UserProfile() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-3 w-full max-w-md">
+          <TabsList className="grid grid-cols-2 w-full max-w-md">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="system-access">My System Access</TabsTrigger>
             <TabsTrigger value="tickets">My Tickets</TabsTrigger>
           </TabsList>
 
@@ -215,18 +214,11 @@ export default function UserProfile() {
                 <CardDescription>Common tasks and actions</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center" asChild>
                     <Link href="/tickets/new">
                       <UserCog className="h-6 w-6 mb-2" />
                       <span>New Staff Request</span>
-                    </Link>
-                  </Button>
-                  
-                  <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center" asChild>
-                    <Link href={`/access-management/new?employeeId=${user.id}`}>
-                      <Shield className="h-6 w-6 mb-2" />
-                      <span>Request System Access</span>
                     </Link>
                   </Button>
                   
@@ -241,70 +233,7 @@ export default function UserProfile() {
             </Card>
           </TabsContent>
 
-          {/* System Access Tab */}
-          <TabsContent value="system-access">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>My System Access</CardTitle>
-                  <CardDescription>Systems you have access to</CardDescription>
-                </div>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/access-management/new?employeeId=${user.id}`}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Request Access
-                  </Link>
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {user.systemAccess && user.systemAccess.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>System</TableHead>
-                        <TableHead>Access Level</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Granted Date</TableHead>
-                        <TableHead>Expires</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {user.systemAccess.map((access: SystemAccess) => (
-                        <TableRow key={access.id}>
-                          <TableCell className="font-medium">{access.system?.name}</TableCell>
-                          <TableCell className="capitalize">{access.accessLevel}</TableCell>
-                          <TableCell>
-                            <StatusBadge status={access.status as any} />
-                          </TableCell>
-                          <TableCell>
-                            {access.grantedAt 
-                              ? formatDate(access.grantedAt)
-                              : '-'
-                            }
-                          </TableCell>
-                          <TableCell>
-                            {access.expiresAt 
-                              ? formatDate(access.expiresAt)
-                              : 'Never'
-                            }
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="text-center py-6">
-                    <p className="text-muted-foreground">You don't have access to any systems yet</p>
-                    <Button variant="outline" className="mt-4" asChild>
-                      <Link href={`/access-management/new?employeeId=${user.id}`}>
-                        Request System Access
-                      </Link>
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+
 
           {/* Tickets Tab */}
           <TabsContent value="tickets">
