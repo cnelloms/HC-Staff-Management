@@ -13,6 +13,7 @@ import { setupMicrosoftAuth } from "./microsoftAuth";
 import { setupDirectAuth } from "./directAuth";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
@@ -27,31 +28,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User management API route - get all users (admin only)
   app.get('/api/users', async (req: any, res) => {
     try {
-      // Only allow access to admins
-      if (!req.session?.directUser?.isAdmin) {
+      // Check for admin access (either via direct auth or Replit auth)
+      const isAdmin = !!(req.session?.directUser?.isAdmin || 
+                        (req.user?.claims && req.user?.isAdmin));
+      
+      if (!isAdmin) {
+        console.log('Admin access denied, session:', req.session);
         return res.status(403).json({ message: "Admin access required" });
       }
       
+      console.log('Admin access granted, fetching users');
+      
       // Get all users from the database
       const allUsers = await storage.getAllUsers();
+      console.log(`Found ${allUsers.length} users`);
       
       // For users with direct authentication, get their credential details
       const usersWithCredentials = await Promise.all(
         allUsers.map(async (user) => {
           if (user.authProvider === 'direct') {
-            const userCredentials = await db.select()
-              .from(credentials)
-              .where(eq(credentials.userId, user.id));
-            
-            const credential = userCredentials[0];
-            
-            if (credential) {
-              return {
-                ...user,
-                username: credential.username,
-                isEnabled: credential.isEnabled !== false,
-                lastLoginAt: credential.lastLoginAt
-              };
+            try {
+              const userCredentials = await db.select()
+                .from(credentials)
+                .where(eq(credentials.userId, user.id));
+              
+              const credential = userCredentials[0];
+              
+              if (credential) {
+                return {
+                  ...user,
+                  username: credential.username,
+                  isEnabled: credential.isEnabled !== false,
+                  lastLoginAt: credential.lastLoginAt
+                };
+              }
+            } catch (err) {
+              console.error('Error fetching credentials for user:', user.id, err);
             }
           }
           return user;
@@ -65,6 +77,199 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Create user endpoint
+  app.post('/api/users/create', async (req: any, res) => {
+    try {
+      // Only allow admins to create users
+      const isAdmin = !!(req.session?.directUser?.isAdmin || 
+                        (req.user?.claims && req.user?.isAdmin));
+      
+      if (!isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { firstName, lastName, email, username, password, isAdmin: newUserIsAdmin } = req.body;
+      
+      if (!firstName || !lastName || !email || !username || !password) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+      
+      // Check if username already exists
+      const existingCredentials = await db.select()
+        .from(credentials)
+        .where(eq(credentials.username, username))
+        .limit(1);
+      
+      if (existingCredentials.length > 0) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
+      
+      // Create a new user
+      const userId = `direct_${Date.now()}`;
+      const newUser = await storage.upsertUser({
+        id: userId,
+        email,
+        firstName,
+        lastName,
+        profileImageUrl: '',
+        authProvider: 'direct',
+        isAdmin: newUserIsAdmin || false
+      });
+      
+      // Create credentials for the user
+      const passwordHash = await bcrypt.hash(password, 10);
+      await db.insert(credentials).values({
+        userId: newUser.id,
+        username,
+        passwordHash,
+        isEnabled: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      
+      return res.status(201).json({ 
+        message: "User created successfully",
+        user: {
+          id: newUser.id,
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
+          email: newUser.email,
+          isAdmin: newUser.isAdmin
+        }
+      });
+    } catch (error) {
+      console.error('Error creating user:', error);
+      return res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+  
+  // Change password endpoint
+  app.post('/api/users/:userId/change-password', async (req: any, res) => {
+    try {
+      // Only allow admins to change passwords
+      const isAdmin = !!(req.session?.directUser?.isAdmin || 
+                        (req.user?.claims && req.user?.isAdmin));
+      
+      if (!isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { userId } = req.params;
+      const { newPassword } = req.body;
+      
+      if (!newPassword) {
+        return res.status(400).json({ message: "New password is required" });
+      }
+      
+      // Get user credentials
+      const userCredentials = await db.select()
+        .from(credentials)
+        .where(eq(credentials.userId, userId));
+      
+      if (userCredentials.length === 0) {
+        return res.status(404).json({ message: "User credentials not found" });
+      }
+      
+      // Update password
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+      await db.update(credentials)
+        .set({ 
+          passwordHash, 
+          updatedAt: new Date() 
+        })
+        .where(eq(credentials.userId, userId));
+      
+      return res.status(200).json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error('Error changing password:', error);
+      return res.status(500).json({ message: "Failed to change password" });
+    }
+  });
+  
+  // Toggle user status endpoint
+  app.post('/api/users/:userId/toggle-status', async (req: any, res) => {
+    try {
+      // Only allow admins to toggle user status
+      const isAdmin = !!(req.session?.directUser?.isAdmin || 
+                        (req.user?.claims && req.user?.isAdmin));
+      
+      if (!isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { userId } = req.params;
+      const { isEnabled } = req.body;
+      
+      // Update user status
+      await db.update(credentials)
+        .set({ 
+          isEnabled: isEnabled, 
+          updatedAt: new Date() 
+        })
+        .where(eq(credentials.userId, userId));
+      
+      return res.status(200).json({ 
+        message: `User ${isEnabled ? 'enabled' : 'disabled'} successfully` 
+      });
+    } catch (error) {
+      console.error('Error toggling user status:', error);
+      return res.status(500).json({ message: "Failed to update user status" });
+    }
+  });
+  
+  // Authentication settings endpoint
+  app.get('/api/auth/settings', async (req: any, res) => {
+    try {
+      // Only allow admins to view settings
+      const isAdmin = !!(req.session?.directUser?.isAdmin || 
+                        (req.user?.claims && req.user?.isAdmin));
+      
+      if (!isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      // Get settings from database or return defaults
+      return res.status(200).json({
+        directLoginEnabled: true,
+        microsoftLoginEnabled: false,
+        replitLoginEnabled: false
+      });
+    } catch (error) {
+      console.error('Error fetching auth settings:', error);
+      return res.status(500).json({ message: "Failed to fetch auth settings" });
+    }
+  });
+  
+  // Update authentication settings endpoint
+  app.post('/api/auth/settings', async (req: any, res) => {
+    try {
+      // Only allow admins to update settings
+      const isAdmin = !!(req.session?.directUser?.isAdmin || 
+                        (req.user?.claims && req.user?.isAdmin));
+      
+      if (!isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { directLoginEnabled, microsoftLoginEnabled, replitLoginEnabled } = req.body;
+      
+      // Save settings to database (mock implementation for now)
+      console.log('Auth settings updated:', { directLoginEnabled, microsoftLoginEnabled, replitLoginEnabled });
+      
+      return res.status(200).json({ 
+        message: "Settings updated successfully",
+        settings: {
+          directLoginEnabled,
+          microsoftLoginEnabled,
+          replitLoginEnabled
+        }
+      });
+    } catch (error) {
+      console.error('Error updating auth settings:', error);
+      return res.status(500).json({ message: "Failed to update auth settings" });
+    }
+  });
+
   // Authentication status route
   app.get('/api/auth/user', async (req: any, res) => {
     try {
