@@ -34,6 +34,7 @@ function Router() {
       <Route path="/permissions" component={Permissions} />
       <Route path="/reports" component={Reports} />
       <Route path="/settings" component={Settings} />
+      <Route path="/profile" component={import("@/pages/profile").default} />
       <Route path="/employee/new" component={NewEmployee} />
       <Route path="/employee/:id" component={EmployeeProfile} />
       {/* Fallback to 404 */}
