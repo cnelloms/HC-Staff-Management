@@ -5,6 +5,7 @@ import { Ticket, Employee } from "@/types";
 import { NewStaffRequestDetails } from "@/components/tickets/new-staff-request-details";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrentUser } from "@/context/user-context";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +39,7 @@ export default function TicketDetail() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { currentUser } = useCurrentUser();
   
   const [status, setStatus] = useState<'open' | 'in_progress' | 'closed' | ''>('');
   const [assigneeId, setAssigneeId] = useState<string>('');
@@ -155,6 +157,26 @@ export default function TicketDetail() {
               <p className="text-muted-foreground mt-1">Ticket #{ticket.id} • Created {format(new Date(ticket.createdAt), 'MMM d, yyyy')}</p>
             </div>
             <div className="flex items-center space-x-2">
+              {ticket.status === 'open' && !ticket.assigneeId && currentUser && (
+                <Button 
+                  onClick={() => {
+                    updateTicketMutation.mutate({ 
+                      status: 'in_progress',
+                      assigneeId: currentUser.id
+                    });
+                    setStatus('in_progress');
+                    setAssigneeId(currentUser.id.toString());
+                    
+                    toast({
+                      title: "Ticket accepted",
+                      description: "You have successfully accepted this ticket.",
+                    });
+                  }}
+                >
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Accept Ticket
+                </Button>
+              )}
               <Button variant="outline" asChild>
                 <Link href={`/tickets/${ticketId}/edit`}>
                   <Edit className="mr-2 h-4 w-4" />
