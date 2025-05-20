@@ -126,14 +126,19 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
     mutationFn: async (values: z.infer<typeof ticketFormSchema>) => {
       return apiRequest("POST", "/api/tickets", values);
     },
-    onSuccess: async (response) => {
-      const data = await response.json();
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       toast({
         title: "Ticket created",
         description: "The ticket has been successfully created.",
       });
-      navigate(`/tickets/${data.id}`);
+      // The API response contains the new ticket directly
+      if (data && data.id) {
+        navigate(`/tickets/${data.id}`);
+      } else {
+        // Fallback to tickets page if we can't get the ID for some reason
+        navigate('/tickets');
+      }
     },
     onError: (error) => {
       toast({
@@ -262,6 +267,40 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ticket Type</FormLabel>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      // Clear systemId if not system_access
+                      if (value !== 'system_access') {
+                        form.setValue('systemId', undefined);
+                      }
+                    }}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="system_access">System Access</SelectItem>
+                      <SelectItem value="onboarding">Onboarding</SelectItem>
+                      <SelectItem value="issue">Technical Issue</SelectItem>
+                      <SelectItem value="request">General Request</SelectItem>
+                      <SelectItem value="new_staff_request">New Staff Request</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
             <FormField
               control={form.control}
               name="title"
