@@ -21,22 +21,15 @@ export function AuthOptions() {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        {/* Replit login option removed as we're using direct auth now */}
+        
         <Button 
-          onClick={handleReplitLogin}
+          disabled
           className="w-full flex items-center justify-center"
           variant="outline"
         >
-          <UserIcon className="mr-2 h-4 w-4" />
-          Continue with Replit
-        </Button>
-        
-        <Button 
-          onClick={handleMicrosoftLogin}
-          className="w-full flex items-center justify-center"
-          variant="default"
-        >
           <FaMicrosoft className="mr-2 h-4 w-4" />
-          Sign in with Microsoft
+          Sign in with Microsoft (Coming Soon)
         </Button>
       </CardContent>
     </Card>
