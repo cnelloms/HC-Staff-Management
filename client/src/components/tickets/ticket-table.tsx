@@ -200,7 +200,7 @@ export function TicketTable() {
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" asChild>
                       <Link href={`/tickets/${ticket.id}`}>
-                        <a>View</a>
+                        View
                       </Link>
                     </Button>
                   </TableCell>

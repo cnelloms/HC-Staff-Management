@@ -363,10 +363,8 @@ export default function TicketDetail() {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <Link href={`/employee/${ticket.requestorId}`}>
-                          <p className="text-sm font-medium hover:underline">
-                            {ticket.requestor.firstName} {ticket.requestor.lastName}
-                          </p>
+                        <Link href={`/employee/${ticket.requestorId}`} className="text-sm font-medium hover:underline">
+                          {ticket.requestor.firstName} {ticket.requestor.lastName}
                         </Link>
                       </div>
                     </div>
@@ -386,10 +384,8 @@ export default function TicketDetail() {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <Link href={`/employee/${ticket.assigneeId}`}>
-                          <p className="text-sm font-medium hover:underline">
-                            {ticket.assignee.firstName} {ticket.assignee.lastName}
-                          </p>
+                        <Link href={`/employee/${ticket.assigneeId}`} className="text-sm font-medium hover:underline">
+                          {ticket.assignee.firstName} {ticket.assignee.lastName}
                         </Link>
                       </div>
                     </div>
