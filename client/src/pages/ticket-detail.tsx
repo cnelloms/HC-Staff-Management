@@ -31,6 +31,7 @@ import {
   BarChart2,
   Calendar,
   Building,
+  Trash,
 } from "lucide-react";
 
 export default function TicketDetail() {
@@ -68,6 +69,27 @@ export default function TicketDetail() {
       toast({
         title: "Error",
         description: error.message || "Failed to update ticket.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const deleteTicketMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("DELETE", `/api/tickets/${ticketId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      toast({
+        title: "Ticket deleted",
+        description: "The ticket has been successfully deleted.",
+      });
+      navigate("/tickets");
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete ticket.",
         variant: "destructive",
       });
     },
@@ -186,6 +208,18 @@ export default function TicketDetail() {
                   <Edit className="mr-2 h-4 w-4" />
                   Edit Ticket
                 </Link>
+              </Button>
+              <Button 
+                variant="outline" 
+                className="text-destructive hover:bg-destructive/10" 
+                onClick={() => {
+                  if (window.confirm("Are you sure you want to delete this ticket? This action cannot be undone.")) {
+                    deleteTicketMutation.mutate();
+                  }
+                }}
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                Delete
               </Button>
             </div>
           </div>
