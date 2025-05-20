@@ -543,6 +543,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get tickets assigned to an employee
+  app.get('/api/tickets/assigned/:employeeId', async (req, res) => {
+    try {
+      const employeeId = parseInt(req.params.employeeId);
+      if (isNaN(employeeId)) {
+        return res.status(400).json({ message: 'Invalid employee ID' });
+      }
+      
+      const tickets = await storage.getTicketsByAssigneeId(employeeId);
+      
+      // Fetch related data for each ticket
+      const ticketsWithDetails = await Promise.all(
+        tickets.map(async (ticket) => {
+          const requestor = await storage.getEmployeeById(ticket.requestorId);
+          const system = ticket.systemId 
+            ? await storage.getSystemById(ticket.systemId) 
+            : null;
+            
+          // For metadata fields like position, we need to translate IDs to names
+          let enhancedMetadata = ticket.metadata || {};
+          
+          if (ticket.type === 'new_staff_request' && ticket.metadata) {
+            if (ticket.metadata.positionId) {
+              const position = await storage.getPositionById(ticket.metadata.positionId);
+              if (position) {
+                enhancedMetadata = {
+                  ...enhancedMetadata,
+                  position: position
+                };
+              }
+            }
+            
+            if (ticket.metadata.departmentId) {
+              const department = await storage.getDepartmentById(ticket.metadata.departmentId);
+              if (department) {
+                enhancedMetadata = {
+                  ...enhancedMetadata,
+                  department: department
+                };
+              }
+            }
+          }
+          
+          return {
+            ...ticket,
+            metadata: enhancedMetadata,
+            requestor: requestor ? {
+              id: requestor.id,
+              firstName: requestor.firstName,
+              lastName: requestor.lastName,
+              position: requestor.position,
+              avatar: requestor.avatar
+            } : null,
+            system: system ? {
+              id: system.id,
+              name: system.name,
+              description: system.description
+            } : null
+          };
+        })
+      );
+      
+      res.json(ticketsWithDetails);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to fetch assigned tickets' });
+    }
+  });
+
   app.get('/api/tickets/:id', async (req, res) => {
     try {
       const id = parseInt(req.params.id);
