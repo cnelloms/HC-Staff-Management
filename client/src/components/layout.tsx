@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Sidebar } from "./ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Bell, PlusCircle, Search, User } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +37,7 @@ export default function Layout({ children, title }: LayoutProps) {
       <Sidebar />
       
       <div className="flex-1 overflow-auto">
-        <header className="bg-white shadow-sm z-10">
+        <header className="bg-background shadow-sm z-10">
           <div className="flex justify-between h-16 px-6">
             <div className="flex items-center">
               <h1 className="text-xl font-semibold text-primary">{title || currentPage}</h1>
@@ -60,6 +61,8 @@ export default function Layout({ children, title }: LayoutProps) {
               <Button variant="ghost" size="icon" className="text-muted-foreground">
                 <Bell className="h-5 w-5" />
               </Button>
+              
+              <ThemeToggle />
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
