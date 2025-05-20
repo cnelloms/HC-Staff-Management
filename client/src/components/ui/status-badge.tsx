@@ -20,6 +20,11 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status, label, className }: StatusBadgeProps) {
+  // Default to 'pending' if status is invalid or undefined
+  const validStatus = (status && ['pending', 'open', 'in_progress', 'active', 'closed', 'revoked', 'onboarding', 'low', 'medium', 'high'].includes(status)) 
+    ? status 
+    : 'pending';
+
   const badgeClasses = {
     pending: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
     open: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
@@ -51,11 +56,11 @@ export function StatusBadge({ status, label, className }: StatusBadgeProps) {
       variant="outline" 
       className={cn(
         "font-semibold border-none",
-        badgeClasses[status],
+        badgeClasses[validStatus],
         className
       )}
     >
-      {label || badgeLabels[status]}
+      {label || badgeLabels[validStatus]}
     </Badge>
   );
 }
