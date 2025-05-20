@@ -12,6 +12,9 @@ import {
   Inbox,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
+import { LoginButton } from "@/components/auth/login-button";
+import { ImpersonationControls } from "@/components/auth/impersonation-controls";
 
 interface SidebarProps {
   user?: {
@@ -21,8 +24,9 @@ interface SidebarProps {
   };
 }
 
-export function Sidebar({ user = { name: 'Sarah Johnson', role: 'HR Administrator', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' } }: SidebarProps) {
+export function Sidebar({ user: defaultUser }: SidebarProps) {
   const [location] = useLocation();
+  const { isAuthenticated, user, employee, isAdmin, isImpersonating, impersonatingEmployee } = useAuth();
 
   const navItems = [
     { href: "/", label: "Dashboard", icon: <Home className="sidebar-icon" /> },
@@ -69,17 +73,57 @@ export function Sidebar({ user = { name: 'Sarah Johnson', role: 'HR Administrato
         </nav>
       </div>
       
-      <div className="border-t border-border p-4">
-        <div className="flex items-center">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={user.avatar} alt={user.name} />
-            <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-          </Avatar>
-          <div className="ml-3">
-            <p className="text-sm font-medium">{user.name}</p>
-            <p className="text-xs text-muted-foreground">{user.role}</p>
-          </div>
-        </div>
+      <div className="border-t border-border p-4 space-y-3">
+        {isAuthenticated ? (
+          <>
+            <div className="flex items-center">
+              <Avatar className="h-10 w-10">
+                <AvatarImage 
+                  src={isImpersonating && impersonatingEmployee 
+                    ? impersonatingEmployee.avatar 
+                    : employee?.avatar || user?.profileImageUrl} 
+                  alt={isImpersonating && impersonatingEmployee 
+                    ? `${impersonatingEmployee.firstName} ${impersonatingEmployee.lastName}`
+                    : employee 
+                      ? `${employee.firstName} ${employee.lastName}`
+                      : user?.firstName || "User"} 
+                />
+                <AvatarFallback>
+                  {isImpersonating && impersonatingEmployee 
+                    ? `${impersonatingEmployee.firstName[0]}${impersonatingEmployee.lastName[0]}`
+                    : employee 
+                      ? `${employee.firstName[0]}${employee.lastName[0]}`
+                      : user?.firstName?.[0] || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="ml-3">
+                <p className="text-sm font-medium">
+                  {isImpersonating && impersonatingEmployee 
+                    ? `${impersonatingEmployee.firstName} ${impersonatingEmployee.lastName}`
+                    : employee 
+                      ? `${employee.firstName} ${employee.lastName}`
+                      : user?.firstName || "User"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {isImpersonating && impersonatingEmployee 
+                    ? impersonatingEmployee.position
+                    : employee?.position || "User"}
+                  {isAdmin && <span className="ml-1 text-primary">(Admin)</span>}
+                </p>
+              </div>
+            </div>
+            
+            {/* Impersonation controls for admins */}
+            {(isAdmin || isImpersonating) && (
+              <ImpersonationControls />
+            )}
+            
+            {/* Login/Logout button */}
+            <LoginButton className="w-full" />
+          </>
+        ) : (
+          <LoginButton className="w-full" />
+        )}
       </div>
     </div>
   );
