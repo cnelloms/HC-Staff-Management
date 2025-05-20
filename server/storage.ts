@@ -607,6 +607,105 @@ export class DatabaseStorage implements IStorage {
     
     return result;
   }
+  
+  // User authentication methods
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...userData,
+        updatedAt: new Date()
+      })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
+  }
+
+  async setUserImpersonation(userId: string, employeeId: number): Promise<boolean> {
+    try {
+      await db
+        .update(users)
+        .set({ 
+          impersonatingId: employeeId,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId));
+      return true;
+    } catch (error) {
+      console.error("Error setting user impersonation:", error);
+      return false;
+    }
+  }
+
+  async clearUserImpersonation(userId: string): Promise<boolean> {
+    try {
+      await db
+        .update(users)
+        .set({ 
+          impersonatingId: null,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId));
+      return true;
+    } catch (error) {
+      console.error("Error clearing user impersonation:", error);
+      return false;
+    }
+  }
+
+  async getUserDetails(userId: string): Promise<{ user: User, employee?: Employee, impersonatingEmployee?: Employee } | undefined> {
+    try {
+      const user = await this.getUser(userId);
+      if (!user) return undefined;
+      
+      let employee: Employee | undefined = undefined;
+      let impersonatingEmployee: Employee | undefined = undefined;
+      
+      if (user.employeeId) {
+        employee = await this.getEmployeeById(user.employeeId);
+      }
+      
+      if (user.impersonatingId) {
+        impersonatingEmployee = await this.getEmployeeById(user.impersonatingId);
+      }
+      
+      return {
+        user,
+        employee,
+        impersonatingEmployee
+      };
+    } catch (error) {
+      console.error("Error getting user details:", error);
+      return undefined;
+    }
+  }
+
+  async makeUserAdmin(userId: string): Promise<boolean> {
+    try {
+      await db
+        .update(users)
+        .set({ 
+          isAdmin: true,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId));
+      return true;
+    } catch (error) {
+      console.error("Error making user admin:", error);
+      return false;
+    }
+  }
 }
 
 // Export the database storage implementation

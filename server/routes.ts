@@ -8,8 +8,58 @@ import {
   insertPositionSchema
 } from "@shared/schema";
 import { z } from "zod";
+import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication
+  await setupAuth(app);
+  
+  // Authentication status route
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const userDetails = await storage.getUserDetails(userId);
+      
+      if (!userDetails) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Determine which employee data to return based on impersonation state
+      const responseData = userDetails.impersonatingEmployee 
+        ? {
+            ...userDetails,
+            currentEmployee: userDetails.impersonatingEmployee,
+            isImpersonating: true
+          }
+        : {
+            ...userDetails,
+            currentEmployee: userDetails.employee,
+            isImpersonating: false
+          };
+      
+      res.json(responseData);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user details" });
+    }
+  });
+  
+  // Admin routes for user management
+  app.post('/api/admin/make-admin/:userId', isAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const success = await storage.makeUserAdmin(userId);
+      
+      if (success) {
+        res.json({ message: "User is now an admin" });
+      } else {
+        res.status(500).json({ message: "Failed to make user an admin" });
+      }
+    } catch (error) {
+      console.error("Error making user admin:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
   // Feature flags
   app.get('/api/feature-flags', async (req, res) => {
     try {
