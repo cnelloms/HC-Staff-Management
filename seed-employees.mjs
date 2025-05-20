@@ -1,7 +1,11 @@
 // Seed script to generate employees with different reporting structures
-import { Pool } from '@neondatabase/serverless';
+import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { eq } from 'drizzle-orm';
+import ws from 'ws';
+
+// Configure Neon to use the WebSocket constructor
+neonConfig.webSocketConstructor = ws;
 
 // Names for random generation
 const firstNames = [
