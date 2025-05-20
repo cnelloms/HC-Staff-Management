@@ -273,7 +273,7 @@ export const credentials = pgTable("credentials", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id),
   username: varchar("username").notNull().unique(),
-  password: varchar("password_hash").notNull(), // Stores hashed password
+  passwordHash: varchar("password_hash").notNull(), // Stores hashed password
   isEnabled: boolean("is_enabled").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

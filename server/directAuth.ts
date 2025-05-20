@@ -65,13 +65,13 @@ export function setupDirectAuth(app: Express) {
       console.log('User credentials found:', { 
         id: userCredentials.id,
         username: userCredentials.username,
-        hasPassword: !!userCredentials.password,
+        hasPasswordHash: !!userCredentials.passwordHash,
         fields: Object.keys(userCredentials)
       });
       
       try {
         console.log('Comparing password with bcrypt');
-        const isPasswordValid = await bcrypt.compare(password, userCredentials.password);
+        const isPasswordValid = await bcrypt.compare(password, userCredentials.passwordHash);
         console.log('Password validation result:', isPasswordValid);
         
         if (!isPasswordValid) {
