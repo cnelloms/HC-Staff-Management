@@ -243,7 +243,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Get employee data if available (as source of truth)
         let employeeData = null;
-        let userProfile = {
+        // Define the user profile with proper type definitions
+        interface UserProfile {
+          id: string;
+          firstName: string;
+          lastName: string;
+          email: string | null | undefined;
+          username: string;
+          isAdmin: boolean;
+          authProvider: string;
+          employeeId: number | null | undefined;
+          impersonatingId: number | undefined;
+          department?: string;
+          position?: string;
+        }
+        
+        let userProfile: UserProfile = {
           id: userId,
           firstName: user?.firstName || 'User', 
           lastName: user?.lastName || '',
@@ -252,9 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isAdmin: req.session.directUser.isAdmin === true,
           authProvider: 'direct',
           employeeId: user?.employeeId,
-          impersonatingId: impersonatingId,
-          department: null,
-          position: null
+          impersonatingId: impersonatingId
         };
         
         // If user has an associated employee record, get that data
