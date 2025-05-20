@@ -716,21 +716,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (existingTicket.type === 'new_staff_request' && existingTicket.metadata) {
           try {
             const staffData = existingTicket.metadata;
+            console.log(`Processing ticket closure for new staff request #${existingTicket.id}`);
+            console.log(`Ticket metadata:`, JSON.stringify(staffData, null, 2));
             
             // Only proceed if we have the required data
-            if (staffData.firstName && staffData.lastName && staffData.position && staffData.departmentId) {
+            if (staffData.firstName && staffData.lastName && (staffData.position || staffData.positionId) && staffData.departmentId) {
               // Create a unique email if not provided
               const email = staffData.workEmail || 
                 `${staffData.firstName.toLowerCase()}.${staffData.lastName.toLowerCase()}@example.com`;
               
+              console.log(`Creating employee profile with email: ${email}`);
+              
+              // Get position information if positionId is available
+              let position = staffData.position;
+              if (staffData.positionId && !position) {
+                console.log(`Looking up position title for positionId: ${staffData.positionId}`);
+                // Fetch position title from database
+                const positionData = await storage.getPositionById(staffData.positionId);
+                if (positionData) {
+                  position = positionData.title;
+                  console.log(`Found position title: ${position}`);
+                } else {
+                  console.log(`No position found with ID: ${staffData.positionId}`);
+                }
+              }
+              
+              if (!position) {
+                console.error(`Cannot create employee: No position found for positionId ${staffData.positionId}`);
+                throw new Error('Position data missing for employee creation');
+              }
+              
+              // Log department information
+              const departmentData = await storage.getDepartmentById(staffData.departmentId);
+              console.log(`Department: ${departmentData ? departmentData.name : 'Unknown'} (ID: ${staffData.departmentId})`);
+              
+              // Log manager information if available
+              const managerId = staffData.reportingManagerId || staffData.manager;
+              if (managerId) {
+                const managerData = await storage.getEmployeeById(managerId);
+                console.log(`Manager: ${managerData ? `${managerData.firstName} ${managerData.lastName}` : 'Unknown'} (ID: ${managerId})`);
+              }
+              
               // Create the new employee
+              console.log(`Creating new employee profile for ${staffData.firstName} ${staffData.lastName}`);
               const newEmployee = await storage.createEmployee({
                 firstName: staffData.firstName,
                 lastName: staffData.lastName,
                 email: email,
-                position: staffData.position,
+                position: position,
                 departmentId: staffData.departmentId,
-                managerId: staffData.reportingManagerId || staffData.manager,
+                managerId: managerId,
                 hireDate: staffData.startDate ? new Date(staffData.startDate) : new Date(),
                 status: 'active',
                 phone: staffData.phone || null,
