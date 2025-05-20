@@ -390,6 +390,71 @@ export function EmployeeRoles() {
           )}
         </div>
       </div>
+
+      {/* Add Role Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Assign Role to Employee</DialogTitle>
+            <DialogDescription>
+              {selectedEmployeeId && employees ? 
+                `Select a role to assign to ${employees.find((e: any) => e.id === selectedEmployeeId)?.firstName} ${employees.find((e: any) => e.id === selectedEmployeeId)?.lastName}` : 
+                "Select a role to assign to this employee"}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="roleId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select 
+                      onValueChange={(value) => field.onChange(parseInt(value))} 
+                      defaultValue={field.value?.toString()}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {rolesLoading ? (
+                          <SelectItem value="loading" disabled>Loading roles...</SelectItem>
+                        ) : roles?.length === 0 ? (
+                          <SelectItem value="none" disabled>No roles available</SelectItem>
+                        ) : (
+                          roles?.map((role: any) => (
+                            <SelectItem 
+                              key={role.id} 
+                              value={role.id.toString()}
+                              disabled={employeeRoles?.some((er: any) => er.id === role.id)}
+                            >
+                              {role.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button type="submit" disabled={addRoleToEmployeeMutation.isPending}>
+                  {addRoleToEmployeeMutation.isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Assign Role
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
