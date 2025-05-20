@@ -49,7 +49,10 @@ import {
   ToggleLeft,
   CheckCircle,
   XCircle,
-  Users
+  Users,
+  Trash2,
+  AlertTriangle,
+  AlertCircle
 } from "lucide-react";
 import { queryClient } from "../lib/queryClient";
 import { ImpersonationPanel } from "@/components/user-management/impersonation-panel";
@@ -169,6 +172,47 @@ function UserManagement() {
     }
   };
   
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    try {
+      // Close the dialog
+      document.querySelector('dialog')?.close();
+      
+      // Show a loading toast
+      toast({
+        title: "Deleting user...",
+        description: "Please wait while the user is removed from the system"
+      });
+      
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "User Deleted",
+          description: `${userName} has been successfully removed from the system`,
+          variant: "default"
+        });
+        
+        // Refresh the user list
+        queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      } else {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to delete user');
+      }
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete user",
+        variant: "destructive"
+      });
+    }
+  };
+  
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -254,19 +298,67 @@ function UserManagement() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {user.authProvider === 'direct' && (
+                      <div className="flex space-x-2">
+                        {user.authProvider === 'direct' && (
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <Key className="h-4 w-4 mr-1" />
+                                Reset Password
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <ChangePasswordForm userId={user.id} />
+                            </DialogContent>
+                          </Dialog>
+                        )}
+                        
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <Key className="h-4 w-4 mr-1" />
-                              Reset Password
+                            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Delete
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
-                            <ChangePasswordForm userId={user.id} />
+                            <DialogHeader>
+                              <DialogTitle className="flex items-center text-red-600">
+                                <AlertTriangle className="h-5 w-5 mr-2" />
+                                Confirm User Deletion
+                              </DialogTitle>
+                              <DialogDescription>
+                                This action will completely remove the user from the system. This cannot be undone.
+                              </DialogDescription>
+                            </DialogHeader>
+                            
+                            <div className="my-4 p-4 border rounded-md bg-amber-50">
+                              <h4 className="font-medium mb-2">You're about to delete:</h4>
+                              <p><span className="font-medium">User:</span> {user.firstName} {user.lastName}</p>
+                              <p><span className="font-medium">Email:</span> {user.email || 'N/A'}</p>
+                              <p><span className="font-medium">Username:</span> {user.username || 'N/A'}</p>
+                              <p><span className="font-medium">Role:</span> {user.isAdmin ? 'Administrator' : 'Regular User'}</p>
+                              {user.employeeId && (
+                                <p className="text-amber-700 mt-2">
+                                  <AlertCircle className="h-4 w-4 inline mr-1" />
+                                  This user has an associated employee record which will be retained.
+                                </p>
+                              )}
+                            </div>
+                            
+                            <DialogFooter>
+                              <Button variant="outline" onClick={() => (document.querySelector('dialog')?.close())}>
+                                Cancel
+                              </Button>
+                              <Button 
+                                variant="destructive"
+                                onClick={() => handleDeleteUser(user.id, `${user.firstName} ${user.lastName}`)}
+                              >
+                                Delete User
+                              </Button>
+                            </DialogFooter>
                           </DialogContent>
                         </Dialog>
-                      )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
