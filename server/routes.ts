@@ -205,6 +205,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const replitAdminAccess = (req.user as any)?.isAdmin === true;
       const isAdmin = directAdminAccess || replitAdminAccess;
       
+      // Debug admin access
+      console.log('Password change attempt by:', {
+        directUser: req.session?.directUser,
+        replitUser: req.user,
+        directAdminAccess,
+        replitAdminAccess,
+        isAdmin
+      });
+      
       if (!isAdmin) {
         return res.status(403).json({ message: "Admin access required" });
       }
