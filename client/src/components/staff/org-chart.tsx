@@ -142,6 +142,7 @@ const OrgNode: React.FC<OrgNodeProps> = ({
 
 export function OrgChart() {
   const [expandedNodes, setExpandedNodes] = React.useState<Record<number, boolean>>({});
+  const [showOnlyManagersWithPending, setShowOnlyManagersWithPending] = React.useState(false);
 
   // Fetch employees
   const { data: employees, isLoading: isLoadingEmployees } = useQuery<Employee[]>({
@@ -159,6 +160,14 @@ export function OrgChart() {
     return employees.filter(emp => !emp.managerId);
   }, [employees]);
 
+  // Filter pending new staff requests
+  const pendingNewStaffRequests = useMemo(() => {
+    if (!tickets) return [];
+    return tickets.filter(
+      ticket => ticket.type === 'new_staff_request' && ticket.status !== 'closed'
+    );
+  }, [tickets]);
+  
   // Organize employees into a hierarchical structure
   const organizationHierarchy = useMemo(() => {
     if (!employees) return topLevelManagers;
@@ -182,16 +191,38 @@ export function OrgChart() {
     });
     
     // Return the top-level managers with their subordinates
-    return topLevelManagers.map(manager => employeeMap.get(manager.id) || manager);
-  }, [employees, topLevelManagers]);
-
-  // Filter pending new staff requests
-  const pendingNewStaffRequests = useMemo(() => {
-    if (!tickets) return [];
-    return tickets.filter(
-      ticket => ticket.type === 'new_staff_request' && ticket.status !== 'closed'
-    );
-  }, [tickets]);
+    let result = topLevelManagers.map(manager => employeeMap.get(manager.id) || manager);
+    
+    // If showing only managers with pending staff, filter the hierarchy
+    if (showOnlyManagersWithPending && pendingNewStaffRequests.length > 0) {
+      // Get all manager IDs that have pending staff requests
+      const managerIdsWithPending = new Set(
+        pendingNewStaffRequests
+          .filter(request => request.metadata?.reportingManagerId)
+          .map(request => request.metadata.reportingManagerId)
+      );
+      
+      // Filter to only include managers with pending staff or their ancestors
+      const hasRelevantSubordinates = (employee: any): boolean => {
+        // Check if this employee is a manager with pending staff
+        if (managerIdsWithPending.has(employee.id)) {
+          return true;
+        }
+        
+        // Check if any subordinates have pending staff
+        if (employee.subordinates && employee.subordinates.length > 0) {
+          return employee.subordinates.some(hasRelevantSubordinates);
+        }
+        
+        return false;
+      };
+      
+      // Apply the filter to the hierarchy
+      result = result.filter(hasRelevantSubordinates);
+    }
+    
+    return result;
+  }, [employees, topLevelManagers, pendingNewStaffRequests, showOnlyManagersWithPending]);
 
   // Toggle expanded state of nodes
   const toggleExpand = (id: number) => {
@@ -236,9 +267,26 @@ export function OrgChart() {
           </Badge>
           
           {pendingNewStaffRequests.length > 0 && (
-            <Badge variant="outline" className="gap-1 bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-800">
+            <Badge 
+              variant="outline" 
+              className={`gap-1 cursor-pointer transition-all ${
+                showOnlyManagersWithPending 
+                  ? "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-700"
+                  : "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-800"
+              } hover:bg-orange-100 hover:text-orange-800 hover:border-orange-300 dark:hover:bg-orange-900/40 dark:hover:text-orange-300 dark:hover:border-orange-700`}
+              onClick={() => {
+                // Toggle the filter
+                setShowOnlyManagersWithPending(!showOnlyManagersWithPending);
+                
+                // If enabling the filter, expand all nodes to make the filtered view more useful
+                if (!showOnlyManagersWithPending) {
+                  expandAll();
+                }
+              }}
+            >
               <UserPlus className="h-3.5 w-3.5 mr-1" />
               {pendingNewStaffRequests.length} Pending
+              {showOnlyManagersWithPending && <span className="ml-1">(filtered)</span>}
             </Badge>
           )}
         </div>
@@ -246,6 +294,16 @@ export function OrgChart() {
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={expandAll}>Expand All</Button>
           <Button variant="outline" size="sm" onClick={collapseAll}>Collapse All</Button>
+          {showOnlyManagersWithPending && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-orange-700 border-orange-200 bg-orange-50 hover:bg-orange-100 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-800 dark:hover:bg-orange-900/40"
+              onClick={() => setShowOnlyManagersWithPending(false)}
+            >
+              Show All
+            </Button>
+          )}
         </div>
       </div>
 
