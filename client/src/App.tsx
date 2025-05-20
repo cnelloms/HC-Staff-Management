@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { UserProvider } from "@/context/user-context";
 import NotFound from "@/pages/not-found";
+import { ProtectedRoute } from "./components/auth/protected-route";
 
 // Pages
 import Dashboard from "@/pages/dashboard";
@@ -27,22 +28,108 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={LoginPage} />
-      <Route path="/" component={Dashboard} />
-      <Route path="/directory" component={Directory} />
-      <Route path="/staff-import" component={StaffImportPage} />
-      <Route path="/tickets" component={Tickets} />
-      <Route path="/my-tickets" component={MyTickets} />
-      <Route path="/tickets/new" component={NewTicket} />
-      <Route path="/tickets/:id" component={TicketDetail} />
-      <Route path="/permissions" component={Permissions} />
-      <Route path="/reports" component={Reports} />
-      <Route path="/settings" component={Settings} />
-      <Route path="/profile" component={UserProfile} />
-      <Route path="/employee/new" component={NewEmployee} />
-      <Route path="/employee/:id" component={EmployeeProfile} />
-      {/* User Management page will be added later */}
+      
+      {/* Protected Routes - require authentication */}
+      <Route path="/">
+        {() => (
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/directory">
+        {() => (
+          <ProtectedRoute>
+            <Directory />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/staff-import">
+        {() => (
+          <ProtectedRoute>
+            <StaffImportPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/tickets">
+        {() => (
+          <ProtectedRoute>
+            <Tickets />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/my-tickets">
+        {() => (
+          <ProtectedRoute>
+            <MyTickets />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/tickets/new">
+        {() => (
+          <ProtectedRoute>
+            <NewTicket />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/tickets/:id">
+        {(params) => (
+          <ProtectedRoute>
+            <TicketDetail />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/permissions">
+        {() => (
+          <ProtectedRoute>
+            <Permissions />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/reports">
+        {() => (
+          <ProtectedRoute>
+            <Reports />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/settings">
+        {() => (
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/profile">
+        {() => (
+          <ProtectedRoute>
+            <UserProfile />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/employee/new">
+        {() => (
+          <ProtectedRoute>
+            <NewEmployee />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/employee/:id">
+        {(params) => (
+          <ProtectedRoute>
+            <EmployeeProfile />
+          </ProtectedRoute>
+        )}
+      </Route>
+      
       {/* Fallback to 404 */}
-      <Route component={NotFound} />
+      <Route>
+        {() => (
+          <ProtectedRoute>
+            <NotFound />
+          </ProtectedRoute>
+        )}
+      </Route>
     </Switch>
   );
 }

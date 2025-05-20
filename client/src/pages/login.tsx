@@ -36,12 +36,14 @@ export default function LoginPage() {
     setIsLoading(true);
     
     try {
+      console.log("Attempting direct login with:", { username });
       const response = await fetch("/api/login/direct", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ username, password }),
+        credentials: "include", // Important for session cookies
       });
       
       if (!response.ok) {
@@ -52,6 +54,7 @@ export default function LoginPage() {
       // Successful login - redirect to the home page
       window.location.href = "/";
     } catch (err: any) {
+      console.error("Login error:", err);
       setError(err.message || "Login failed");
     } finally {
       setIsLoading(false);
