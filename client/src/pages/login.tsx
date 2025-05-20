@@ -53,17 +53,16 @@ export default function LoginPage() {
         throw new Error(data.message || "Invalid username or password");
       }
       
-      // Successful login - redirect to the home page
+      // Successful login - save user data and redirect
       console.log("Login successful:", data);
       
-      // Force a full page reload to the dashboard after login
-      // We use replace instead of href to avoid browser history issues
-      window.location.replace("/");
+      // Store user data in localStorage for persistence
+      if (data.user) {
+        localStorage.setItem("auth_user", JSON.stringify(data.user));
+      }
       
-      // If the redirect doesn't happen immediately, try again after a short delay
-      setTimeout(() => {
-        window.location.replace("/");
-      }, 500);
+      // Force navigation to the dashboard
+      window.location.href = "/";
       return;
     } catch (err: any) {
       console.error("Login error:", err);
