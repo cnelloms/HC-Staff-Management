@@ -12,7 +12,6 @@ import Dashboard from "@/pages/dashboard";
 import Directory from "@/pages/directory";
 import Tickets from "@/pages/tickets";
 import MyTickets from "@/pages/my-tickets";
-import AccessManagement from "@/pages/access-management";
 import Reports from "@/pages/reports";
 import Settings from "@/pages/settings";
 import EmployeeProfile from "@/pages/employee-profile";
@@ -33,7 +32,6 @@ function Router() {
       <Route path="/my-tickets" component={MyTickets} />
       <Route path="/tickets/new" component={NewTicket} />
       <Route path="/tickets/:id" component={TicketDetail} />
-      <Route path="/access-management" component={AccessManagement} />
       <Route path="/permissions" component={Permissions} />
       <Route path="/reports" component={Reports} />
       <Route path="/settings" component={Settings} />
