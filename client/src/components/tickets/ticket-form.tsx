@@ -57,7 +57,7 @@ const newStaffMetadataSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }).optional(),
   phone: z.string().optional(),
   expectedCompletionDate: z.string().optional(),
-  priority: z.enum(["low", "medium", "high"]).default("medium"),
+  priority: z.enum(["low", "medium", "high"]).default("low"),
   notes: z.string().optional(),
 }).optional();
 
@@ -75,9 +75,7 @@ const ticketFormSchema = z.object({
   status: z.enum(["open", "in_progress", "closed"], {
     required_error: "Please select a status.",
   }),
-  priority: z.enum(["low", "medium", "high"], {
-    required_error: "Please select a priority.",
-  }),
+  priority: z.enum(["low", "medium", "high"]).default("low"),
   type: z.literal("new_staff_request"),
   systemId: z.coerce.number().optional(),
   metadata: z.any().optional(), // Will contain different structures based on ticket type
