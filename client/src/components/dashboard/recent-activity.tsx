@@ -77,36 +77,39 @@ export function RecentActivity() {
               </div>
             ))
           ) : (
-            activities?.map((activity) => (
-              <div key={activity.id} className="flex items-start space-x-4">
+            activities && activities.length > 0 ? activities.map((activity) => (
+              <div key={activity.id || Math.random()} className="flex items-start space-x-4">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={activity.employee?.avatar} alt={activity.employee?.name} />
+                  <AvatarImage src={activity.employee?.avatar || ""} alt={activity.employee?.name || "Employee"} />
                   <AvatarFallback>
-                    {activity.employee?.name.split(' ').map(n => n[0]).join('')}
+                    {activity.employee?.name ? activity.employee.name.split(' ').map(n => n[0]).join('') : "E"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">
-                    <a href={`/employee/${activity.employeeId}`} className="hover:underline">
-                      {activity.employee?.name}
+                    <a href={`/employee/${activity.employeeId || 0}`} className="hover:underline">
+                      {activity.employee?.name || "Employee"}
                     </a>{' '}
-                    {activity.description}
+                    {activity.description || "performed an action"}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {activity.employee?.position}
+                    {activity.employee?.position || "Staff"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {formatTimestamp(activity.timestamp)}
+                    {activity.timestamp ? formatTimestamp(activity.timestamp) : "Recently"}
                   </p>
                 </div>
                 <StatusBadge 
                   status={getActivityBadgeType(activity.activityType)} 
+                  label={getActivityBadgeLabel(activity.activityType)}
                   className="whitespace-nowrap"
-                >
-                  {getActivityBadgeLabel(activity.activityType)}
-                </StatusBadge>
+                />
               </div>
-            ))
+            )) : (
+              <div className="py-4 text-center">
+                <p className="text-sm text-muted-foreground">No recent activities</p>
+              </div>
+            )
           )}
         </div>
       </CardContent>

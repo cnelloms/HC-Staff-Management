@@ -1,0 +1,165 @@
+index-UrSrKgL-.js:378 Auth state: {user: null, isAuthenticated: false, isAdmin: false, rawIsAdmin: undefined}
+index-UrSrKgL-.js:378 Auth state: {user: {…}, isAuthenticated: true, isAdmin: true, rawIsAdmin: true}
+index-UrSrKgL-.js:378 Auth state: {user: null, isAuthenticated: false, isAdmin: false, rawIsAdmin: undefined}
+index-UrSrKgL-.js:378 Auth state: {user: null, isAuthenticated: false, isAdmin: false, rawIsAdmin: undefined}
+index-UrSrKgL-.js:378 Auth state: {user: {…}, isAuthenticated: true, isAdmin: true, rawIsAdmin: true}
+index-UrSrKgL-.js:378 Auth state: {user: null, isAuthenticated: false, isAdmin: false, rawIsAdmin: undefined}
+index-UrSrKgL-.js:378 Auth state: {user: {…}, isAuthenticated: true, isAdmin: true, rawIsAdmin: true}
+index-UrSrKgL-.js:378 Auth state: {user: {…}, isAuthenticated: true, isAdmin: true, rawIsAdmin: true}
+index-UrSrKgL-.js:378 Auth state: {user: {…}, isAuthenticated: true, isAdmin: true, rawIsAdmin: true}
+index-UrSrKgL-.js:378 Auth state: {user: {…}, isAuthenticated: true, isAdmin: true, rawIsAdmin: true}
+index-UrSrKgL-.js:378 Auth state: {user: {…}, isAuthenticated: true, isAdmin: true, rawIsAdmin: true}
+index-UrSrKgL-.js:378 Auth state: {user: {…}, isAuthenticated: true, isAdmin: true, rawIsAdmin: true}
+index-UrSrKgL-.js:378 Auth state: {user: {…}, isAuthenticated: true, isAdmin: true, rawIsAdmin: true}
+index-UrSrKgL-.js:378 Auth state: {user: {…}, isAuthenticated: true, isAdmin: true, rawIsAdmin: true}
+index-UrSrKgL-.js:378 Auth state: {user: {…}, isAuthenticated: true, isAdmin: true, rawIsAdmin: true}
+index-UrSrKgL-.js:378 Auth state: {user: {…}, isAuthenticated: true, isAdmin: true, rawIsAdmin: true}
+index-UrSrKgL-.js:40  TypeError: Cannot read properties of undefined (reading '0')
+    at DZ (index-UrSrKgL-.js:422:8477)
+    at aj (index-UrSrKgL-.js:38:17018)
+    at C_ (index-UrSrKgL-.js:40:3139)
+    at A3 (index-UrSrKgL-.js:40:44833)
+    at j3 (index-UrSrKgL-.js:40:39790)
+    at fG (index-UrSrKgL-.js:40:39718)
+    at Tg (index-UrSrKgL-.js:40:39570)
+    at B_ (index-UrSrKgL-.js:40:35934)
+    at AC (index-UrSrKgL-.js:40:36738)
+    at zl (index-UrSrKgL-.js:38:3279)
+A_ @ index-UrSrKgL-.js:40
+r.callback @ index-UrSrKgL-.js:40
+cC @ index-UrSrKgL-.js:38
+jC @ index-UrSrKgL-.js:40
+b3 @ index-UrSrKgL-.js:40
+lG @ index-UrSrKgL-.js:40
+hG @ index-UrSrKgL-.js:40
+ic @ index-UrSrKgL-.js:40
+AC @ index-UrSrKgL-.js:40
+zl @ index-UrSrKgL-.js:38
+(anonymous) @ index-UrSrKgL-.js:40
+setTimeout
+lK @ index-UrSrKgL-.js:48
+s @ index-UrSrKgL-.js:48
+batch @ index-UrSrKgL-.js:48
+qs @ index-UrSrKgL-.js:48
+setData @ index-UrSrKgL-.js:48
+onSuccess @ index-UrSrKgL-.js:48
+d @ index-UrSrKgL-.js:48
+Promise.then
+g @ index-UrSrKgL-.js:48
+start @ index-UrSrKgL-.js:48
+fetch @ index-UrSrKgL-.js:48
+Dh @ index-UrSrKgL-.js:48
+setOptions @ index-UrSrKgL-.js:48
+(anonymous) @ index-UrSrKgL-.js:48
+yy @ index-UrSrKgL-.js:40
+cf @ index-UrSrKgL-.js:40
+hG @ index-UrSrKgL-.js:40
+ic @ index-UrSrKgL-.js:40
+AC @ index-UrSrKgL-.js:40
+zl @ index-UrSrKgL-.js:38
+(anonymous) @ index-UrSrKgL-.js:40
+setTimeout
+lK @ index-UrSrKgL-.js:48
+s @ index-UrSrKgL-.js:48
+batch @ index-UrSrKgL-.js:48
+qs @ index-UrSrKgL-.js:48
+setData @ index-UrSrKgL-.js:48
+onSuccess @ index-UrSrKgL-.js:48
+d @ index-UrSrKgL-.js:48
+Promise.then
+g @ index-UrSrKgL-.js:48
+start @ index-UrSrKgL-.js:48
+fetch @ index-UrSrKgL-.js:48
+Dh @ index-UrSrKgL-.js:48
+onSubscribe @ index-UrSrKgL-.js:48
+subscribe @ index-UrSrKgL-.js:48
+(anonymous) @ index-UrSrKgL-.js:48
+zI @ index-UrSrKgL-.js:38
+yy @ index-UrSrKgL-.js:40
+cf @ index-UrSrKgL-.js:40
+AC @ index-UrSrKgL-.js:40
+zl @ index-UrSrKgL-.js:38
+hG @ index-UrSrKgL-.js:40
+ic @ index-UrSrKgL-.js:40
+_3 @ index-UrSrKgL-.js:40
+_ @ index-UrSrKgL-.js:25
+N @ index-UrSrKgL-.js:25
+index-UrSrKgL-.js:422  Uncaught TypeError: Cannot read properties of undefined (reading '0')
+    at DZ (index-UrSrKgL-.js:422:8477)
+    at aj (index-UrSrKgL-.js:38:17018)
+    at C_ (index-UrSrKgL-.js:40:3139)
+    at A3 (index-UrSrKgL-.js:40:44833)
+    at j3 (index-UrSrKgL-.js:40:39790)
+    at fG (index-UrSrKgL-.js:40:39718)
+    at Tg (index-UrSrKgL-.js:40:39570)
+    at B_ (index-UrSrKgL-.js:40:35934)
+    at AC (index-UrSrKgL-.js:40:36738)
+    at zl (index-UrSrKgL-.js:38:3279)
+DZ @ index-UrSrKgL-.js:422
+aj @ index-UrSrKgL-.js:38
+C_ @ index-UrSrKgL-.js:40
+A3 @ index-UrSrKgL-.js:40
+j3 @ index-UrSrKgL-.js:40
+fG @ index-UrSrKgL-.js:40
+Tg @ index-UrSrKgL-.js:40
+B_ @ index-UrSrKgL-.js:40
+AC @ index-UrSrKgL-.js:40
+zl @ index-UrSrKgL-.js:38
+(anonymous) @ index-UrSrKgL-.js:40
+setTimeout
+lK @ index-UrSrKgL-.js:48
+s @ index-UrSrKgL-.js:48
+batch @ index-UrSrKgL-.js:48
+qs @ index-UrSrKgL-.js:48
+setData @ index-UrSrKgL-.js:48
+onSuccess @ index-UrSrKgL-.js:48
+d @ index-UrSrKgL-.js:48
+Promise.then
+g @ index-UrSrKgL-.js:48
+start @ index-UrSrKgL-.js:48
+fetch @ index-UrSrKgL-.js:48
+Dh @ index-UrSrKgL-.js:48
+setOptions @ index-UrSrKgL-.js:48
+(anonymous) @ index-UrSrKgL-.js:48
+yy @ index-UrSrKgL-.js:40
+cf @ index-UrSrKgL-.js:40
+hG @ index-UrSrKgL-.js:40
+ic @ index-UrSrKgL-.js:40
+AC @ index-UrSrKgL-.js:40
+zl @ index-UrSrKgL-.js:38
+(anonymous) @ index-UrSrKgL-.js:40
+setTimeout
+lK @ index-UrSrKgL-.js:48
+s @ index-UrSrKgL-.js:48
+batch @ index-UrSrKgL-.js:48
+qs @ index-UrSrKgL-.js:48
+setData @ index-UrSrKgL-.js:48
+onSuccess @ index-UrSrKgL-.js:48
+d @ index-UrSrKgL-.js:48
+Promise.then
+g @ index-UrSrKgL-.js:48
+start @ index-UrSrKgL-.js:48
+fetch @ index-UrSrKgL-.js:48
+Dh @ index-UrSrKgL-.js:48
+onSubscribe @ index-UrSrKgL-.js:48
+subscribe @ index-UrSrKgL-.js:48
+(anonymous) @ index-UrSrKgL-.js:48
+zI @ index-UrSrKgL-.js:38
+yy @ index-UrSrKgL-.js:40
+cf @ index-UrSrKgL-.js:40
+AC @ index-UrSrKgL-.js:40
+zl @ index-UrSrKgL-.js:38
+hG @ index-UrSrKgL-.js:40
+ic @ index-UrSrKgL-.js:40
+_3 @ index-UrSrKgL-.js:40
+_ @ index-UrSrKgL-.js:25
+N @ index-UrSrKgL-.js:25
+Unchecked runtime.lastError: Cannot create item with duplicate id LastPass https://health-staff-tracker-cnelloms.replit.app/
+Unchecked runtime.lastError: Cannot create item with duplicate id separator https://health-staff-tracker-cnelloms.replit.app/
+Unchecked runtime.lastError: Cannot create item with duplicate id Add Item https://health-staff-tracker-cnelloms.replit.app/
+Unchecked runtime.lastError: Cannot create item with duplicate id Add Password https://health-staff-tracker-cnelloms.replit.app/
+Unchecked runtime.lastError: Cannot create item with duplicate id Add Address https://health-staff-tracker-cnelloms.replit.app/
+Unchecked runtime.lastError: Cannot create item with duplicate id Add Payment Card https://health-staff-tracker-cnelloms.replit.app/
+Unchecked runtime.lastError: Cannot create item with duplicate id Add other item https://health-staff-tracker-cnelloms.replit.app/
+Unchecked runtime.lastError: Cannot create item with duplicate id Save all entered data https://health-staff-tracker-cnelloms.replit.app/
+Unchecked runtime.lastError: Cannot create item with duplicate id Generate Secure Password https://health-staff-tracker-cnelloms.replit.app/
