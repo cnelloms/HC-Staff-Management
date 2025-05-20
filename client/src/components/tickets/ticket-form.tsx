@@ -260,33 +260,13 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
     }
   }
 
-  // Get the current ticket type
-  const ticketType = form.watch('type');
-  
-  // Always show new staff request fields since it's the only option
-  const showNewStaffFields = true;
-
-  // When ticket type changes, handle metadata fields appropriately
+  // Initialize metadata object for new staff request form
   React.useEffect(() => {
-    // If changing to new staff request, initialize metadata object
-    if (ticketType === 'new_staff_request' && !form.getValues().metadata) {
+    // Initialize metadata object if not already set
+    if (!form.getValues().metadata) {
       form.setValue('metadata', {});
     }
-    
-    // If switching from new staff request to another type, clean up
-    if (ticketType !== 'new_staff_request' && form.getValues().metadata) {
-      // Keep other metadata for other ticket types, but remove staff-specific fields
-      const metadata = form.getValues().metadata;
-      const newMetadata = { ...metadata };
-      
-      ['firstName', 'lastName', 'position', 'reportingManagerId', 
-       'startDate', 'departmentId', 'email', 'phone'].forEach(field => {
-        delete newMetadata[field];
-      });
-      
-      form.setValue('metadata', Object.keys(newMetadata).length ? newMetadata : undefined);
-    }
-  }, [ticketType, form]);
+  }, [form]);
 
   return (
     <Card>
