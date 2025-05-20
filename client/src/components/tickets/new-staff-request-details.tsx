@@ -102,36 +102,47 @@ export function NewStaffRequestDetails({ ticketId, metadata, ticket }: NewStaffR
   
   const updateTaskMutation = useMutation({
     mutationFn: async (data: {taskIndex: number, completed: boolean}) => {
-      // Clone the metadata
-      const metadataCopy = {...metadata};
-      
-      // Update the checklist item
-      if (metadataCopy.checklist && metadataCopy.checklist[data.taskIndex]) {
-        metadataCopy.checklist[data.taskIndex].completed = data.completed;
+      try {
+        // Create a deep copy of the metadata to avoid mutation issues
+        const metadataCopy = JSON.parse(JSON.stringify(metadata));
+        
+        // Update the checklist item
+        if (metadataCopy.checklist && metadataCopy.checklist[data.taskIndex]) {
+          metadataCopy.checklist[data.taskIndex].completed = data.completed;
+        }
+        
+        // Calculate new progress
+        let completedCount = 0;
+        metadataCopy.checklist.forEach((task: any) => {
+          if (task.completed) completedCount++;
+        });
+        metadataCopy.progress = Math.round((completedCount / metadataCopy.checklist.length) * 100);
+        
+        // Update status based on progress
+        if (metadataCopy.progress === 100) {
+          metadataCopy.status = "completed";
+        } else if (metadataCopy.progress > 0) {
+          metadataCopy.status = "in_progress";
+        } else {
+          metadataCopy.status = "pending";
+        }
+        
+        // Create the update payload
+        const updatePayload = {
+          metadata: metadataCopy
+        };
+        
+        // Only update ticket status if onboarding is complete
+        if (metadataCopy.progress === 100) {
+          updatePayload.status = "closed";
+        }
+        
+        // Send the updated metadata
+        return apiRequest("PATCH", `/api/tickets/${ticketId}`, updatePayload);
+      } catch (error) {
+        console.error("Error updating task:", error);
+        throw error;
       }
-      
-      // Calculate new progress
-      let completedCount = 0;
-      metadataCopy.checklist.forEach((task: any) => {
-        if (task.completed) completedCount++;
-      });
-      metadataCopy.progress = Math.round((completedCount / metadataCopy.checklist.length) * 100);
-      
-      // Update status based on progress
-      if (metadataCopy.progress === 100) {
-        metadataCopy.status = "completed";
-      } else if (metadataCopy.progress > 0) {
-        metadataCopy.status = "in_progress";
-      } else {
-        metadataCopy.status = "pending";
-      }
-      
-      // Send the updated metadata
-      return apiRequest("PATCH", `/api/tickets/${ticketId}`, {
-        metadata: metadataCopy,
-        // Also update ticket status if onboarding is complete
-        ...(metadataCopy.progress === 100 ? { status: "closed" } : {})
-      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticketId}`] });
