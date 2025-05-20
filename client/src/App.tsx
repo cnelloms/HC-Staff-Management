@@ -101,6 +101,13 @@ function Router() {
           </ProtectedRoute>
         )}
       </Route>
+      <Route path="/user-management">
+        {() => (
+          <ProtectedRoute>
+            <UserManagementPage />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route path="/profile">
         {() => (
           <ProtectedRoute>
