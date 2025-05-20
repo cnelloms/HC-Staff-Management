@@ -795,4 +795,439 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+import { db } from "./db";
+import { eq, sql, desc, and, asc } from "drizzle-orm";
+
+export class DatabaseStorage implements IStorage {
+  // Department operations
+  async getDepartments(): Promise<Department[]> {
+    return await db.select().from(departments);
+  }
+
+  async getDepartmentById(id: number): Promise<Department | undefined> {
+    const [department] = await db.select().from(departments).where(eq(departments.id, id));
+    return department || undefined;
+  }
+
+  async createDepartment(department: InsertDepartment): Promise<Department> {
+    const [newDepartment] = await db.insert(departments).values(department).returning();
+    return newDepartment;
+  }
+
+  // Employee operations
+  async getEmployees(): Promise<Employee[]> {
+    return await db.select().from(employees);
+  }
+
+  async getEmployeeById(id: number): Promise<Employee | undefined> {
+    const [employee] = await db.select().from(employees).where(eq(employees.id, id));
+    return employee || undefined;
+  }
+
+  async createEmployee(employee: InsertEmployee): Promise<Employee> {
+    const [newEmployee] = await db.insert(employees).values(employee).returning();
+    return newEmployee;
+  }
+
+  async updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee | undefined> {
+    const [updatedEmployee] = await db
+      .update(employees)
+      .set(employee)
+      .where(eq(employees.id, id))
+      .returning();
+    return updatedEmployee || undefined;
+  }
+
+  // System operations
+  async getSystems(): Promise<System[]> {
+    return await db.select().from(systems);
+  }
+
+  async getSystemById(id: number): Promise<System | undefined> {
+    const [system] = await db.select().from(systems).where(eq(systems.id, id));
+    return system || undefined;
+  }
+
+  async createSystem(system: InsertSystem): Promise<System> {
+    const [newSystem] = await db.insert(systems).values(system).returning();
+    return newSystem;
+  }
+
+  // System Access operations
+  async getSystemAccessEntries(): Promise<SystemAccess[]> {
+    return await db.select().from(systemAccess);
+  }
+
+  async getSystemAccessById(id: number): Promise<SystemAccess | undefined> {
+    const [access] = await db.select().from(systemAccess).where(eq(systemAccess.id, id));
+    return access || undefined;
+  }
+
+  async getSystemAccessByEmployeeId(employeeId: number): Promise<SystemAccess[]> {
+    return await db.select().from(systemAccess).where(eq(systemAccess.employeeId, employeeId));
+  }
+
+  async createSystemAccess(access: InsertSystemAccess): Promise<SystemAccess> {
+    const [newAccess] = await db.insert(systemAccess).values(access).returning();
+    return newAccess;
+  }
+
+  async updateSystemAccess(id: number, access: Partial<InsertSystemAccess>): Promise<SystemAccess | undefined> {
+    const [updatedAccess] = await db
+      .update(systemAccess)
+      .set(access)
+      .where(eq(systemAccess.id, id))
+      .returning();
+    return updatedAccess || undefined;
+  }
+
+  // Ticket operations
+  async getTickets(): Promise<Ticket[]> {
+    return await db.select().from(tickets);
+  }
+
+  async getTicketById(id: number): Promise<Ticket | undefined> {
+    const [ticket] = await db.select().from(tickets).where(eq(tickets.id, id));
+    return ticket || undefined;
+  }
+
+  async getTicketsByRequestorId(requestorId: number): Promise<Ticket[]> {
+    return await db.select().from(tickets).where(eq(tickets.requestorId, requestorId));
+  }
+
+  async getTicketsByAssigneeId(assigneeId: number): Promise<Ticket[]> {
+    return await db.select().from(tickets).where(eq(tickets.assigneeId, assigneeId));
+  }
+
+  async createTicket(ticket: InsertTicket): Promise<Ticket> {
+    const [newTicket] = await db.insert(tickets).values(ticket).returning();
+    return newTicket;
+  }
+
+  async updateTicket(id: number, ticket: Partial<InsertTicket>): Promise<Ticket | undefined> {
+    const [updatedTicket] = await db
+      .update(tickets)
+      .set(ticket)
+      .where(eq(tickets.id, id))
+      .returning();
+    return updatedTicket || undefined;
+  }
+
+  // Activity operations
+  async getActivities(): Promise<Activity[]> {
+    return await db.select().from(activities);
+  }
+
+  async getRecentActivities(limit: number): Promise<Activity[]> {
+    return await db
+      .select()
+      .from(activities)
+      .orderBy(desc(activities.timestamp))
+      .limit(limit);
+  }
+
+  async getActivitiesByEmployeeId(employeeId: number): Promise<Activity[]> {
+    return await db
+      .select()
+      .from(activities)
+      .where(eq(activities.employeeId, employeeId))
+      .orderBy(desc(activities.timestamp));
+  }
+
+  async createActivity(activity: InsertActivity): Promise<Activity> {
+    const [newActivity] = await db.insert(activities).values(activity).returning();
+    return newActivity;
+  }
+
+  // Dashboard data operations
+  async getDashboardStats(): Promise<DashboardStats> {
+    // Total employees count
+    const [employeeCount] = await db
+      .select({ count: sql`count(*)` })
+      .from(employees);
+
+    // Employee growth (mock value for now)
+    const employeeGrowth = 4.3;
+
+    // Pending tickets count
+    const [pendingTicketsCount] = await db
+      .select({ count: sql`count(*)` })
+      .from(tickets)
+      .where(eq(tickets.status, "open"));
+
+    // Ticket growth (mock value for now)
+    const ticketGrowth = 2.5;
+
+    // System access rate (mock value for now)
+    const systemAccessRate = 87.5;
+
+    // System access growth (mock value for now)
+    const systemAccessGrowth = 3.2;
+
+    // Onboarding count
+    const [onboardingCount] = await db
+      .select({ count: sql`count(*)` })
+      .from(employees)
+      .where(eq(employees.status, "onboarding"));
+
+    return {
+      totalEmployees: Number(employeeCount.count),
+      employeeGrowth,
+      pendingTickets: Number(pendingTicketsCount.count),
+      ticketGrowth,
+      systemAccessRate,
+      systemAccessGrowth,
+      onboardingCount: Number(onboardingCount.count)
+    };
+  }
+
+  async getSystemAccessStats(): Promise<SystemAccessStat[]> {
+    const sysAccessStats: SystemAccessStat[] = [];
+    
+    // Get all systems
+    const allSystems = await this.getSystems();
+    
+    for (const system of allSystems) {
+      // Total users with access to this system
+      const [totalUsersResult] = await db
+        .select({ count: sql`count(*)` })
+        .from(systemAccess)
+        .where(eq(systemAccess.systemId, system.id));
+
+      // Active users with access to this system
+      const [activeUsersResult] = await db
+        .select({ count: sql`count(*)` })
+        .from(systemAccess)
+        .where(and(
+          eq(systemAccess.systemId, system.id),
+          eq(systemAccess.status, "active")
+        ));
+
+      // Pending requests for this system
+      const [pendingRequestsResult] = await db
+        .select({ count: sql`count(*)` })
+        .from(systemAccess)
+        .where(and(
+          eq(systemAccess.systemId, system.id),
+          eq(systemAccess.status, "pending")
+        ));
+
+      // Calculate access rate (active users / total users * 100)
+      const totalUsers = Number(totalUsersResult.count);
+      const accessRate = totalUsers > 0 
+        ? (Number(activeUsersResult.count) / totalUsers) * 100 
+        : 0;
+
+      sysAccessStats.push({
+        systemId: system.id,
+        systemName: system.name,
+        systemDescription: system.description || "",
+        totalUsers,
+        activeUsers: Number(activeUsersResult.count),
+        pendingRequests: Number(pendingRequestsResult.count),
+        accessRate: Math.round(accessRate * 10) / 10 // Round to 1 decimal place
+      });
+    }
+    
+    return sysAccessStats;
+  }
+
+  // Permission operations
+  async getPermissions(): Promise<Permission[]> {
+    return await db.select().from(permissions);
+  }
+
+  async getPermissionById(id: number): Promise<Permission | undefined> {
+    const [permission] = await db.select().from(permissions).where(eq(permissions.id, id));
+    return permission || undefined;
+  }
+
+  async getPermissionsByResource(resource: string): Promise<Permission[]> {
+    return await db.select().from(permissions).where(eq(permissions.resource, resource));
+  }
+
+  async createPermission(permission: InsertPermission): Promise<Permission> {
+    const [newPermission] = await db.insert(permissions).values(permission).returning();
+    return newPermission;
+  }
+
+  async updatePermission(id: number, permission: Partial<InsertPermission>): Promise<Permission | undefined> {
+    const [updatedPermission] = await db
+      .update(permissions)
+      .set(permission)
+      .where(eq(permissions.id, id))
+      .returning();
+    return updatedPermission || undefined;
+  }
+
+  async deletePermission(id: number): Promise<boolean> {
+    await db.delete(permissions).where(eq(permissions.id, id));
+    return true;
+  }
+
+  // Role operations
+  async getRoles(): Promise<Role[]> {
+    return await db.select().from(roles);
+  }
+
+  async getRoleById(id: number): Promise<Role | undefined> {
+    const [role] = await db.select().from(roles).where(eq(roles.id, id));
+    return role || undefined;
+  }
+
+  async createRole(role: InsertRole): Promise<Role> {
+    const [newRole] = await db.insert(roles).values(role).returning();
+    return newRole;
+  }
+
+  async updateRole(id: number, role: Partial<InsertRole>): Promise<Role | undefined> {
+    const [updatedRole] = await db
+      .update(roles)
+      .set(role)
+      .where(eq(roles.id, id))
+      .returning();
+    return updatedRole || undefined;
+  }
+
+  async deleteRole(id: number): Promise<boolean> {
+    await db.delete(roles).where(eq(roles.id, id));
+    return true;
+  }
+
+  // Role Permission operations
+  async getRolePermissions(roleId: number): Promise<Permission[]> {
+    const rolePermissionJoins = await db
+      .select()
+      .from(rolePermissions)
+      .where(eq(rolePermissions.roleId, roleId));
+
+    if (rolePermissionJoins.length === 0) {
+      return [];
+    }
+
+    const permissionIds = rolePermissionJoins.map(rp => rp.permissionId);
+    
+    // Using in operator with array would be better, but for simplicity:
+    const result: Permission[] = [];
+    for (const id of permissionIds) {
+      const perm = await this.getPermissionById(id);
+      if (perm) {
+        result.push(perm);
+      }
+    }
+    
+    return result;
+  }
+
+  async addPermissionToRole(rolePermission: InsertRolePermission): Promise<RolePermission> {
+    const [newRolePermission] = await db.insert(rolePermissions).values(rolePermission).returning();
+    return newRolePermission;
+  }
+
+  async removePermissionFromRole(roleId: number, permissionId: number): Promise<boolean> {
+    await db
+      .delete(rolePermissions)
+      .where(
+        and(
+          eq(rolePermissions.roleId, roleId),
+          eq(rolePermissions.permissionId, permissionId)
+        )
+      );
+    return true;
+  }
+
+  // Employee Role operations
+  async getEmployeeRoles(employeeId: number): Promise<Role[]> {
+    const employeeRoleJoins = await db
+      .select()
+      .from(employeeRoles)
+      .where(eq(employeeRoles.employeeId, employeeId));
+
+    if (employeeRoleJoins.length === 0) {
+      return [];
+    }
+
+    const roleIds = employeeRoleJoins.map(er => er.roleId);
+    
+    // Using in operator with array would be better, but for simplicity:
+    const result: Role[] = [];
+    for (const id of roleIds) {
+      const role = await this.getRoleById(id);
+      if (role) {
+        result.push(role);
+      }
+    }
+    
+    return result;
+  }
+
+  async addRoleToEmployee(employeeRole: InsertEmployeeRole): Promise<EmployeeRole> {
+    const [newEmployeeRole] = await db.insert(employeeRoles).values(employeeRole).returning();
+    return newEmployeeRole;
+  }
+
+  async removeRoleFromEmployee(employeeId: number, roleId: number): Promise<boolean> {
+    await db
+      .delete(employeeRoles)
+      .where(
+        and(
+          eq(employeeRoles.employeeId, employeeId),
+          eq(employeeRoles.roleId, roleId)
+        )
+      );
+    return true;
+  }
+
+  // Permission check operations
+  async hasPermission(employeeId: number, resource: string, action: string): Promise<boolean> {
+    // Get the employee's roles
+    const roles = await this.getEmployeeRoles(employeeId);
+    
+    if (roles.length === 0) {
+      return false;
+    }
+    
+    // For each role, check if they have the permission
+    for (const role of roles) {
+      const permissions = await this.getRolePermissions(role.id);
+      
+      // Check if any of the permissions match the requested resource and action
+      for (const permission of permissions) {
+        if (permission.resource === resource && permission.action === action) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  }
+
+  async getFieldLevelPermissions(employeeId: number, resource: string): Promise<Record<string, boolean>> {
+    // Get the employee's roles
+    const roles = await this.getEmployeeRoles(employeeId);
+    
+    if (roles.length === 0) {
+      return {};
+    }
+    
+    // Combine field level permissions from all roles
+    const result: Record<string, boolean> = {};
+    
+    for (const role of roles) {
+      const permissions = await this.getRolePermissions(role.id);
+      
+      // Check permissions for the requested resource
+      for (const permission of permissions) {
+        if (permission.resource === resource && permission.fieldLevel) {
+          // Merge field level permissions
+          Object.assign(result, permission.fieldLevel);
+        }
+      }
+    }
+    
+    return result;
+  }
+}
+
+// Replace MemStorage with DatabaseStorage
+export const storage = new DatabaseStorage();
