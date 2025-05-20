@@ -9,10 +9,14 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
+import { setupMicrosoftAuth } from "./microsoftAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
   await setupAuth(app);
+  
+  // Set up Microsoft authentication if enabled
+  setupMicrosoftAuth(app);
   
   // Authentication status route
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
