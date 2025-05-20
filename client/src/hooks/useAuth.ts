@@ -28,10 +28,18 @@ export function useAuth() {
   const user = serverUser || localUser;
   const isLoading = isServerLoading && !localUser;
   
+  // For debugging purposes, log the user details
+  console.log('Auth state:', { 
+    user, 
+    isAuthenticated: !!user,
+    isAdmin: user?.isAdmin === true,
+    rawIsAdmin: user?.isAdmin
+  });
+  
   return {
     user,
     isLoading,
     isAuthenticated: !!user,
-    isAdmin: user?.isAdmin === true
+    isAdmin: user?.isAdmin === true || false // Ensure it's always a boolean
   };
 }

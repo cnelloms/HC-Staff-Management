@@ -100,11 +100,11 @@ export function setupDirectAuth(app: Express) {
         })
         .where(eq(credentials.id, userCredentials.id));
       
-      // Store user in session
+      // Store user in session with explicit boolean conversion for isAdmin
       req.session.directUser = {
         id: user.id,
         username: userCredentials.username,
-        isAdmin: user.isAdmin,
+        isAdmin: user.isAdmin === true,
       };
       
       // Save session and return success

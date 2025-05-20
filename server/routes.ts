@@ -16,7 +16,6 @@ import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  try {
   // Set up authentication
   await setupAuth(app);
   
@@ -1492,8 +1491,4 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
   return httpServer;
-  } catch (error) {
-    console.error("Error in registerRoutes:", error);
-    throw error;
-  }
 }
