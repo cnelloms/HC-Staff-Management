@@ -99,6 +99,11 @@ function UserManagement() {
   const { data: users = [], isLoading, error } = useQuery({
     queryKey: ['/api/users'],
     staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: false,
+    // Add better error handling for debugging
+    onError: (error: any) => {
+      console.error("Error fetching users:", error);
+    }
   });
   
   // Show error toast if fetching users fails

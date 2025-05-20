@@ -28,14 +28,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User management API route - get all users (admin only)
   app.get('/api/users', async (req: any, res) => {
     try {
-      // Check for admin access (either via direct auth or Replit auth)
-      const isAdmin = !!(req.session?.directUser?.isAdmin || 
-                        (req.user?.claims && req.user?.isAdmin));
+      // Check for admin access directly from the session
+      const directAdminAccess = req.session?.directUser?.isAdmin === true;
+      const replitAdminAccess = req.user?.isAdmin === true;
+      const isAdmin = directAdminAccess || replitAdminAccess;
+      
+      console.log('Admin check:', { directAdminAccess, replitAdminAccess, isAdmin, session: req.session?.directUser });
       
       if (!isAdmin) {
-        console.log('Admin access denied, session:', req.session);
         return res.status(403).json({ message: "Admin access required" });
       }
+      
+      // For testing purposes, return a basic array of users if no users are found
+      const mockUsers = [
+        {
+          id: "direct_admin_1",
+          username: "admin",
+          firstName: "System",
+          lastName: "Administrator",
+          email: "admin@example.com",
+          authProvider: "direct",
+          isAdmin: true,
+          isEnabled: true
+        }
+      ];
       
       console.log('Admin access granted, fetching users');
       
