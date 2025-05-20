@@ -40,7 +40,7 @@ export function TicketTable() {
       const matchesSearch = searchTerm === '' || 
         ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ticket.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (ticket.requestor?.name && ticket.requestor.name.toLowerCase().includes(searchTerm.toLowerCase()));
+        (ticket.requestor && `${ticket.requestor.firstName} ${ticket.requestor.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()));
         
       const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
       const matchesType = typeFilter === 'all' || ticket.type === typeFilter;
@@ -90,10 +90,8 @@ export function TicketTable() {
         </div>
         <Button asChild>
           <Link href="/tickets/new">
-            <a>
               <PlusIcon className="mr-2 h-4 w-4" />
               New Ticket
-            </a>
           </Link>
         </Button>
       </div>
@@ -161,12 +159,12 @@ export function TicketTable() {
                     {ticket.requestor ? (
                       <div className="flex items-center space-x-2">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={ticket.requestor.avatar} alt={ticket.requestor.name} />
+                          <AvatarImage src={ticket.requestor.avatar} alt={`${ticket.requestor.firstName} ${ticket.requestor.lastName}`} />
                           <AvatarFallback>
-                            {ticket.requestor.name.split(' ').map(n => n[0]).join('')}
+                            {ticket.requestor.firstName?.[0]}{ticket.requestor.lastName?.[0]}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm">{ticket.requestor.name}</span>
+                        <span className="text-sm">{ticket.requestor.firstName} {ticket.requestor.lastName}</span>
                       </div>
                     ) : (
                       <span className="text-muted-foreground">-</span>
@@ -176,12 +174,12 @@ export function TicketTable() {
                     {ticket.assignee ? (
                       <div className="flex items-center space-x-2">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={ticket.assignee.avatar} alt={ticket.assignee.name} />
+                          <AvatarImage src={ticket.assignee.avatar} alt={`${ticket.assignee.firstName} ${ticket.assignee.lastName}`} />
                           <AvatarFallback>
-                            {ticket.assignee.name.split(' ').map(n => n[0]).join('')}
+                            {ticket.assignee.firstName?.[0]}{ticket.assignee.lastName?.[0]}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm">{ticket.assignee.name}</span>
+                        <span className="text-sm">{ticket.assignee.firstName} {ticket.assignee.lastName}</span>
                       </div>
                     ) : (
                       <span className="text-muted-foreground">Unassigned</span>
