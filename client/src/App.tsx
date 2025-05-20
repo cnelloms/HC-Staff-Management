@@ -8,6 +8,8 @@ import { UserProvider } from "@/context/user-context";
 import NotFound from "@/pages/not-found";
 import { ProtectedRoute } from "./components/auth/protected-route";
 import { AdminRoute } from "./components/auth/admin-route";
+import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 // Pages
 import Dashboard from "@/pages/dashboard";
@@ -24,128 +26,123 @@ import NewEmployee from "@/pages/new-employee";
 import NewTicket from "@/pages/new-ticket";
 import Permissions from "@/pages/permissions";
 import StaffImportPage from "@/pages/staff-import";
-import LoginPage from "@/pages/login";
+import SimpleLoginPage from "@/pages/simple-login";
 import UserManagementPage from "@/pages/user-management";
 
 function Router() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  useEffect(() => {
+    // Check if user is authenticated
+    async function checkAuth() {
+      try {
+        const response = await fetch('/api/auth/user', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          if (userData) {
+            setIsAuthenticated(true);
+            localStorage.setItem('auth_user', JSON.stringify(userData));
+          }
+        }
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    checkAuth();
+  }, []);
+  
+  // Show loading screen while checking authentication
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <h2 className="text-xl font-medium">Loading application...</h2>
+        </div>
+      </div>
+    );
+  }
+  
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return <SimpleLoginPage />;
+  }
+
   return (
     <Switch>
-      <Route path="/login" component={LoginPage} />
+      <Route path="/login" component={SimpleLoginPage} />
       
       {/* Protected Routes - require authentication */}
       <Route path="/">
-        {() => (
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        )}
+        {() => <Dashboard />}
       </Route>
+      
       <Route path="/directory">
-        {() => (
-          <ProtectedRoute>
-            <Directory />
-          </ProtectedRoute>
-        )}
+        {() => <Directory />}
       </Route>
+      
       <Route path="/staff-import">
-        {() => (
-          <ProtectedRoute>
-            <StaffImportPage />
-          </ProtectedRoute>
-        )}
+        {() => <StaffImportPage />}
       </Route>
+      
       <Route path="/tickets">
-        {() => (
-          <ProtectedRoute>
-            <Tickets />
-          </ProtectedRoute>
-        )}
+        {() => <Tickets />}
       </Route>
+      
       <Route path="/my-tickets">
-        {() => (
-          <ProtectedRoute>
-            <MyTickets />
-          </ProtectedRoute>
-        )}
+        {() => <MyTickets />}
       </Route>
+      
       <Route path="/tickets/new">
-        {() => (
-          <ProtectedRoute>
-            <NewTicket />
-          </ProtectedRoute>
-        )}
+        {() => <NewTicket />}
       </Route>
+      
       <Route path="/tickets/:id/edit">
-        {(params) => (
-          <ProtectedRoute>
-            <EditTicket />
-          </ProtectedRoute>
-        )}
+        {() => <EditTicket />}
       </Route>
+      
       <Route path="/tickets/:id">
-        {(params) => (
-          <ProtectedRoute>
-            <TicketDetail />
-          </ProtectedRoute>
-        )}
+        {() => <TicketDetail />}
       </Route>
+      
       <Route path="/permissions">
-        {() => (
-          <ProtectedRoute>
-            <Permissions />
-          </ProtectedRoute>
-        )}
+        {() => <Permissions />}
       </Route>
+      
       <Route path="/reports">
-        {() => (
-          <ProtectedRoute>
-            <Reports />
-          </ProtectedRoute>
-        )}
+        {() => <Reports />}
       </Route>
+      
       <Route path="/settings">
-        {() => (
-          <ProtectedRoute>
-            <Settings />
-          </ProtectedRoute>
-        )}
+        {() => <Settings />}
       </Route>
+      
       <Route path="/user-management">
-        {() => (
-          <AdminRoute>
-            <UserManagementPage />
-          </AdminRoute>
-        )}
+        {() => <UserManagementPage />}
       </Route>
+      
       <Route path="/profile">
-        {() => (
-          <ProtectedRoute>
-            <UserProfile />
-          </ProtectedRoute>
-        )}
+        {() => <UserProfile />}
       </Route>
+      
       <Route path="/employee/new">
-        {() => (
-          <ProtectedRoute>
-            <NewEmployee />
-          </ProtectedRoute>
-        )}
+        {() => <NewEmployee />}
       </Route>
+      
       <Route path="/employee/:id">
-        {(params) => (
-          <ProtectedRoute>
-            <EmployeeProfile />
-          </ProtectedRoute>
-        )}
+        {() => <EmployeeProfile />}
       </Route>
       
       {/* Fallback to 404 */}
       <Route>
-        {() => (
-          <ProtectedRoute>
-            <NotFound />
-          </ProtectedRoute>
-        )}
+        {() => <NotFound />}
       </Route>
     </Switch>
   );
