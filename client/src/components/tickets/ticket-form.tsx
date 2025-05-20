@@ -94,6 +94,10 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
   const { data: systems } = useQuery({
     queryKey: ['/api/systems'],
   });
+  
+  const { data: departments } = useQuery({
+    queryKey: ['/api/departments'],
+  });
 
   // If employeeId is provided (creating from employee profile), set as requestor
   const initialFormValues = employeeId 
@@ -159,10 +163,49 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
   });
 
   function onSubmit(values: z.infer<typeof ticketFormSchema>) {
+    // Prepare form values for submission
+    const formData = { ...values };
+    
+    // For new staff request tickets, validate the required metadata fields
+    if (values.type === 'new_staff_request') {
+      // Validate required fields for new staff request
+      const requiredFields = ['firstName', 'lastName', 'position', 'reportingManagerId', 'departmentId', 'startDate'];
+      const missingFields = requiredFields.filter(field => !values.metadata?.[field]);
+      
+      if (missingFields.length > 0) {
+        toast({
+          title: "Validation Error",
+          description: `Please fill in all required staff information fields: ${missingFields.join(', ')}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Create a default title if not provided or generic
+      if (!values.title || values.title === 'New Staff Request') {
+        const firstName = values.metadata.firstName;
+        const lastName = values.metadata.lastName;
+        formData.title = `New Staff Request: ${firstName} ${lastName}`;
+      }
+      
+      // Add checklist items to metadata
+      formData.metadata = {
+        ...values.metadata,
+        checklist: [
+          { task: "Create user account", completed: false },
+          { task: "Set up email address", completed: false },
+          { task: "Assign required system access", completed: false },
+          { task: "Prepare workstation", completed: false },
+          { task: "Schedule orientation", completed: false },
+          { task: "Notify reporting manager", completed: false }
+        ]
+      };
+    }
+    
     if (isEditing) {
-      updateMutation.mutate(values);
+      updateMutation.mutate(formData);
     } else {
-      createMutation.mutate(values);
+      createMutation.mutate(formData);
     }
   }
 
@@ -434,6 +477,205 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                   </FormItem>
                 )}
               />
+            )}
+
+            {showNewStaffFields && (
+              <div className="space-y-6 border border-border rounded-md p-4 mt-4">
+                <h3 className="font-medium text-lg">New Staff Details</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Please provide the details for the new staff member.
+                </p>
+
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="metadata.firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter first name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="metadata.lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter last name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="metadata.email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="email" 
+                            placeholder="Enter email address (if known)" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Optional if not yet known
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="metadata.phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Enter phone number (if known)" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Optional if not yet known
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="metadata.position"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Job Title/Position*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter job title or position" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="metadata.departmentId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Department*</FormLabel>
+                        <Select
+                          onValueChange={(value) => field.onChange(parseInt(value))}
+                          defaultValue={field.value?.toString()}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select department" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {departments?.map((department) => (
+                              <SelectItem 
+                                key={department.id} 
+                                value={department.id.toString()}
+                              >
+                                {department.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="metadata.reportingManagerId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Reporting Manager*</FormLabel>
+                        <Select
+                          onValueChange={(value) => field.onChange(parseInt(value))}
+                          defaultValue={field.value?.toString()}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select reporting manager" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {employees?.map((employee) => (
+                              <SelectItem 
+                                key={employee.id} 
+                                value={employee.id.toString()}
+                              >
+                                {employee.firstName} {employee.lastName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="metadata.startDate"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Start Date*</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={`pl-3 text-left font-normal ${!field.value ? "text-muted-foreground" : ""}`}
+                              >
+                                {field.value ? (
+                                  format(new Date(field.value), "PPP")
+                                ) : (
+                                  <span>Select start date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value ? new Date(field.value) : undefined}
+                              onSelect={(date) => field.onChange(date ? date.toISOString() : "")}
+                              disabled={(date) => date < new Date()}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
             )}
           </form>
         </Form>
