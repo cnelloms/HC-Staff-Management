@@ -755,6 +755,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.delete('/api/tickets/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid ticket ID' });
+      }
+      
+      const success = await storage.deleteTicket(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: 'Ticket not found or could not be deleted' });
+      }
+      
+      return res.status(200).json({ message: 'Ticket deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting ticket:', error);
+      return res.status(500).json({ message: 'Failed to delete ticket' });
+    }
+  });
+  
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -317,12 +317,31 @@ export class DatabaseStorage implements IStorage {
       updatedAt: new Date()
     };
     
+    // If status is being changed to closed, set closedAt
+    if (ticket.status === 'closed') {
+      updateData.closedAt = new Date();
+    }
+    
     const [updatedTicket] = await db
       .update(tickets)
       .set(updateData)
       .where(eq(tickets.id, id))
       .returning();
     return updatedTicket || undefined;
+  }
+  
+  async deleteTicket(id: number): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(tickets)
+        .where(eq(tickets.id, id))
+        .returning({ id: tickets.id });
+      
+      return result.length > 0;
+    } catch (error) {
+      console.error('Error deleting ticket:', error);
+      return false;
+    }
   }
 
   // Activity operations
