@@ -100,7 +100,7 @@ export default function EmployeeProfile() {
     <Layout title={`${employee.firstName} ${employee.lastName}`}>
       <div className="space-y-6">
         {/* Profile Header */}
-        <div className="bg-white rounded-lg border shadow-sm p-6">
+        <div className="bg-card rounded-lg border shadow-sm p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Profile Info */}
             <div className="md:col-span-2">

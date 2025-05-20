@@ -52,7 +52,7 @@ const OrgNode: React.FC<OrgNodeProps> = ({
   return (
     <div className="mb-6">
       <div 
-        className="border rounded-md p-4 bg-background hover:bg-muted/50 transition-colors"
+        className="border rounded-md p-4 bg-card hover:bg-muted/50 transition-colors"
         style={{ marginLeft: `${marginLeft}px` }}
       >
         <div className="flex items-start justify-between">
