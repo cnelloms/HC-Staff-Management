@@ -13,6 +13,7 @@ declare module 'express-session' {
       id: string;
       username: string;
       isAdmin: boolean;
+      impersonatingId?: number;
     };
   }
 }
@@ -336,6 +337,77 @@ export function setupDirectAuth(app: Express) {
     } catch (error) {
       console.error('Error updating auth settings:', error);
       return res.status(500).json({ message: 'An error occurred while updating auth settings' });
+    }
+  });
+  
+  // Impersonation routes for admin users
+  
+  // Start impersonating an employee
+  app.post('/api/impersonate/:employeeId', isAdmin, async (req, res) => {
+    try {
+      const employeeId = parseInt(req.params.employeeId);
+      const referer = req.headers.referer || '';
+      
+      // Check if the request is coming from the User Management page
+      if (!referer.includes('/user-management')) {
+        return res.status(403).json({ 
+          message: 'Impersonation can only be initiated from the User Management page' 
+        });
+      }
+      
+      if (isNaN(employeeId)) {
+        return res.status(400).json({ message: 'Invalid employee ID' });
+      }
+      
+      const employee = await storage.getEmployeeById(employeeId);
+      if (!employee) {
+        return res.status(404).json({ message: 'Employee not found' });
+      }
+      
+      // Set impersonation state for the direct user
+      const userId = req.session.directUser?.id;
+      if (userId) {
+        await storage.setUserImpersonation(userId, employeeId);
+        
+        // Update session with impersonation info
+        req.session.directUser = {
+          ...req.session.directUser!,
+          impersonatingId: employeeId
+        };
+        
+        return res.status(200).json({ 
+          message: `Now impersonating ${employee.firstName} ${employee.lastName}`,
+          employee
+        });
+      } else {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+    } catch (error) {
+      console.error('Impersonation error:', error);
+      return res.status(500).json({ message: 'Failed to impersonate user' });
+    }
+  });
+  
+  // Stop impersonating
+  app.post('/api/stop-impersonating', isAuthenticatedWithDirect, async (req, res) => {
+    try {
+      const userId = req.session.directUser?.id;
+      if (userId) {
+        await storage.clearUserImpersonation(userId);
+        
+        // Update session
+        req.session.directUser = {
+          ...req.session.directUser!,
+          impersonatingId: undefined
+        };
+        
+        return res.status(200).json({ message: 'Impersonation stopped' });
+      } else {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+    } catch (error) {
+      console.error('Error stopping impersonation:', error);
+      return res.status(500).json({ message: 'Failed to stop impersonation' });
     }
   });
 }

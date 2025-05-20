@@ -6,9 +6,21 @@ export function useAuth() {
   const [localUser, setLocalUser] = useState<any>(null);
   
   // Try to get user from server first
-  const { data: serverUser, isLoading: isServerLoading } = useQuery({
+  const { data: userData, isLoading: isServerLoading } = useQuery({
     queryKey: ["/api/auth/user"],
     retry: false,
+  });
+  
+  // Get the employee details if we have a user
+  const { data: employeeData } = useQuery({
+    queryKey: ["/api/employees", userData?.employeeId],
+    enabled: !!userData?.employeeId,
+  });
+  
+  // Get impersonated employee details if the user is impersonating
+  const { data: impersonatedEmployee } = useQuery({
+    queryKey: ["/api/employees", userData?.impersonatingId],
+    enabled: !!userData?.impersonatingId,
   });
   
   // On mount, check localStorage for saved user data
@@ -25,8 +37,9 @@ export function useAuth() {
   }, []);
   
   // Use server user if available, fall back to localStorage user
-  const user = serverUser || localUser;
+  const user = userData || localUser;
   const isLoading = isServerLoading && !localUser;
+  const isImpersonating = !!user?.impersonatingId;
   
   // For debugging purposes, log the user details
   console.log('Auth state:', { 
@@ -40,6 +53,9 @@ export function useAuth() {
     user,
     isLoading,
     isAuthenticated: !!user,
-    isAdmin: user?.isAdmin === true || false // Ensure it's always a boolean
+    isAdmin: user?.isAdmin === true || false, // Ensure it's always a boolean
+    employee: employeeData || null,
+    isImpersonating,
+    impersonatingEmployee: impersonatedEmployee || null
   };
 }

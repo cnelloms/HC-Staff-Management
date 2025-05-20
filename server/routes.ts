@@ -33,17 +33,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('User authenticated with direct login:', req.session.directUser);
         const userId = req.session.directUser.id;
         
-        // Return basic user info with admin status
+        // Get the user record from the database to include any additional info
+        const user = await storage.getUser(userId);
+        
+        // Include impersonation data
+        const impersonatingId = req.session.directUser.impersonatingId || 
+                               (user?.impersonatingId as number | undefined);
+        
+        // Return user info including impersonation status
         return res.json({
           id: userId,
+          firstName: user?.firstName || 'User', 
+          lastName: user?.lastName || '',
+          email: user?.email,
           username: req.session.directUser.username,
           isAdmin: req.session.directUser.isAdmin === true,
-          authProvider: 'direct'
+          authProvider: 'direct',
+          employeeId: user?.employeeId,
+          impersonatingId: impersonatingId
         });
       } 
       // Check if user is authenticated through Replit Auth
-      else if (req.isAuthenticated && req.isAuthenticated() && req.user && req.user.claims) {
-        const userId = req.user.claims.sub;
+      else if (req.isAuthenticated && req.isAuthenticated() && req.user && (req.user as any).claims) {
+        const userId = (req.user as any).claims.sub;
         const user = await storage.getUser(userId);
         if (user) {
           return res.json(user);
