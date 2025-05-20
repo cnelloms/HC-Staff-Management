@@ -118,7 +118,13 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
   
   const initialFormValues = {
     ...defaultValues,
-    requestorId: initialRequestorId
+    requestorId: defaultValues?.requestorId || initialRequestorId || undefined,
+    title: defaultValues?.title || "",
+    description: defaultValues?.description || "",
+    status: defaultValues?.status || "open",
+    priority: defaultValues?.priority || "low",
+    type: "new_staff_request",
+    metadata: defaultValues?.metadata || {}
   };
 
   const form = useForm<z.infer<typeof ticketFormSchema>>({
