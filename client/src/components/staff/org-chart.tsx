@@ -219,8 +219,9 @@ export function OrgChart() {
 
   if (isLoadingEmployees || isLoadingTickets) {
     return (
-      <div className="flex justify-center items-center h-40">
+      <div className="flex flex-col items-center justify-center gap-4 h-60">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-muted-foreground">Loading organization chart...</p>
       </div>
     );
   }
