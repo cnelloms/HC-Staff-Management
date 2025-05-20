@@ -710,7 +710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add closedAt timestamp if status is being set to closed for the first time
       let updateData = {...validationResult.data};
       if (updateData.status === 'closed' && existingTicket.status !== 'closed') {
-        updateData.closedAt = new Date().toISOString();
+        updateData.closedAt = new Date();
       }
       
       const updatedTicket = await storage.updateTicket(id, updateData);
