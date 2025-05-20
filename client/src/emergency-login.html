@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Staff Management System - Emergency Login</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+    }
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 20px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .card-header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #1f2937;
+    }
+    .card-header p {
+      margin: 5px 0 0;
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+    .card-body {
+      padding: 20px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #374151;
+    }
+    input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+    button:disabled {
+      background-color: #93c5fd;
+      cursor: not-allowed;
+    }
+    .error {
+      background-color: #fee2e2;
+      border: 1px solid #fca5a5;
+      border-radius: 4px;
+      padding: 12px;
+      margin-bottom: 16px;
+      color: #b91c1c;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+    }
+    .error svg {
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 8px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .title {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .title h1 {
+      margin: 0;
+      font-size: 1.875rem;
+      font-weight: bold;
+      color: #2563eb;
+    }
+    .title p {
+      margin: 5px 0 0;
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="title">
+      <h1>HC Staff</h1>
+      <p>Management System</p>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <h1>Sign in</h1>
+        <p>Enter your username and password to access the system</p>
+      </div>
+      <div class="card-body">
+        <div id="error-message" class="error" style="display: none;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span id="error-text"></span>
+        </div>
+        
+        <form id="login-form">
+          <div class="form-group">
+            <label for="username">Username</label>
+            <input 
+              id="username" 
+              type="text" 
+              placeholder="Enter your username"
+              required
+            />
+          </div>
+          
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input 
+              id="password" 
+              type="password" 
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+          
+          <button type="submit" id="submit-button">
+            Sign in
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('login-form');
+      const submitButton = document.getElementById('submit-button');
+      const errorMessage = document.getElementById('error-message');
+      const errorText = document.getElementById('error-text');
+      
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        
+        if (!username || !password) {
+          showError('Username and password are required');
+          return;
+        }
+        
+        // Show loading state
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="loading"></span> Signing in...';
+        errorMessage.style.display = 'none';
+        
+        try {
+          const response = await fetch('/api/login/direct', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+            credentials: 'include'
+          });
+          
+          const data = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(data.message || 'Invalid username or password');
+          }
+          
+          // Successful login - redirect to dashboard
+          window.location.href = '/';
+          
+        } catch (err) {
+          showError(err.message || 'Login failed');
+          
+          // Reset button state
+          submitButton.disabled = false;
+          submitButton.textContent = 'Sign in';
+        }
+      });
+      
+      function showError(message) {
+        errorText.textContent = message;
+        errorMessage.style.display = 'flex';
+      }
+    });
+  </script>
+</body>
+</html>
