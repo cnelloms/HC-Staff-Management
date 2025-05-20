@@ -93,31 +93,31 @@ export function Sidebar({ user: defaultUser }: SidebarProps) {
                   src={isImpersonating && impersonatingEmployee 
                     ? impersonatingEmployee.avatar 
                     : employee?.avatar || user?.profileImageUrl} 
-                  alt={isImpersonating && impersonatingEmployee 
-                    ? `${impersonatingEmployee.firstName} ${impersonatingEmployee.lastName}`
-                    : employee 
-                      ? `${employee.firstName} ${employee.lastName}`
+                  alt={isImpersonating && impersonatingEmployee && impersonatingEmployee.firstName
+                    ? `${impersonatingEmployee.firstName} ${impersonatingEmployee.lastName || ''}`
+                    : employee && employee.firstName
+                      ? `${employee.firstName} ${employee.lastName || ''}`
                       : user?.firstName || "User"} 
                 />
                 <AvatarFallback>
-                  {isImpersonating && impersonatingEmployee 
-                    ? `${impersonatingEmployee.firstName[0]}${impersonatingEmployee.lastName[0]}`
-                    : employee 
-                      ? `${employee.firstName[0]}${employee.lastName[0]}`
+                  {isImpersonating && impersonatingEmployee && impersonatingEmployee.firstName
+                    ? `${impersonatingEmployee.firstName[0]}${impersonatingEmployee.lastName ? impersonatingEmployee.lastName[0] : ''}`
+                    : employee && employee.firstName
+                      ? `${employee.firstName[0]}${employee.lastName ? employee.lastName[0] : ''}`
                       : user?.firstName?.[0] || "U"}
                 </AvatarFallback>
               </Avatar>
               <div className="ml-3">
                 <p className="text-sm font-medium">
-                  {isImpersonating && impersonatingEmployee 
-                    ? `${impersonatingEmployee.firstName} ${impersonatingEmployee.lastName}`
-                    : employee 
-                      ? `${employee.firstName} ${employee.lastName}`
+                  {isImpersonating && impersonatingEmployee && impersonatingEmployee.firstName
+                    ? `${impersonatingEmployee.firstName} ${impersonatingEmployee.lastName || ''}`
+                    : employee && employee.firstName
+                      ? `${employee.firstName} ${employee.lastName || ''}`
                       : user?.firstName || "User"}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {isImpersonating && impersonatingEmployee 
-                    ? impersonatingEmployee.position
+                    ? (impersonatingEmployee.position || "Staff")
                     : employee?.position || "User"}
                   {isAdmin && <span className="ml-1 text-primary">(Admin)</span>}
                 </p>
