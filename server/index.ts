@@ -26,13 +26,15 @@ const sessionStore = new pgStore({
 app.use(session({
   store: sessionStore,
   secret: process.env.SESSION_SECRET || 'your-secret-key',
-  resave: false,
-  saveUninitialized: false,
+  resave: true, // Changed to true to ensure session is saved on each request
+  saveUninitialized: true, // Changed to true to create session for all requests
+  name: 'staff_mgmt_sid', // Explicit name for the session cookie
   cookie: {
-    secure: true, // Set to true since we're behind HTTPS proxy
+    secure: 'auto', // Only use secure cookies in production
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
-    sameSite: 'lax'
+    sameSite: 'lax',
+    path: '/'
   }
 }));
 
