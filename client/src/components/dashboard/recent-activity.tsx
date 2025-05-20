@@ -7,9 +7,12 @@ import { Activity } from "@/types";
 import { format, formatDistanceToNow } from "date-fns";
 
 export function RecentActivity() {
-  const { data: activities, isLoading } = useQuery<Activity[]>({
+  const { data: activities = [], isLoading, error } = useQuery<Activity[]>({
     queryKey: ['/api/dashboard/recent-activities'],
   });
+  
+  // Safely handle activities data
+  const safeActivities = Array.isArray(activities) ? activities : [];
 
   const getActivityBadgeType = (type: Activity['activityType']) => {
     switch (type) {
@@ -77,22 +80,24 @@ export function RecentActivity() {
               </div>
             ))
           ) : (
-            activities && activities.length > 0 ? activities.map((activity) => (
+            safeActivities.length > 0 ? safeActivities.map((activity) => (
               <div key={activity.id || Math.random()} className="flex items-start space-x-4">
                 <Avatar className="h-10 w-10">
                   <AvatarImage 
                     src={activity.employee?.avatar || ""} 
-                    alt={activity.employee ? `${activity.employee.firstName} ${activity.employee.lastName}` : "Employee"} 
+                    alt={activity.employee && activity.employee.firstName ? `${activity.employee.firstName} ${activity.employee.lastName || ''}` : "Employee"} 
                   />
                   <AvatarFallback>
-                    {activity.employee?.firstName ? `${activity.employee.firstName[0]}${activity.employee.lastName ? activity.employee.lastName[0] : ''}` : "E"}
+                    {activity.employee && typeof activity.employee === 'object' && activity.employee.firstName 
+                      ? `${activity.employee.firstName[0]}${activity.employee.lastName ? activity.employee.lastName[0] : ''}` 
+                      : "E"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">
                     <a href={`/employee/${activity.employeeId || 0}`} className="hover:underline">
-                      {activity.employee ? 
-                        `${activity.employee.firstName} ${activity.employee.lastName}` : 
+                      {activity.employee && activity.employee.firstName ? 
+                        `${activity.employee.firstName} ${activity.employee.lastName || ''}` : 
                         "Employee"}
                     </a>{' '}
                     {activity.description || "performed an action"}
