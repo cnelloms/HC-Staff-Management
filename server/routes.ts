@@ -652,6 +652,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'Failed to fetch feature flags' });
     }
   });
+
+  // Ticket routes
+  app.get('/api/tickets', async (req: Request, res: Response) => {
+    try {
+      const tickets = await storage.getTickets();
+      return res.json(tickets);
+    } catch (error) {
+      console.error('Error fetching tickets:', error);
+      return res.status(500).json({ message: 'Failed to fetch tickets' });
+    }
+  });
+
+  app.get('/api/tickets/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid ticket ID' });
+      }
+      
+      const ticket = await storage.getTicketById(id);
+      if (!ticket) {
+        return res.status(404).json({ message: 'Ticket not found' });
+      }
+      
+      return res.json(ticket);
+    } catch (error) {
+      console.error('Error fetching ticket:', error);
+      return res.status(500).json({ message: 'Failed to fetch ticket' });
+    }
+  });
+
+  app.post('/api/tickets', async (req: Request, res: Response) => {
+    try {
+      const ticketData = req.body;
+      const newTicket = await storage.createTicket(ticketData);
+      return res.json(newTicket);
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      return res.status(500).json({ message: 'Failed to create ticket' });
+    }
+  });
+
+  app.patch('/api/tickets/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid ticket ID' });
+      }
+      
+      const ticketData = req.body;
+      const updatedTicket = await storage.updateTicket(id, ticketData);
+      
+      if (!updatedTicket) {
+        return res.status(404).json({ message: 'Ticket not found' });
+      }
+      
+      return res.json(updatedTicket);
+    } catch (error) {
+      console.error('Error updating ticket:', error);
+      return res.status(500).json({ message: 'Failed to update ticket' });
+    }
+  });
   
   const httpServer = createServer(app);
   return httpServer;
