@@ -633,10 +633,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid ticket data', errors: validationResult.error.errors });
       }
       
-      // Add closedAt timestamp if status is being set to closed
-      let updateData = validationResult.data;
-      if (updateData.status === 'closed') {
-        updateData = { ...updateData, closedAt: new Date() };
+      // Get existing ticket to check for status changes
+      const existingTicket = await storage.getTicketById(id);
+      if (!existingTicket) {
+        return res.status(404).json({ message: 'Ticket not found' });
+      }
+      
+      // Add closedAt timestamp if status is being set to closed for the first time
+      let updateData = {...validationResult.data};
+      if (updateData.status === 'closed' && existingTicket.status !== 'closed') {
+        updateData.closedAt = new Date().toISOString();
       }
       
       const updatedTicket = await storage.updateTicket(id, updateData);
@@ -644,22 +650,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Ticket not found' });
       }
       
-      // Create activity for ticket update
-      if (updatedTicket.assigneeId && req.body.assigneeId && updatedTicket.assigneeId !== req.body.assigneeId) {
-        const assignee = await storage.getEmployeeById(updatedTicket.assigneeId);
-        
+      // Create activity for assignee change
+      if (updateData.assigneeId && 
+          (!existingTicket.assigneeId || existingTicket.assigneeId !== updateData.assigneeId)) {
         await storage.createActivity({
-          employeeId: updatedTicket.assigneeId,
+          employeeId: updateData.assigneeId,
           activityType: 'ticket',
           description: `Assigned to ticket: ${updatedTicket.title}`,
           metadata: {
             ticketId: updatedTicket.id,
-            assignedById: req.body.assigneeId
+            assignedById: updateData.assigneeId
           }
         });
       }
       
-      if (req.body.status === 'closed') {
+      // Create activity for status change to closed
+      if (updateData.status === 'closed' && existingTicket.status !== 'closed') {
         await storage.createActivity({
           employeeId: updatedTicket.requestorId,
           activityType: 'ticket',
@@ -671,7 +677,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      res.json(updatedTicket);
+      // Get additional data for response
+      const requestor = await storage.getEmployeeById(updatedTicket.requestorId);
+      const assignee = updatedTicket.assigneeId 
+        ? await storage.getEmployeeById(updatedTicket.assigneeId) 
+        : null;
+      const system = updatedTicket.systemId 
+        ? await storage.getSystemById(updatedTicket.systemId) 
+        : null;
+        
+      res.json({
+        ...updatedTicket,
+        requestor: requestor ? {
+          id: requestor.id,
+          firstName: requestor.firstName,
+          lastName: requestor.lastName,
+          avatar: requestor.avatar,
+          position: requestor.position
+        } : null,
+        assignee: assignee ? {
+          id: assignee.id,
+          firstName: assignee.firstName,
+          lastName: assignee.lastName,
+          avatar: assignee.avatar,
+          position: assignee.position
+        } : null,
+        system: system ? {
+          id: system.id,
+          name: system.name,
+          description: system.description
+        } : null
+      });
     } catch (error) {
       res.status(500).json({ message: 'Failed to update ticket' });
     }
