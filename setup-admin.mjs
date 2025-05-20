@@ -61,7 +61,7 @@ async function setupAdminUser() {
       // Create admin credentials
       await pool.query(`
         INSERT INTO credentials
-        (user_id, username, password, is_enabled)
+        (user_id, username, password_hash, is_enabled)
         VALUES ($1, 'admin', $2, true)
       `, [userId, hashedPassword]);
       
