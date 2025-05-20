@@ -15,6 +15,7 @@ import AccessManagement from "@/pages/access-management";
 import Reports from "@/pages/reports";
 import Settings from "@/pages/settings";
 import EmployeeProfile from "@/pages/employee-profile";
+import UserProfile from "@/pages/profile";
 import TicketDetail from "@/pages/ticket-detail";
 import NewEmployee from "@/pages/new-employee";
 import NewTicket from "@/pages/new-ticket";
@@ -34,7 +35,7 @@ function Router() {
       <Route path="/permissions" component={Permissions} />
       <Route path="/reports" component={Reports} />
       <Route path="/settings" component={Settings} />
-      <Route path="/profile" component={import("@/pages/profile").default} />
+      <Route path="/profile" component={UserProfile} />
       <Route path="/employee/new" component={NewEmployee} />
       <Route path="/employee/:id" component={EmployeeProfile} />
       {/* Fallback to 404 */}
