@@ -23,29 +23,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupDirectAuth(app);
   
   // Authentication status route
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const userDetails = await storage.getUserDetails(userId);
-      
-      if (!userDetails) {
-        return res.status(404).json({ message: "User not found" });
+      // Check if user is authenticated through direct login
+      if (req.session && req.session.directUser) {
+        console.log('User authenticated with direct login:', req.session.directUser);
+        const userId = req.session.directUser.id;
+        const userDetails = await storage.getUserDetails(userId);
+        
+        if (!userDetails) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        // Determine which employee data to return based on impersonation state
+        const responseData = userDetails.impersonatingEmployee 
+          ? {
+              ...userDetails,
+              currentEmployee: userDetails.impersonatingEmployee,
+              isImpersonating: true
+            }
+          : {
+              ...userDetails,
+              currentEmployee: userDetails.employee,
+              isImpersonating: false
+            };
+        
+        return res.json(responseData);
       }
       
-      // Determine which employee data to return based on impersonation state
-      const responseData = userDetails.impersonatingEmployee 
-        ? {
-            ...userDetails,
-            currentEmployee: userDetails.impersonatingEmployee,
-            isImpersonating: true
-          }
-        : {
-            ...userDetails,
-            currentEmployee: userDetails.employee,
-            isImpersonating: false
-          };
+      // Check if user is authenticated through Replit Auth
+      if (req.isAuthenticated() && req.user && req.user.claims) {
+        const userId = req.user.claims.sub;
+        const userDetails = await storage.getUserDetails(userId);
+        
+        if (!userDetails) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        // Determine which employee data to return based on impersonation state
+        const responseData = userDetails.impersonatingEmployee 
+          ? {
+              ...userDetails,
+              currentEmployee: userDetails.impersonatingEmployee,
+              isImpersonating: true
+            }
+          : {
+              ...userDetails,
+              currentEmployee: userDetails.employee,
+              isImpersonating: false
+            };
+        
+        return res.json(responseData);
+      }
       
-      res.json(responseData);
+      // If not authenticated through any method
+      return res.status(401).json({ message: "Unauthorized" });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user details" });
