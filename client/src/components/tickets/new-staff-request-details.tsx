@@ -143,7 +143,6 @@ export function NewStaffRequestDetails({ ticketId, metadata }: NewStaffRequestDe
       // If all tasks are completed, close the ticket
       if (updatedData.allTasksCompleted) {
         payload.status = "closed";
-        payload.closedAt = new Date().toISOString();
       }
       
       return apiRequest("PATCH", `/api/tickets/${ticketId}`, payload);
