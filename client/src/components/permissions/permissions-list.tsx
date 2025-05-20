@@ -438,15 +438,124 @@ export function PermissionsList() {
       ) : (
         <div className="text-center py-10 border rounded-md">
           <p className="text-muted-foreground mb-4">No permissions found</p>
-          <DialogTrigger asChild>
-            <Button onClick={() => {
-              setEditingPermission(null);
-              form.reset();
-              setIsAddDialogOpen(true);
-            }}>
-              Create your first permission
-            </Button>
-          </DialogTrigger>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => {
+                setEditingPermission(null);
+                form.reset();
+                setIsAddDialogOpen(true);
+              }}>
+                Create your first permission
+              </Button>
+            </DialogTrigger>
+            {/* Add Dialog Content here for "No permissions found" case */}
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Create Permission</DialogTitle>
+                <DialogDescription>
+                  Fill in the details to create a new permission.
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Permission name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Permission description" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="resource"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Resource</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Resource name" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          The entity this permission applies to (e.g., employee, department)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="action"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Action</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Action name" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          The action this permission allows (e.g., read, create, update, delete)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="scope"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Scope</FormLabel>
+                        <FormControl>
+                          <Select 
+                            onValueChange={field.onChange} 
+                            defaultValue={field.value}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a scope" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All</SelectItem>
+                              <SelectItem value="own">Own</SelectItem>
+                              <SelectItem value="department">Department</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormDescription>
+                          Scope of the permission (all resources, own resources, or department resources)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <DialogFooter>
+                    <Button 
+                      type="submit" 
+                      disabled={createPermissionMutation.isPending || updatePermissionMutation.isPending}
+                    >
+                      Create
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
     </div>
