@@ -241,8 +241,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const impersonatingId = req.session.directUser.impersonatingId || 
                                (user?.impersonatingId as number | undefined);
         
-        // Return user info including impersonation status
-        return res.json({
+        // Get employee data if available (as source of truth)
+        let employeeData = null;
+        let userProfile = {
           id: userId,
           firstName: user?.firstName || 'User', 
           lastName: user?.lastName || '',
@@ -251,15 +252,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isAdmin: req.session.directUser.isAdmin === true,
           authProvider: 'direct',
           employeeId: user?.employeeId,
-          impersonatingId: impersonatingId
-        });
+          impersonatingId: impersonatingId,
+          department: null,
+          position: null
+        };
+        
+        // If user has an associated employee record, get that data
+        if (user?.employeeId) {
+          const employee = await storage.getEmployeeById(user.employeeId);
+          if (employee) {
+            // Override with employee data (source of truth)
+            userProfile.firstName = employee.firstName;
+            userProfile.lastName = employee.lastName;
+            userProfile.email = employee.email;
+            userProfile.position = employee.position;
+            
+            // Get department info
+            if (employee.departmentId) {
+              const department = await storage.getDepartmentById(employee.departmentId);
+              if (department) {
+                userProfile.department = department.name;
+              }
+            }
+            
+            // Sync user profile with employee data if needed
+            if (user.firstName !== employee.firstName || 
+                user.lastName !== employee.lastName || 
+                user.email !== employee.email) {
+              // Update user profile with employee data (employee is source of truth)
+              await storage.syncUserFromEmployee(userId, user.employeeId);
+            }
+          }
+        }
+        
+        // If user is impersonating another employee, get that employee's data
+        if (impersonatingId) {
+          const impersonatedEmployee = await storage.getEmployeeById(impersonatingId);
+          if (impersonatedEmployee) {
+            // Override profile with impersonated employee data
+            userProfile.firstName = impersonatedEmployee.firstName;
+            userProfile.lastName = impersonatedEmployee.lastName;
+            userProfile.email = impersonatedEmployee.email;
+            userProfile.position = impersonatedEmployee.position;
+            userProfile.employeeId = impersonatingId;
+            
+            // Get department info for impersonated employee
+            if (impersonatedEmployee.departmentId) {
+              const department = await storage.getDepartmentById(impersonatedEmployee.departmentId);
+              if (department) {
+                userProfile.department = department.name;
+              }
+            }
+          }
+        }
+        
+        return res.json(userProfile);
       } 
       // Check if user is authenticated through Replit Auth
       else if (req.isAuthenticated && req.isAuthenticated() && req.user && (req.user as any).claims) {
         const userId = (req.user as any).claims.sub;
         const user = await storage.getUser(userId);
         if (user) {
-          return res.json(user);
+          // Create a complete user profile with employee data if available
+          let userProfile = {...user, department: null, position: null};
+          
+          // If user has an associated employee, get that data
+          if (user.employeeId) {
+            const employee = await storage.getEmployeeById(user.employeeId);
+            if (employee) {
+              // Override with employee data (source of truth)
+              userProfile.firstName = employee.firstName;
+              userProfile.lastName = employee.lastName;
+              userProfile.email = employee.email;
+              userProfile.position = employee.position;
+              
+              // Get department info
+              if (employee.departmentId) {
+                const department = await storage.getDepartmentById(employee.departmentId);
+                if (department) {
+                  userProfile.department = department.name;
+                }
+              }
+              
+              // Sync user profile with employee data if needed
+              if (user.firstName !== employee.firstName || 
+                  user.lastName !== employee.lastName || 
+                  user.email !== employee.email) {
+                await storage.syncUserFromEmployee(userId, user.employeeId);
+              }
+            }
+          }
+          
+          return res.json(userProfile);
         }
       }
       

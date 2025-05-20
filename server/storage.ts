@@ -687,25 +687,6 @@ export class DatabaseStorage implements IStorage {
   async upsertUser(userData: UpsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return user;
-  }
-  
-  async getAllUsers(): Promise<User[]> {
-    return await db.select().from(users);
-  }
-
-  async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
       .values({
         ...userData,
         updatedAt: new Date()
@@ -718,7 +699,60 @@ export class DatabaseStorage implements IStorage {
         },
       })
       .returning();
+    
+    // If employee ID is provided, make sure employee data is updated too
+    if (userData.employeeId && (userData.firstName || userData.lastName || userData.email)) {
+      const employee = await this.getEmployeeById(userData.employeeId);
+      if (employee) {
+        const updates: Partial<InsertEmployee> = {};
+        
+        // Only update fields that are provided and different
+        if (userData.firstName && userData.firstName !== employee.firstName) {
+          updates.firstName = userData.firstName;
+        }
+        
+        if (userData.lastName && userData.lastName !== employee.lastName) {
+          updates.lastName = userData.lastName;
+        }
+        
+        if (userData.email && userData.email !== employee.email) {
+          updates.email = userData.email;
+        }
+        
+        // Update employee record if there are changes
+        if (Object.keys(updates).length > 0) {
+          await this.updateEmployee(userData.employeeId, updates);
+        }
+      }
+    }
+    
     return user;
+  }
+  
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+  
+  // Sync user profile data from employee data (ensures employee record is source of truth)
+  async syncUserFromEmployee(userId: string, employeeId: number): Promise<User | undefined> {
+    const employee = await this.getEmployeeById(employeeId);
+    if (!employee) {
+      return undefined;
+    }
+    
+    // Update user with employee data
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        email: employee.email,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+      
+    return updatedUser;
   }
 
   async setUserImpersonation(userId: string, employeeId: number): Promise<boolean> {
@@ -753,26 +787,51 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getUserDetails(userId: string): Promise<{ user: User, employee?: Employee, impersonatingEmployee?: Employee } | undefined> {
+  async getUserDetails(userId: string): Promise<{ user: User, employee?: Employee, impersonatingEmployee?: Employee, department?: Department } | undefined> {
     try {
-      const user = await this.getUser(userId);
-      if (!user) return undefined;
+      let userRecord = await this.getUser(userId);
+      if (!userRecord) return undefined;
       
       let employee: Employee | undefined = undefined;
       let impersonatingEmployee: Employee | undefined = undefined;
+      let department: Department | undefined = undefined;
       
-      if (user.employeeId) {
-        employee = await this.getEmployeeById(user.employeeId);
+      // Get associated employee data if available
+      if (userRecord.employeeId) {
+        employee = await this.getEmployeeById(userRecord.employeeId);
+        
+        // If employee data exists, sync the user profile with it if needed
+        if (employee && (
+            userRecord.firstName !== employee.firstName || 
+            userRecord.lastName !== employee.lastName || 
+            userRecord.email !== employee.email)) {
+            
+          // Update user record with employee data (employee is source of truth)
+          await this.syncUserFromEmployee(userId, userRecord.employeeId);
+          
+          // Refresh user data after sync
+          const refreshedUser = await this.getUser(userId);
+          if (refreshedUser) {
+            userRecord = refreshedUser;
+          }
+        }
+        
+        // Get department data if available
+        if (employee?.departmentId) {
+          department = await this.getDepartmentById(employee.departmentId);
+        }
       }
       
-      if (user.impersonatingId) {
-        impersonatingEmployee = await this.getEmployeeById(user.impersonatingId);
+      // Get impersonated employee data if available
+      if (userRecord.impersonatingId) {
+        impersonatingEmployee = await this.getEmployeeById(userRecord.impersonatingId);
       }
       
       return {
-        user,
+        user: userRecord,
         employee,
-        impersonatingEmployee
+        impersonatingEmployee,
+        department
       };
     } catch (error) {
       console.error("Error getting user details:", error);
