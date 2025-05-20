@@ -184,7 +184,12 @@ export function PermissionsList() {
   }
 
   if (isLoading) {
-    return <div className="py-4 text-center">Loading permissions...</div>;
+    return (
+      <div className="py-8 flex flex-col items-center justify-center gap-4">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-muted-foreground">Loading permissions...</p>
+      </div>
+    );
   }
 
   return (

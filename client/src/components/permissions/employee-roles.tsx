@@ -158,7 +158,12 @@ export function EmployeeRoles() {
   }
 
   if (employeesLoading) {
-    return <div className="py-4 text-center">Loading employees...</div>;
+    return (
+      <div className="py-8 flex flex-col items-center justify-center gap-4">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-muted-foreground">Loading employees...</p>
+      </div>
+    );
   }
 
   return (
@@ -306,7 +311,10 @@ export function EmployeeRoles() {
           
           {selectedEmployeeId ? (
             employeeRolesLoading ? (
-              <div className="py-4 text-center">Loading roles...</div>
+              <div className="py-8 flex flex-col items-center justify-center gap-4">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-muted-foreground">Loading roles...</p>
+              </div>
             ) : employeeRoles && employeeRoles.length > 0 ? (
               <div className="max-h-[450px] overflow-y-auto">
                 <Table>
