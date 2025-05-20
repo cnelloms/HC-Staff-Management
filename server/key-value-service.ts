@@ -183,7 +183,7 @@ export class KeyValueService {
     await db.delete(keyValueStore)
       .where(
         and(
-          isNull(keyValueStore.expiresAt).not(),
+          eq(isNull(keyValueStore.expiresAt), false),
           lt(keyValueStore.expiresAt as any, now)
         )
       );

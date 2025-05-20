@@ -331,7 +331,7 @@ export const keyValueStore = pgTable("key_value_store", {
     // Ensure unique combinations of namespace+key when userId is null (global settings)
     uniqueGlobalKeys: uniqueIndex("unique_global_keys")
       .on(table.namespace, table.key)
-      .where(`user_id IS NULL`)
+      .where(isNull(table.userId))
   };
 });
 
