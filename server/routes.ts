@@ -516,17 +516,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ...ticket,
             requestor: requestor ? {
               id: requestor.id,
-              name: `${requestor.firstName} ${requestor.lastName}`,
+              firstName: requestor.firstName,
+              lastName: requestor.lastName,
+              position: requestor.position,
               avatar: requestor.avatar
             } : null,
             assignee: assignee ? {
               id: assignee.id,
-              name: `${assignee.firstName} ${assignee.lastName}`,
+              firstName: assignee.firstName,
+              lastName: assignee.lastName,
+              position: assignee.position,
               avatar: assignee.avatar
             } : null,
             system: system ? {
               id: system.id,
-              name: system.name
+              name: system.name,
+              description: system.description
             } : null
           };
         })
