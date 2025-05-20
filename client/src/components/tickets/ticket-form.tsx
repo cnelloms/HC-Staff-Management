@@ -309,7 +309,7 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
+                        <SelectValue>New Staff Request</SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
