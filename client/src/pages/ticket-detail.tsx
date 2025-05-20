@@ -2,6 +2,7 @@ import { useParams, Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/layout";
 import { Ticket, Employee } from "@/types";
+import { NewStaffRequestDetails } from "@/components/tickets/new-staff-request-details";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
