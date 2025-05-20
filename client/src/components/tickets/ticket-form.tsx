@@ -459,7 +459,7 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">No specific system</SelectItem>
+                        <SelectItem value="none">No specific system</SelectItem>
                         {systems?.map((system) => (
                           <SelectItem 
                             key={system.id} 
