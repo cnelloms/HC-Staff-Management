@@ -55,7 +55,7 @@ export function setupDirectAuth(app: Express) {
       }
       
       // Verify password
-      const isPasswordValid = await bcrypt.compare(password, userCredentials.password);
+      const isPasswordValid = await bcrypt.compare(password, userCredentials.password_hash);
       
       if (!isPasswordValid) {
         return res.status(401).json({ message: 'Invalid username or password' });
