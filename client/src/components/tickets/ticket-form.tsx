@@ -78,9 +78,7 @@ const ticketFormSchema = z.object({
   priority: z.enum(["low", "medium", "high"], {
     required_error: "Please select a priority.",
   }),
-  type: z.enum(["new_staff_request"], {
-    required_error: "Please select a ticket type.",
-  }),
+  type: z.literal("new_staff_request"),
   systemId: z.coerce.number().optional(),
   metadata: z.any().optional(), // Will contain different structures based on ticket type
 });
@@ -219,34 +217,14 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
         formData.title = `New Staff Request: ${firstName} ${lastName} (${positionTitle})`;
       }
       
-      // Add checklist items to metadata
+      // Add simplified onboarding checklist with exactly 3 tasks
       formData.metadata = {
         ...values.metadata,
         checklist: [
-          // Account setup
-          { task: "Create network user account", completed: false, category: "accounts" },
-          { task: "Set up corporate email address", completed: false, category: "accounts" },
-          { task: "Configure access permissions", completed: false, category: "accounts" },
-          
-          // Equipment
-          { task: "Prepare workstation/laptop", completed: false, category: "equipment" },
-          { task: "Set up phone/extension", completed: false, category: "equipment" },
-          { task: "Order and configure mobile device", completed: false, category: "equipment" },
-          
-          // System access
-          { task: "Grant EHR system access", completed: false, category: "systems" },
-          { task: "Configure financial system permissions", completed: false, category: "systems" },
-          { task: "Set up scheduling system access", completed: false, category: "systems" },
-          
-          // Onboarding
-          { task: "Schedule orientation session", completed: false, category: "onboarding" },
-          { task: "Prepare welcome package", completed: false, category: "onboarding" },
-          { task: "Assign onboarding buddy", completed: false, category: "onboarding" },
-          
-          // Communication
-          { task: "Notify department team", completed: false, category: "communication" },
-          { task: "Inform reporting manager", completed: false, category: "communication" },
-          { task: "Add to relevant email groups", completed: false, category: "communication" }
+          // Only 3 specific tasks for onboarding workflow
+          { task: "Create work email for new staff", completed: false, category: "accounts" },
+          { task: "Generate a secure 12-character password (letters and numbers, human-readable)", completed: false, category: "accounts" },
+          { task: "Send login information to reporting manager", completed: false, category: "communication" }
         ],
         progress: 0,
         status: "pending"
@@ -297,10 +275,12 @@ New Staff Request Details:
 ${metadata.email ? `- Email: ${metadata.email}` : ''}
 ${metadata.phone ? `- Phone: ${metadata.phone}` : ''}
 
-This ticket is for onboarding a new staff member. The onboarding process includes:
-1. Creating a work email account
-2. Generating a secure password
-3. Sending login information to the reporting manager
+Onboarding Tasks (IT Department):
+1. Create work email for new staff (with validation for email format)
+2. Generate a secure 12-character password (letters and numbers, human-readable)
+3. Send login information to reporting manager (with email template)
+
+Note: When all tasks are completed, the ticket will automatically close.
 `;
     
     form.setValue('description', description.trim());
