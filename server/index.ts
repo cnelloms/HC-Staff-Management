@@ -3,10 +3,38 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import loginRouter from "./login-router";
 import keyValueRouter from "./key-value-routes";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Set trust proxy to handle secure cookies behind Replit's proxy
+app.set('trust proxy', 1);
+
+// Set up session middleware with PostgreSQL store
+const pgStore = connectPg(session);
+const sessionStore = new pgStore({
+  pool: pool,
+  tableName: 'sessions',
+  createTableIfMissing: true
+});
+
+// Configure session middleware
+app.use(session({
+  store: sessionStore,
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: true, // Set to true since we're behind HTTPS proxy
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+    sameSite: 'lax'
+  }
+}));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -37,6 +65,9 @@ app.use((req, res, next) => {
 
   next();
 });
+
+// Mount the API routes
+app.use('/api/kv', keyValueRouter);
 
 (async () => {
   const server = await registerRoutes(app);

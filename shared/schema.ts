@@ -328,10 +328,9 @@ export const keyValueStore = pgTable("key_value_store", {
       table.key, 
       table.userId
     ),
-    // Ensure unique combinations of namespace+key when userId is null (global settings)
-    uniqueGlobalKeys: uniqueIndex("unique_global_keys")
-      .on(table.namespace, table.key)
-      .where(isNull(table.userId))
+    // Unique combinations of namespace+key+userId
+    uniqueNamespaceKeyUserIdx: uniqueIndex("unique_namespace_key_user_idx")
+      .on(table.namespace, table.key, table.userId)
   };
 });
 
