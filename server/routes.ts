@@ -338,6 +338,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth user endpoint
   app.get('/api/auth/user', async (req: Request, res: Response) => {
     try {
+      // Debug session information to help troubleshoot
+      console.log('Session in auth/user endpoint:', {
+        hasSession: !!req.session,
+        hasDirectUser: !!(req.session && req.session.directUser),
+        sessionID: req.sessionID,
+        cookies: req.headers.cookie
+      });
+      
       // Check if user is authenticated through direct login
       if (req.session && req.session.directUser) {
         console.log('User authenticated with direct login:', req.session.directUser);
