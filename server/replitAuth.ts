@@ -8,12 +8,17 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
+// Check for required environment variables
 if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
+  console.warn("Warning: Environment variable REPLIT_DOMAINS not provided, Replit Auth may not work correctly");
 }
 
 if (!process.env.SESSION_SECRET) {
-  throw new Error("Environment variable SESSION_SECRET is required");
+  console.warn("Warning: Environment variable SESSION_SECRET is required for secure sessions");
+}
+
+if (!process.env.REPL_ID) {
+  console.warn("Warning: Environment variable REPL_ID not provided, Replit Auth may not work correctly");
 }
 
 const getOidcConfig = memoize(
