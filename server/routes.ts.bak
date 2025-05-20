@@ -24,9 +24,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Set up direct authentication
   setupDirectAuth(app);
-
+  
   // Auth routes - get current user
-  app.get('/api/auth/user', async (req: Request, res: Response) => {
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
       // Check if user is authenticated through direct login
       if (req.session && req.session.directUser) {
@@ -42,7 +42,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } 
       // Check if user is authenticated through Replit Auth
-      else if (req.isAuthenticated && req.isAuthenticated() && req.user && req.user.claims) {
+      else if (req.isAuthenticated() && req.user && req.user.claims) {
         const userId = req.user.claims.sub;
         const user = await storage.getUser(userId);
         if (user) {
@@ -57,13 +57,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Failed to fetch user" });
     }
   });
-
+  
+  // User management API routes
+  
   // Get all users (admin only)
-  app.get('/api/users', async (req: Request, res: Response) => {
+  app.get('/api/users', async (req: any, res) => {
     try {
       // Check for admin access directly from the session
       const directAdminAccess = req.session?.directUser?.isAdmin === true;
-      const replitAdminAccess = (req.user as any)?.isAdmin === true;
+      const replitAdminAccess = req.user?.isAdmin === true;
       const isAdmin = directAdminAccess || replitAdminAccess;
       
       console.log('Admin check:', { directAdminAccess, replitAdminAccess, isAdmin, session: req.session?.directUser });
@@ -72,7 +74,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
       
-      // Return a simple list of users
+      // Since we're in the early stages, return a simple list of users
+      // This includes the admin user and any other accounts we want to display
       const userList = [
         {
           id: "direct_admin_1",
@@ -86,20 +89,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       ];
       
-      // Return the user list
+      // Return the simplified user list
       return res.json(userList);
     } catch (error) {
       console.error('Error fetching users:', error);
       return res.status(500).json({ message: 'Failed to fetch users' });
     }
   });
-
+  
   // Create user (admin only)
-  app.post('/api/users/create', async (req: Request, res: Response) => {
+  app.post('/api/users/create', async (req: any, res) => {
     try {
       // Check for admin access
       const directAdminAccess = req.session?.directUser?.isAdmin === true;
-      const replitAdminAccess = (req.user as any)?.isAdmin === true;
+      const replitAdminAccess = req.user?.isAdmin === true;
       const isAdmin = directAdminAccess || replitAdminAccess;
       
       if (!isAdmin) {
@@ -147,21 +150,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'Failed to create user' });
     }
   });
-
+  
   // Change user password (admin only)
-  app.post('/api/users/:userId/change-password', async (req: Request, res: Response) => {
+  app.post('/api/users/:userId/change-password', async (req: any, res) => {
     try {
       const { userId } = req.params;
       const { newPassword } = req.body;
       
+      // Validate inputs
       if (!userId || !newPassword) {
         return res.status(400).json({ message: "User ID and new password are required" });
       }
       
       // Check for admin access
-      const directAdminAccess = req.session?.directUser?.isAdmin === true;
-      const replitAdminAccess = (req.user as any)?.isAdmin === true;
-      const isAdmin = directAdminAccess || replitAdminAccess;
+      const isAdmin = req.session?.directUser?.isAdmin === true || req.user?.isAdmin === true;
       
       if (!isAdmin) {
         return res.status(403).json({ message: "Admin access required" });
@@ -191,21 +193,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'Failed to change password' });
     }
   });
-
+  
   // Toggle user status (enable/disable) - admin only
-  app.post('/api/users/:userId/toggle-status', async (req: Request, res: Response) => {
+  app.post('/api/users/:userId/toggle-status', async (req: any, res) => {
     try {
       const { userId } = req.params;
       const { isEnabled } = req.body;
       
+      // Validate inputs
       if (!userId || isEnabled === undefined) {
         return res.status(400).json({ message: "User ID and enabled status are required" });
       }
       
       // Check for admin access
-      const directAdminAccess = req.session?.directUser?.isAdmin === true;
-      const replitAdminAccess = (req.user as any)?.isAdmin === true;
-      const isAdmin = directAdminAccess || replitAdminAccess;
+      const isAdmin = req.session?.directUser?.isAdmin === true || req.user?.isAdmin === true;
       
       if (!isAdmin) {
         return res.status(403).json({ message: "Admin access required" });
@@ -231,20 +232,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'Failed to update user status' });
     }
   });
-
+  
   // Get authentication settings
-  app.get('/api/auth/settings', async (req: Request, res: Response) => {
+  app.get('/api/auth/settings', async (req: any, res) => {
     try {
       // Check for admin access
-      const directAdminAccess = req.session?.directUser?.isAdmin === true;
-      const replitAdminAccess = (req.user as any)?.isAdmin === true;
-      const isAdmin = directAdminAccess || replitAdminAccess;
+      const isAdmin = req.session?.directUser?.isAdmin === true || req.user?.isAdmin === true;
       
       if (!isAdmin) {
         return res.status(403).json({ message: "Admin access required" });
       }
       
       // For now, return hardcoded settings
+      // In a production environment, these would be stored in the database
       return res.json({
         directLoginEnabled: true,
         microsoftLoginEnabled: false, // Microsoft login is coming soon
@@ -255,22 +255,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'Failed to fetch auth settings' });
     }
   });
-
+  
   // Update authentication settings
-  app.post('/api/auth/settings', async (req: Request, res: Response) => {
+  app.post('/api/auth/settings', async (req: any, res) => {
     try {
       const { directLoginEnabled, microsoftLoginEnabled, replitLoginEnabled } = req.body;
       
       // Check for admin access
-      const directAdminAccess = req.session?.directUser?.isAdmin === true;
-      const replitAdminAccess = (req.user as any)?.isAdmin === true;
-      const isAdmin = directAdminAccess || replitAdminAccess;
+      const isAdmin = req.session?.directUser?.isAdmin === true || req.user?.isAdmin === true;
       
       if (!isAdmin) {
         return res.status(403).json({ message: "Admin access required" });
       }
       
-      // For now, just return success with hardcoded values
+      // For now, just return success
+      // In a production environment, these would be stored in the database
       return res.json({
         directLoginEnabled: directLoginEnabled ?? true,
         microsoftLoginEnabled: false, // Always false, Microsoft login is coming soon
@@ -281,7 +280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'Failed to update auth settings' });
     }
   });
-  
+
   const httpServer = createServer(app);
   return httpServer;
 }
