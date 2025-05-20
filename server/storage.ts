@@ -1,4 +1,5 @@
 import { 
+  Position, InsertPosition,
   Department, InsertDepartment, 
   Employee, InsertEmployee, 
   System, InsertSystem, 
@@ -9,13 +10,19 @@ import {
   Role, InsertRole,
   RolePermission, InsertRolePermission,
   EmployeeRole, InsertEmployeeRole,
-  employees, departments, systems, systemAccess, tickets, activities,
+  positions, employees, departments, systems, systemAccess, tickets, activities,
   permissions, roles, rolePermissions, employeeRoles
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, desc, and, asc } from "drizzle-orm";
 
 export interface IStorage {
+  // Position operations
+  getPositions(): Promise<Position[]>;
+  getPositionById(id: number): Promise<Position | undefined>;
+  getPositionsByDepartment(departmentId: number): Promise<Position[]>;
+  createPosition(position: InsertPosition): Promise<Position>;
+  
   // Department operations
   getDepartments(): Promise<Department[]>;
   getDepartmentById(id: number): Promise<Department | undefined>;

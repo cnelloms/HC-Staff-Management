@@ -1,6 +1,24 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// Position table
+export const positions = pgTable("positions", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  departmentId: integer("department_id").notNull(),
+  description: text("description"),
+}, (positions) => {
+  return {
+    titleUnique: uniqueIndex("position_title_unique").on(positions.title),
+  };
+});
+
+export const insertPositionSchema = createInsertSchema(positions).pick({
+  title: true,
+  departmentId: true,
+  description: true,
+});
 
 // Department table
 export const departments = pgTable("departments", {
@@ -191,6 +209,9 @@ export const insertEmployeeRoleSchema = createInsertSchema(employeeRoles).pick({
 });
 
 // Type exports
+export type Position = typeof positions.$inferSelect;
+export type InsertPosition = z.infer<typeof insertPositionSchema>;
+
 export type Department = typeof departments.$inferSelect;
 export type InsertDepartment = z.infer<typeof insertDepartmentSchema>;
 
