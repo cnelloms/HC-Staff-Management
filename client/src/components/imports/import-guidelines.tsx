@@ -87,9 +87,9 @@ export function ImportGuidelines() {
           </ul>
         </div>
 
-        <Alert variant="warning">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Important Notes</AlertTitle>
+        <Alert className="bg-amber-50 border-amber-200">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-800">Important Notes</AlertTitle>
           <AlertDescription>
             <ul className="list-disc list-inside text-sm mt-2">
               <li>All emails must be unique and valid format</li>
