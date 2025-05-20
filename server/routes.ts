@@ -662,6 +662,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dashboard routes
+  app.get('/api/dashboard/stats', async (req: Request, res: Response) => {
+    try {
+      const stats = await storage.getDashboardStats();
+      return res.json(stats);
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      return res.status(500).json({ message: 'Failed to fetch dashboard stats' });
+    }
+  });
+  
+  app.get('/api/dashboard/access-stats', async (req: Request, res: Response) => {
+    try {
+      const accessStats = await storage.getSystemAccessStats();
+      return res.json(accessStats);
+    } catch (error) {
+      console.error('Error fetching system access stats:', error);
+      return res.status(500).json({ message: 'Failed to fetch system access stats' });
+    }
+  });
+  
+  app.get('/api/dashboard/recent-activities', async (req: Request, res: Response) => {
+    try {
+      const activities = await storage.getRecentActivities(10); // Limit to 10 recent activities
+      return res.json(activities);
+    } catch (error) {
+      console.error('Error fetching recent activities:', error);
+      return res.status(500).json({ message: 'Failed to fetch recent activities' });
+    }
+  });
+  
   // Ticket routes
   app.get('/api/tickets', async (req: Request, res: Response) => {
     try {
