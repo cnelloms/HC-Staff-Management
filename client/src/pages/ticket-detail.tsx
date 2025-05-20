@@ -119,8 +119,9 @@ export default function TicketDetail() {
   if (ticketLoading) {
     return (
       <Layout>
-        <div className="p-8 flex justify-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <div className="p-8 flex flex-col items-center justify-center gap-4">
+          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-muted-foreground">Loading ticket details...</p>
         </div>
       </Layout>
     );
