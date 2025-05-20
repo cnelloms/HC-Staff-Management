@@ -55,6 +55,9 @@ const newStaffMetadataSchema = z.object({
   departmentId: z.coerce.number({ required_error: "Department is required" }),
   email: z.string().email({ message: "Invalid email address" }).optional(),
   phone: z.string().optional(),
+  expectedCompletionDate: z.string().optional(),
+  priority: z.enum(["low", "medium", "high"]).default("medium"),
+  notes: z.string().optional(),
 }).optional();
 
 const ticketFormSchema = z.object({
@@ -74,7 +77,7 @@ const ticketFormSchema = z.object({
   priority: z.enum(["low", "medium", "high"], {
     required_error: "Please select a priority.",
   }),
-  type: z.enum(["system_access", "onboarding", "issue", "request", "new_staff_request"], {
+  type: z.enum(["new_staff_request"], {
     required_error: "Please select a ticket type.",
   }),
   systemId: z.coerce.number().optional(),
@@ -117,7 +120,7 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
       assigneeId: undefined,
       status: "open",
       priority: "medium",
-      type: "issue",
+      type: "new_staff_request",
       systemId: undefined,
     },
   });
@@ -206,13 +209,33 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
       formData.metadata = {
         ...values.metadata,
         checklist: [
-          { task: "Create user account", completed: false },
-          { task: "Set up email address", completed: false },
-          { task: "Assign required system access", completed: false },
-          { task: "Prepare workstation", completed: false },
-          { task: "Schedule orientation", completed: false },
-          { task: "Notify reporting manager", completed: false }
-        ]
+          // Account setup
+          { task: "Create network user account", completed: false, category: "accounts" },
+          { task: "Set up corporate email address", completed: false, category: "accounts" },
+          { task: "Configure access permissions", completed: false, category: "accounts" },
+          
+          // Equipment
+          { task: "Prepare workstation/laptop", completed: false, category: "equipment" },
+          { task: "Set up phone/extension", completed: false, category: "equipment" },
+          { task: "Order and configure mobile device", completed: false, category: "equipment" },
+          
+          // System access
+          { task: "Grant EHR system access", completed: false, category: "systems" },
+          { task: "Configure financial system permissions", completed: false, category: "systems" },
+          { task: "Set up scheduling system access", completed: false, category: "systems" },
+          
+          // Onboarding
+          { task: "Schedule orientation session", completed: false, category: "onboarding" },
+          { task: "Prepare welcome package", completed: false, category: "onboarding" },
+          { task: "Assign onboarding buddy", completed: false, category: "onboarding" },
+          
+          // Communication
+          { task: "Notify department team", completed: false, category: "communication" },
+          { task: "Inform reporting manager", completed: false, category: "communication" },
+          { task: "Add to relevant email groups", completed: false, category: "communication" }
+        ],
+        progress: 0,
+        status: "pending"
       };
     }
     
@@ -289,10 +312,6 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="system_access">System Access</SelectItem>
-                      <SelectItem value="onboarding">Onboarding</SelectItem>
-                      <SelectItem value="issue">Technical Issue</SelectItem>
-                      <SelectItem value="request">General Request</SelectItem>
                       <SelectItem value="new_staff_request">New Staff Request</SelectItem>
                     </SelectContent>
                   </Select>
