@@ -108,27 +108,43 @@ export function setupDirectAuth(app: Express) {
         isAdmin: user.isAdmin === true,
       };
       
-      // Save session and return success
-      req.session.save((err) => {
-        if (err) {
-          console.error('Error saving session:', err);
+      // Force regenerate the session to prevent session fixation
+      req.session.regenerate((regenerateErr) => {
+        if (regenerateErr) {
+          console.error('Error regenerating session:', regenerateErr);
           return res.status(500).json({ message: 'Error during authentication' });
         }
         
-        console.log('Session saved successfully, user logged in:', user.id);
+        // Set user data in the new session
+        req.session.directUser = {
+          id: user.id,
+          username: userCredentials.username,
+          isAdmin: user.isAdmin === true,
+        };
         
-        // Get additional user details
-        return res.status(200).json({ 
-          message: 'Logged in successfully', 
-          user: {
-            id: user.id,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            isAdmin: user.isAdmin,
-            employeeId: user.employeeId
-          },
-          redirectTo: '/'
+        // Save session and return success
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error('Error saving session:', saveErr);
+            return res.status(500).json({ message: 'Error during authentication' });
+          }
+          
+          console.log('Session saved successfully, user logged in:', user.id);
+          console.log('Session data:', req.session);
+          
+          // Get additional user details
+          return res.status(200).json({ 
+            message: 'Logged in successfully', 
+            user: {
+              id: user.id,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              email: user.email,
+              isAdmin: user.isAdmin,
+              employeeId: user.employeeId
+            },
+            redirectTo: '/'
+          });
         });
       });
     } catch (error) {
