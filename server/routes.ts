@@ -792,6 +792,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Create the employee
           const newEmployee = await storage.createEmployee(newEmployeeData);
           
+          // Create a user account for the new employee
+          try {
+            // Generate a unique username (first initial + last name in lowercase)
+            const firstInitial = newEmployee.firstName.charAt(0).toLowerCase();
+            const baseUsername = `${firstInitial}${newEmployee.lastName.toLowerCase()}`.replace(/[^a-z0-9]/g, '');
+            
+            // Check if username exists already and append number if needed
+            let username = baseUsername;
+            let counter = 1;
+            let usernameExists = true;
+            
+            while (usernameExists) {
+              const existingUser = await db
+                .select()
+                .from(credentials)
+                .where(eq(credentials.username, username))
+                .limit(1);
+              
+              if (existingUser.length === 0) {
+                usernameExists = false;
+              } else {
+                username = `${baseUsername}${counter}`;
+                counter++;
+              }
+            }
+            
+            // Generate a secure password
+            const generatePassword = () => {
+              const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+              let password = '';
+              for (let i = 0; i < 12; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+              }
+              return password;
+            };
+            
+            const password = generatePassword();
+            
+            // Create user ID
+            const userId = `direct_${username}_${Date.now()}`;
+            
+            // Create user record
+            const user = await storage.upsertUser({
+              id: userId,
+              firstName: newEmployee.firstName,
+              lastName: newEmployee.lastName,
+              email: newEmployee.email,
+              employeeId: newEmployee.id, // Link to the employee record
+              isAdmin: false,
+              authProvider: 'direct'
+            });
+            
+            // Hash password
+            const salt = await bcrypt.genSalt(10);
+            const passwordHash = await bcrypt.hash(password, salt);
+            
+            // Create credentials record
+            await db.insert(credentials)
+              .values({
+                userId,
+                username,
+                passwordHash,
+                isEnabled: true,
+                createdAt: new Date(),
+                updatedAt: new Date()
+              });
+            
+            // Update ticket metadata with the login credentials
+            updatedTicket.metadata = {
+              ...updatedTicket.metadata,
+              employeeCreated: true,
+              employeeId: newEmployee.id,
+              userAccountCreated: true,
+              username: username,
+              password: password, // Store plain password in metadata for admin to share with employee
+              userId: userId
+            };
+            
+            // Log the account creation in activity
+            await storage.createActivity({
+              type: "user_account_creation",
+              description: `User account created for ${newEmployee.firstName} ${newEmployee.lastName} (${username})`,
+              employeeId: newEmployee.id,
+              metadata: {
+                source: "ticket",
+                ticketId: updatedTicket.id,
+                username: username
+              }
+            });
+          } catch (userCreationError) {
+            console.error('Error creating user account:', userCreationError);
+            // Continue with the process even if user creation fails
+            // Just update ticket with employee info
+            updatedTicket.metadata = {
+              ...updatedTicket.metadata,
+              employeeCreated: true,
+              employeeId: newEmployee.id,
+              userAccountCreated: false,
+              userCreationError: "Failed to create user account"
+            };
+          }
+          
           // Create an activity for the employee creation
           await storage.createActivity({
             type: "employee_creation",
@@ -802,13 +904,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ticketId: updatedTicket.id
             }
           });
-          
-          // Include the newly created employee in the response
-          updatedTicket.metadata = {
-            ...updatedTicket.metadata,
-            employeeCreated: true,
-            employeeId: newEmployee.id
-          };
         } catch (employeeError) {
           console.error('Error creating employee from ticket:', employeeError);
           // Continue with the process, just log the error - we don't want to fail the ticket update
