@@ -46,13 +46,20 @@ export default function LoginPage() {
         credentials: "include", // Important for session cookies
       });
       
+      const data = await response.json();
+      
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.message || "Invalid username or password");
       }
       
       // Successful login - redirect to the home page
-      window.location.href = "/";
+      console.log("Login successful:", data);
+      
+      // Force a page reload to the home page after a short delay
+      // This gives time for the session to be properly established
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1000);
     } catch (err: any) {
       console.error("Login error:", err);
       setError(err.message || "Login failed");

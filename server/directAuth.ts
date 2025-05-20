@@ -114,6 +114,9 @@ export function setupDirectAuth(app: Express) {
           return res.status(500).json({ message: 'Error during authentication' });
         }
         
+        console.log('Session saved successfully, user logged in:', user.id);
+        
+        // Get additional user details
         return res.status(200).json({ 
           message: 'Logged in successfully', 
           user: {
@@ -121,8 +124,10 @@ export function setupDirectAuth(app: Express) {
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
-            isAdmin: user.isAdmin
-          }
+            isAdmin: user.isAdmin,
+            employeeId: user.employeeId
+          },
+          redirectTo: '/'
         });
       });
     } catch (error) {
