@@ -186,7 +186,7 @@ export default function TicketDetail() {
                   </>
                 )}
                 
-                {ticket.metadata && (
+                {ticket.metadata && ticket.type !== 'new_staff_request' && (
                   <>
                     <Separator />
                     <div className="space-y-2">
@@ -195,6 +195,17 @@ export default function TicketDetail() {
                         {JSON.stringify(ticket.metadata, null, 2)}
                       </pre>
                     </div>
+                  </>
+                )}
+                
+                {/* Show the New Staff Request Component */}
+                {ticket.type === 'new_staff_request' && ticket.metadata && (
+                  <>
+                    <Separator />
+                    <NewStaffRequestDetails 
+                      ticketId={ticket.id} 
+                      metadata={ticket.metadata} 
+                    />
                   </>
                 )}
                 
