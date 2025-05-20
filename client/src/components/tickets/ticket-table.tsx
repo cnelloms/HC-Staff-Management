@@ -146,8 +146,8 @@ export function TicketTable() {
                   <TableCell>
                     <div>
                       <div className="font-medium">
-                        <Link href={`/tickets/${ticket.id}`}>
-                          <a className="hover:underline">{ticket.title}</a>
+                        <Link href={`/tickets/${ticket.id}`} className="hover:underline">
+                          {ticket.title}
                         </Link>
                       </div>
                       <div className="text-sm text-muted-foreground truncate max-w-[250px]">
