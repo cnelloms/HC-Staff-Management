@@ -18,7 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { 
   User, 
@@ -86,7 +86,7 @@ export function NewStaffRequestDetails({ ticketId, metadata }: NewStaffRequestDe
   const {
     firstName,
     lastName,
-    position,
+    positionId,
     departmentId,
     reportingManagerId,
     startDate,
@@ -94,6 +94,14 @@ export function NewStaffRequestDetails({ ticketId, metadata }: NewStaffRequestDe
     phone,
     checklist = []
   } = metadata;
+  
+  // Fetch position data
+  const { data: positions } = useQuery({
+    queryKey: ['/api/positions'],
+  });
+  
+  // Find position title
+  const position = positions?.find(p => p.id === positionId)?.title || 'Unknown Position';
   
   // Format the start date if it exists
   const formattedStartDate = startDate ? format(new Date(startDate), 'MMMM d, yyyy') : 'Not specified';
