@@ -34,19 +34,14 @@ export function LoginButton({ className }: { className?: string }) {
   }
 
   return (
-    <Dialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
-      <DialogTrigger asChild>
-        <Button 
-          variant="default" 
-          className={className}
-        >
-          <UserIcon className="mr-2 h-4 w-4" />
-          Login
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <AuthOptions />
-      </DialogContent>
-    </Dialog>
+    <Button 
+      variant="default" 
+      className={className}
+      onClick={() => window.location.href = '/login'}
+      aria-label="Log in to the system"
+    >
+      <UserIcon className="mr-2 h-4 w-4" />
+      Login
+    </Button>
   );
 }
