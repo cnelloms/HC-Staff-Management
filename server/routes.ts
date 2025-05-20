@@ -711,6 +711,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let updateData = {...validationResult.data};
       if (updateData.status === 'closed' && existingTicket.status !== 'closed') {
         updateData.closedAt = new Date();
+        
+        // If this is a new staff request ticket that's being closed, create the employee
+        if (existingTicket.type === 'new_staff_request' && existingTicket.metadata) {
+          try {
+            const staffData = existingTicket.metadata;
+            
+            // Only proceed if we have the required data
+            if (staffData.firstName && staffData.lastName && staffData.position && staffData.departmentId) {
+              // Create a unique email if not provided
+              const email = staffData.workEmail || 
+                `${staffData.firstName.toLowerCase()}.${staffData.lastName.toLowerCase()}@example.com`;
+              
+              // Create the new employee
+              const newEmployee = await storage.createEmployee({
+                firstName: staffData.firstName,
+                lastName: staffData.lastName,
+                email: email,
+                position: staffData.position,
+                departmentId: staffData.departmentId,
+                managerId: staffData.reportingManagerId || staffData.manager,
+                hireDate: staffData.startDate ? new Date(staffData.startDate) : new Date(),
+                status: 'active',
+                phone: staffData.phone || null,
+                avatar: `https://ui-avatars.com/api/?name=${staffData.firstName}+${staffData.lastName}&background=random`
+              });
+              
+              // Create activity for new employee creation
+              await storage.createActivity({
+                employeeId: existingTicket.requestorId,
+                activityType: 'onboarding',
+                description: `Completed onboarding for ${staffData.firstName} ${staffData.lastName}`,
+                metadata: {
+                  ticketId: existingTicket.id,
+                  newEmployeeId: newEmployee.id
+                }
+              });
+              
+              console.log(`New employee created from ticket #${existingTicket.id}: ${newEmployee.firstName} ${newEmployee.lastName} (ID: ${newEmployee.id})`);
+            }
+          } catch (error) {
+            console.error('Error creating employee from ticket:', error);
+            // Continue with ticket update even if employee creation fails
+          }
+        }
       }
       
       const updatedTicket = await storage.updateTicket(id, updateData);
