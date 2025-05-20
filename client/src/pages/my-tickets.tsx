@@ -1,17 +1,13 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/layout";
-import { useCurrentUser } from "@/context/user-context";
 import { Ticket } from "@/types";
+import { useCurrentUser } from "@/context/user-context";
+import { format } from "date-fns";
+import { Link } from "wouter";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -20,413 +16,435 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { format } from "date-fns";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Inbox, 
-  Clock, 
-  CheckCircle,
-  UserCircle,
-  Filter,
-  UserPlus,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import {
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
+import { 
+  FilterX,
+  Plus,
+  Ticket as TicketIcon,
+  Inbox,
+  AlertCircle,
+  Clock,
+  CheckCircle2
+} from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { 
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
+// Status badge variations 
+const getStatusBadge = (status: string) => {
+  switch (status) {
+    case "open":
+      return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">Open</Badge>;
+    case "in_progress":
+      return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800">In Progress</Badge>;
+    case "closed":
+      return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">Closed</Badge>;
+    default:
+      return <Badge variant="outline">{status}</Badge>;
+  }
+};
+
+// Priority badge variations
+const getPriorityBadge = (priority: string) => {
+  switch (priority) {
+    case "high":
+      return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-900 dark:text-red-300">High</Badge>;
+    case "medium":
+      return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 dark:bg-amber-900 dark:text-amber-300">Medium</Badge>;
+    case "low":
+      return <Badge className="bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900 dark:text-green-300">Low</Badge>;
+    default:
+      return <Badge>{priority}</Badge>;
+  }
+};
+
+// Type badge variations
+const getTypeBadge = (type: string) => {
+  switch (type) {
+    case "new_staff_request":
+      return <Badge variant="secondary">New Staff Request</Badge>;
+    case "system_access":
+      return <Badge variant="secondary">System Access</Badge>;
+    case "onboarding":
+      return <Badge variant="secondary">Onboarding</Badge>;
+    case "issue":
+      return <Badge variant="secondary">Issue</Badge>;
+    case "request":
+      return <Badge variant="secondary">General Request</Badge>;
+    default:
+      return <Badge variant="secondary">{type}</Badge>;
+  }
+};
 
 export default function MyTickets() {
-  const { currentUser } = useCurrentUser();
-  const [filter, setFilter] = useState("all");
-  const [searchTerm, setSearchTerm] = useState("");
+  const { currentUser, isLoading: isUserLoading } = useCurrentUser();
+  const [activeTab, setActiveTab] = useState("assigned");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
   
-  const { data: assignedTickets, isLoading } = useQuery({
-    queryKey: ['/api/tickets/assigned', currentUser?.id],
+  // Fetch assigned tickets (where current user is the assignee)
+  const { 
+    data: assignedTickets, 
+    isLoading: isAssignedLoading 
+  } = useQuery<Ticket[]>({
+    queryKey: [`/api/tickets/assignee/${currentUser?.id}`],
     enabled: !!currentUser?.id,
   });
-
-  // Filter tickets based on status and search term
-  const filteredTickets = Array.isArray(assignedTickets) 
-    ? assignedTickets.filter((ticket: Ticket) => {
-        // Apply status filter
-        if (filter !== "all" && ticket.status !== filter) {
-          return false;
-        }
-        
-        // Apply search filter
-        if (searchTerm) {
-          const searchLower = searchTerm.toLowerCase();
-          return (
-            ticket.title.toLowerCase().includes(searchLower) ||
-            ticket.description.toLowerCase().includes(searchLower) ||
-            (ticket.requestor && 
-              `${ticket.requestor.firstName} ${ticket.requestor.lastName}`
-                .toLowerCase()
-                .includes(searchLower)
-            )
-          );
-        }
-        
-        return true;
-      }) 
+  
+  // Filter assigned tickets based on status and type
+  const filteredAssignedTickets = Array.isArray(assignedTickets) 
+    ? assignedTickets.filter(ticket => {
+        const matchesStatus = statusFilter === "all" || ticket.status === statusFilter;
+        const matchesType = typeFilter === "all" || ticket.type === typeFilter;
+        return matchesStatus && matchesType;
+      })
     : [];
+
+  // Ticket count by status for assigned tickets
+  const assignedTicketCounts = {
+    total: Array.isArray(assignedTickets) ? assignedTickets.length : 0,
+    open: Array.isArray(assignedTickets) ? assignedTickets.filter(t => t.status === "open").length : 0,
+    inProgress: Array.isArray(assignedTickets) ? assignedTickets.filter(t => t.status === "in_progress").length : 0,
+    closed: Array.isArray(assignedTickets) ? assignedTickets.filter(t => t.status === "closed").length : 0,
+  };
   
-  // Group tickets by status
-  const openTickets = filteredTickets.filter((t: Ticket) => t.status === "open");
-  const inProgressTickets = filteredTickets.filter((t: Ticket) => t.status === "in_progress");
-  const closedTickets = filteredTickets.filter((t: Ticket) => t.status === "closed");
-  
-  // Calculate statistics
-  const totalAssigned = Array.isArray(assignedTickets) ? assignedTickets.length : 0;
-  const totalOpen = Array.isArray(assignedTickets) 
-    ? assignedTickets.filter((t: Ticket) => t.status === "open").length 
-    : 0;
-  const totalInProgress = Array.isArray(assignedTickets)
-    ? assignedTickets.filter((t: Ticket) => t.status === "in_progress").length
-    : 0;
-  const totalClosed = Array.isArray(assignedTickets)
-    ? assignedTickets.filter((t: Ticket) => t.status === "closed").length
-    : 0;
-  
-  // Staff onboarding tickets
-  const onboardingTickets = filteredTickets.filter(
-    (t: Ticket) => t.type === "new_staff_request"
-  );
+  // Ticket count by status for created tickets
+  const createdTickets = Array.isArray(assignedTickets) 
+    ? assignedTickets.filter(ticket => ticket.requestorId === currentUser?.id)
+    : [];
+    
+  const createdTicketCounts = {
+    total: createdTickets.length,
+    open: createdTickets.filter(t => t.status === "open").length,
+    inProgress: createdTickets.filter(t => t.status === "in_progress").length,
+    closed: createdTickets.filter(t => t.status === "closed").length,
+  };
+
+  // Reset filters
+  const resetFilters = () => {
+    setStatusFilter("all");
+    setTypeFilter("all");
+  };
+
+  // Loading state
+  if (isUserLoading) {
+    return (
+      <Layout title="My Tickets">
+        <div className="flex justify-center items-center h-64">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout title="My Tickets">
-      <div className="container mx-auto py-6">
-        <div className="flex justify-between items-center mb-6">
+      <div className="space-y-6">
+        {/* Header with counts */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">My Tickets</h1>
+            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+              <Inbox className="h-8 w-8" />
+              My Tickets
+            </h1>
             <p className="text-muted-foreground mt-1">
-              Manage tickets assigned to you
+              Manage tickets assigned to you and view your ticket requests
             </p>
           </div>
-          <Link href="/tickets/new">
-            <Button>
-              <UserPlus className="mr-2 h-4 w-4" />
-              New Staff Request
+          
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button asChild>
+              <Link href="/tickets/new">
+                <Plus className="mr-2 h-4 w-4" />
+                New Ticket
+              </Link>
             </Button>
-          </Link>
-        </div>
-        
-        {/* Stats cards */}
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-4 mb-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Assigned
-              </CardTitle>
-              <Inbox className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalAssigned}</div>
-              <p className="text-xs text-muted-foreground">
-                All tickets assigned to you
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Open</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalOpen}</div>
-              <p className="text-xs text-muted-foreground">
-                Tickets waiting to be actioned
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-              <UserCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalInProgress}</div>
-              <p className="text-xs text-muted-foreground">
-                Tickets you're currently working on
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Closed</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalClosed}</div>
-              <p className="text-xs text-muted-foreground">
-                Completed tickets
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Filter controls */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6 items-end">
-          <div className="w-full sm:w-1/4">
-            <label className="text-sm font-medium mb-1 block">Status</label>
-            <Select 
-              value={filter} 
-              onValueChange={(value) => setFilter(value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="w-full sm:w-3/4">
-            <label className="text-sm font-medium mb-1 block">Search</label>
-            <Input
-              placeholder="Search tickets by title, description, or requestor"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full"
-            />
           </div>
         </div>
-
-        {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4">Loading your tickets...</p>
+        
+        {/* Ticket Tabs */}
+        <Tabs defaultValue="assigned" value={activeTab} onValueChange={setActiveTab}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <TabsList>
+              <TabsTrigger value="assigned" className="relative">
+                Assigned to Me
+                {assignedTicketCounts.total > 0 && (
+                  <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5">
+                    {assignedTicketCounts.total}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="created" className="relative">
+                Created by Me
+                {createdTicketCounts.total > 0 && (
+                  <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5">
+                    {createdTicketCounts.total}
+                  </span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+            
+            <div className="flex items-center gap-2">
+              {/* Status Filter */}
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[130px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {/* Type Filter */}
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="new_staff_request">New Staff Request</SelectItem>
+                  <SelectItem value="system_access">System Access</SelectItem>
+                  <SelectItem value="onboarding">Onboarding</SelectItem>
+                  <SelectItem value="issue">Issue</SelectItem>
+                  <SelectItem value="request">General Request</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {/* Reset Filters */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={resetFilters}
+                disabled={statusFilter === "all" && typeFilter === "all"}
+                title="Reset filters"
+              >
+                <FilterX className="h-4 w-4" />
+              </Button>
             </div>
           </div>
-        ) : (
-          <>
-            {totalAssigned === 0 ? (
-              <Alert className="my-8">
-                <AlertTitle>No tickets assigned to you yet</AlertTitle>
-                <AlertDescription>
-                  When tickets are assigned to you, they will appear here.
-                </AlertDescription>
-              </Alert>
-            ) : filteredTickets.length === 0 ? (
-              <Alert className="my-8">
-                <AlertTitle>No tickets match your filters</AlertTitle>
-                <AlertDescription>
-                  Try adjusting your search criteria or filter settings.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <Tabs defaultValue="all" className="w-full">
-                <TabsList className="grid grid-cols-4 w-full">
-                  <TabsTrigger value="all">
-                    All ({filteredTickets.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="open">
-                    Open ({openTickets.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="in-progress">
-                    In Progress ({inProgressTickets.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="closed">
-                    Closed ({closedTickets.length})
-                  </TabsTrigger>
-                </TabsList>
+          
+          {/* Assigned Tickets Tab */}
+          <TabsContent value="assigned">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TicketIcon className="h-5 w-5" />
+                  Tickets Assigned To Me
+                </CardTitle>
+                <CardDescription>
+                  Manage and update status of tickets where you're the assignee
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-3 mb-6">
+                  <div className="flex-1 p-4 border rounded-lg bg-card">
+                    <div className="text-muted-foreground text-sm">Open</div>
+                    <div className="text-2xl font-bold mt-1 flex items-center gap-2">
+                      <AlertCircle className="text-blue-500 h-5 w-5" />
+                      {assignedTicketCounts.open}
+                    </div>
+                  </div>
+                  <div className="flex-1 p-4 border rounded-lg bg-card">
+                    <div className="text-muted-foreground text-sm">In Progress</div>
+                    <div className="text-2xl font-bold mt-1 flex items-center gap-2">
+                      <Clock className="text-amber-500 h-5 w-5" />
+                      {assignedTicketCounts.inProgress}
+                    </div>
+                  </div>
+                  <div className="flex-1 p-4 border rounded-lg bg-card">
+                    <div className="text-muted-foreground text-sm">Closed</div>
+                    <div className="text-2xl font-bold mt-1 flex items-center gap-2">
+                      <CheckCircle2 className="text-green-500 h-5 w-5" />
+                      {assignedTicketCounts.closed}
+                    </div>
+                  </div>
+                </div>
                 
-                <ScrollArea className="h-[60vh]">
-                  <TabsContent value="all" className="mt-4">
-                    <TicketTable tickets={filteredTickets} />
-                  </TabsContent>
-                  
-                  <TabsContent value="open" className="mt-4">
-                    {openTickets.length === 0 ? (
-                      <Alert>
-                        <AlertTitle>No open tickets</AlertTitle>
-                        <AlertDescription>
-                          You don't have any open tickets assigned to you.
-                        </AlertDescription>
-                      </Alert>
-                    ) : (
-                      <TicketTable tickets={openTickets} />
-                    )}
-                  </TabsContent>
-                  
-                  <TabsContent value="in-progress" className="mt-4">
-                    {inProgressTickets.length === 0 ? (
-                      <Alert>
-                        <AlertTitle>No in-progress tickets</AlertTitle>
-                        <AlertDescription>
-                          You don't have any tickets currently in progress.
-                        </AlertDescription>
-                      </Alert>
-                    ) : (
-                      <TicketTable tickets={inProgressTickets} />
-                    )}
-                  </TabsContent>
-                  
-                  <TabsContent value="closed" className="mt-4">
-                    {closedTickets.length === 0 ? (
-                      <Alert>
-                        <AlertTitle>No closed tickets</AlertTitle>
-                        <AlertDescription>
-                          You don't have any closed tickets.
-                        </AlertDescription>
-                      </Alert>
-                    ) : (
-                      <TicketTable tickets={closedTickets} />
-                    )}
-                  </TabsContent>
-                </ScrollArea>
-              </Tabs>
-            )}
-            
-            {/* Staff Onboarding Section when there are onboarding tickets */}
-            {onboardingTickets.length > 0 && (
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle className="text-xl">Staff Onboarding Tasks</CardTitle>
-                  <CardDescription>
-                    Review and complete onboarding tasks for new staff members
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>New Staff Member</TableHead>
-                        <TableHead>Position</TableHead>
-                        <TableHead>Start Date</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Priority</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {onboardingTickets.map((ticket: Ticket) => (
-                        <TableRow key={ticket.id}>
-                          <TableCell>
-                            {ticket.metadata?.firstName} {ticket.metadata?.lastName}
-                          </TableCell>
-                          <TableCell>
-                            {ticket.metadata?.position?.title || 
-                             "Position not specified"}
-                          </TableCell>
-                          <TableCell>
-                            {ticket.metadata?.startDate 
-                              ? format(new Date(ticket.metadata.startDate), "MMM d, yyyy")
-                              : "Not specified"}
-                          </TableCell>
-                          <TableCell>
-                            <StatusBadge status={ticket.status} />
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                ticket.priority === "high"
-                                  ? "destructive"
-                                  : ticket.priority === "medium"
-                                  ? "default"
-                                  : "outline"
-                              }
-                            >
-                              {ticket.priority}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="outline" size="sm" asChild>
-                              <Link href={`/ticket/${ticket.id}`}>View Details</Link>
-                            </Button>
-                          </TableCell>
+                {isAssignedLoading ? (
+                  <div className="flex justify-center items-center h-64">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : filteredAssignedTickets.length > 0 ? (
+                  <ScrollArea className="h-[400px]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>ID</TableHead>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Priority</TableHead>
+                          <TableHead>Created</TableHead>
+                          <TableHead>Requestor</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            )}
-          </>
-        )}
+                      </TableHeader>
+                      <TableBody>
+                        {filteredAssignedTickets.map((ticket) => (
+                          <TableRow key={ticket.id}>
+                            <TableCell className="font-medium">#{ticket.id}</TableCell>
+                            <TableCell>
+                              <Link href={`/tickets/${ticket.id}`} className="text-primary hover:underline">
+                                {ticket.title}
+                              </Link>
+                            </TableCell>
+                            <TableCell>{getTypeBadge(ticket.type)}</TableCell>
+                            <TableCell>{getStatusBadge(ticket.status)}</TableCell>
+                            <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
+                            <TableCell>{format(new Date(ticket.createdAt), 'MMM d, yyyy')}</TableCell>
+                            <TableCell>
+                              {ticket.requestor?.firstName} {ticket.requestor?.lastName}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                ) : (
+                  <div className="text-center py-12 border rounded-lg">
+                    <TicketIcon className="mx-auto h-12 w-12 text-muted-foreground opacity-20" />
+                    <h3 className="mt-4 text-lg font-medium">No tickets found</h3>
+                    <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
+                      {statusFilter !== "all" || typeFilter !== "all"
+                        ? "Try changing your filters or check back later for new assignments."
+                        : "You don't have any assigned tickets yet. Check back later for new assignments."}
+                    </p>
+                    {(statusFilter !== "all" || typeFilter !== "all") && (
+                      <Button variant="outline" className="mt-4" onClick={resetFilters}>
+                        <FilterX className="mr-2 h-4 w-4" />
+                        Clear Filters
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Created Tickets Tab */}
+          <TabsContent value="created">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TicketIcon className="h-5 w-5" />
+                  Tickets Created By Me
+                </CardTitle>
+                <CardDescription>
+                  Track the status of tickets you've submitted
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-3 mb-6">
+                  <div className="flex-1 p-4 border rounded-lg bg-card">
+                    <div className="text-muted-foreground text-sm">Open</div>
+                    <div className="text-2xl font-bold mt-1 flex items-center gap-2">
+                      <AlertCircle className="text-blue-500 h-5 w-5" />
+                      {createdTicketCounts.open}
+                    </div>
+                  </div>
+                  <div className="flex-1 p-4 border rounded-lg bg-card">
+                    <div className="text-muted-foreground text-sm">In Progress</div>
+                    <div className="text-2xl font-bold mt-1 flex items-center gap-2">
+                      <Clock className="text-amber-500 h-5 w-5" />
+                      {createdTicketCounts.inProgress}
+                    </div>
+                  </div>
+                  <div className="flex-1 p-4 border rounded-lg bg-card">
+                    <div className="text-muted-foreground text-sm">Closed</div>
+                    <div className="text-2xl font-bold mt-1 flex items-center gap-2">
+                      <CheckCircle2 className="text-green-500 h-5 w-5" />
+                      {createdTicketCounts.closed}
+                    </div>
+                  </div>
+                </div>
+                
+                {isAssignedLoading ? (
+                  <div className="flex justify-center items-center h-64">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : createdTickets.length > 0 ? (
+                  <ScrollArea className="h-[400px]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>ID</TableHead>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Priority</TableHead>
+                          <TableHead>Created</TableHead>
+                          <TableHead>Assignee</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {createdTickets
+                          .filter(ticket => {
+                            const matchesStatus = statusFilter === "all" || ticket.status === statusFilter;
+                            const matchesType = typeFilter === "all" || ticket.type === typeFilter;
+                            return matchesStatus && matchesType;
+                          })
+                          .map((ticket) => (
+                            <TableRow key={ticket.id}>
+                              <TableCell className="font-medium">#{ticket.id}</TableCell>
+                              <TableCell>
+                                <Link href={`/tickets/${ticket.id}`} className="text-primary hover:underline">
+                                  {ticket.title}
+                                </Link>
+                              </TableCell>
+                              <TableCell>{getTypeBadge(ticket.type)}</TableCell>
+                              <TableCell>{getStatusBadge(ticket.status)}</TableCell>
+                              <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
+                              <TableCell>{format(new Date(ticket.createdAt), 'MMM d, yyyy')}</TableCell>
+                              <TableCell>
+                                {ticket.assignee ? `${ticket.assignee.firstName} ${ticket.assignee.lastName}` : "—"}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                ) : (
+                  <div className="text-center py-12 border rounded-lg">
+                    <TicketIcon className="mx-auto h-12 w-12 text-muted-foreground opacity-20" />
+                    <h3 className="mt-4 text-lg font-medium">No tickets found</h3>
+                    <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
+                      {statusFilter !== "all" || typeFilter !== "all"
+                        ? "Try changing your filters or create a new ticket request."
+                        : "You haven't created any tickets yet. Click the 'New Ticket' button to get started."}
+                    </p>
+                    {(statusFilter !== "all" || typeFilter !== "all") ? (
+                      <Button variant="outline" className="mt-4" onClick={resetFilters}>
+                        <FilterX className="mr-2 h-4 w-4" />
+                        Clear Filters
+                      </Button>
+                    ) : (
+                      <Button className="mt-4" asChild>
+                        <Link href="/tickets/new">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Create Ticket
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
-  );
-}
-
-function TicketTable({ tickets }: { tickets: Ticket[] }) {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Title</TableHead>
-          <TableHead>Requestor</TableHead>
-          <TableHead>Created</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Priority</TableHead>
-          <TableHead>Type</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {tickets.map((ticket: Ticket) => (
-          <TableRow key={ticket.id}>
-            <TableCell>
-              <div className="font-medium">{ticket.title}</div>
-            </TableCell>
-            <TableCell>
-              {ticket.requestor
-                ? `${ticket.requestor.firstName} ${ticket.requestor.lastName}`
-                : "Unknown"}
-            </TableCell>
-            <TableCell>
-              {format(new Date(ticket.createdAt), "MMM d, yyyy")}
-            </TableCell>
-            <TableCell>
-              <StatusBadge status={ticket.status} />
-            </TableCell>
-            <TableCell>
-              <Badge
-                variant={
-                  ticket.priority === "high"
-                    ? "destructive"
-                    : ticket.priority === "medium"
-                    ? "default"
-                    : "outline"
-                }
-              >
-                {ticket.priority}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              <Badge variant="secondary">
-                {ticket.type === "new_staff_request"
-                  ? "New Staff"
-                  : ticket.type === "system_access"
-                  ? "System Access"
-                  : ticket.type === "onboarding"
-                  ? "Onboarding"
-                  : ticket.type === "issue"
-                  ? "Issue"
-                  : "Request"}
-              </Badge>
-            </TableCell>
-            <TableCell className="text-right">
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/ticket/${ticket.id}`}>View</Link>
-              </Button>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
   );
 }
