@@ -2,10 +2,23 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <!-- Fixed viewport meta tag without maximum-scale -->
+    <title>Staff Management Portal</title>
+    <!-- Dynamic viewport fix script -->
+    <script>
+      // Remove any problematic viewport meta tags
+      document.addEventListener('DOMContentLoaded', function() {
+        const existingViewportTags = document.querySelectorAll('meta[name="viewport"]');
+        existingViewportTags.forEach(tag => tag.remove());
+        
+        // Create a new, correct viewport tag
+        const newViewport = document.createElement('meta');
+        newViewport.setAttribute('name', 'viewport');
+        newViewport.setAttribute('content', 'width=device-width, initial-scale=1.0, user-scalable=yes');
+        document.head.appendChild(newViewport);
+      });
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
     <meta name="description" content="A comprehensive web-based staff management platform that automates and streamlines employee onboarding, ticketing, and workflow management." />
-    <title>Staff Management Portal</title>
     <!-- Preconnect to improve performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
