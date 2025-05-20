@@ -310,3 +310,38 @@ export type Credential = typeof credentials.$inferSelect;
 export type InsertCredential = z.infer<typeof insertCredentialSchema>;
 export type AuthSettings = typeof authSettings.$inferSelect;
 export type InsertAuthSettings = z.infer<typeof insertAuthSettingsSchema>;
+
+// Key-Value Store table
+export const keyValueStore = pgTable("key_value_store", {
+  id: serial("id").primaryKey(),
+  namespace: varchar("namespace").notNull(), // Categorizes the type of data: 'user_preferences', 'app_config', 'announcements', 'session_data', 'cache'
+  key: varchar("key").notNull(),
+  value: jsonb("value").notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: 'cascade' }), // Optional: only populated for user-specific data
+  expiresAt: timestamp("expires_at"), // Optional: for temporary/cached data
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    namespaceKeyUserIdx: index("namespace_key_user_idx").on(
+      table.namespace, 
+      table.key, 
+      table.userId
+    ),
+    // Ensure unique combinations of namespace+key when userId is null (global settings)
+    uniqueGlobalKeys: uniqueIndex("unique_global_keys")
+      .on(table.namespace, table.key)
+      .where(`user_id IS NULL`)
+  };
+});
+
+export const insertKeyValueSchema = createInsertSchema(keyValueStore).pick({
+  namespace: true,
+  key: true,
+  value: true,
+  userId: true,
+  expiresAt: true,
+});
+
+export type KeyValueStore = typeof keyValueStore.$inferSelect;
+export type InsertKeyValueStore = z.infer<typeof insertKeyValueSchema>;
