@@ -4,11 +4,9 @@ import {
   Users,
   Ticket,
   Layout,
-  Key,
   BarChart2,
   Settings,
   Home,
-  ShieldCheck,
   FileUp,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,8 +27,6 @@ export function Sidebar({ user = { name: 'Sarah Johnson', role: 'HR Administrato
     { href: "/directory", label: "Staff Directory", icon: <Users className="sidebar-icon" /> },
     { href: "/staff-import", label: "Import Staff", icon: <FileUp className="sidebar-icon" /> },
     { href: "/tickets", label: "Tickets", icon: <Ticket className="sidebar-icon" /> },
-    { href: "/access-management", label: "Compliance", icon: <Key className="sidebar-icon" /> },
-    { href: "/permissions", label: "Permissions", icon: <ShieldCheck className="sidebar-icon" /> },
     { href: "/reports", label: "Reports", icon: <BarChart2 className="sidebar-icon" /> },
     { href: "/settings", label: "Settings", icon: <Settings className="sidebar-icon" /> },
   ];
