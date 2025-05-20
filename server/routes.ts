@@ -5,12 +5,14 @@ import {
   insertDepartmentSchema, insertEmployeeSchema, insertSystemSchema, 
   insertSystemAccessSchema, insertTicketSchema, insertActivitySchema,
   insertPermissionSchema, insertRoleSchema, insertRolePermissionSchema, insertEmployeeRoleSchema,
-  insertPositionSchema
+  insertPositionSchema, users, credentials
 } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
 import { setupMicrosoftAuth } from "./microsoftAuth";
 import { setupDirectAuth } from "./directAuth";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
@@ -21,6 +23,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Set up direct authentication
   setupDirectAuth(app);
+  
+  // User management API route - get all users (admin only)
+  app.get('/api/users', async (req: any, res) => {
+    try {
+      // Only allow access to admins
+      if (!req.session?.directUser?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      // Get all users from the database
+      const allUsers = await storage.getAllUsers();
+      
+      // For users with direct authentication, get their credential details
+      const usersWithCredentials = await Promise.all(
+        allUsers.map(async (user) => {
+          if (user.authProvider === 'direct') {
+            const userCredentials = await db.select()
+              .from(credentials)
+              .where(eq(credentials.userId, user.id));
+            
+            const credential = userCredentials[0];
+            
+            if (credential) {
+              return {
+                ...user,
+                username: credential.username,
+                isEnabled: credential.isEnabled !== false,
+                lastLoginAt: credential.lastLoginAt
+              };
+            }
+          }
+          return user;
+        })
+      );
+      
+      return res.json(usersWithCredentials);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
   
   // Authentication status route
   app.get('/api/auth/user', async (req: any, res) => {

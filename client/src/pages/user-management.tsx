@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { 
   Tabs, 
   TabsContent, 
@@ -38,7 +39,18 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/layout";
-import { Shield, UserCog, Settings2, RefreshCw, UserPlus, Key, ToggleLeft } from "lucide-react";
+import { 
+  Shield, 
+  UserCog, 
+  Settings2, 
+  RefreshCw, 
+  UserPlus, 
+  Key, 
+  ToggleLeft,
+  CheckCircle,
+  XCircle
+} from "lucide-react";
+import { queryClient } from "../lib/queryClient";
 
 export default function UserManagementPage() {
   const { isAuthenticated, isAdmin } = useAuth();
@@ -99,37 +111,25 @@ export default function UserManagementPage() {
 }
 
 function UserManagement() {
-  const [users, setUsers] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const [isCreateUserDialogOpen, setIsCreateUserDialogOpen] = useState(false);
   
-  // Fetch users
+  // Fetch users with React Query
+  const { data: users = [], isLoading, error } = useQuery({
+    queryKey: ['/api/users'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+  
+  // Show error toast if fetching users fails
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch('/api/users');
-        if (response.ok) {
-          const data = await response.json();
-          setUsers(data);
-        } else {
-          throw new Error('Failed to fetch users');
-        }
-      } catch (error) {
-        console.error('Error fetching users:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load users",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchUsers();
-  }, [toast]);
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load users",
+        variant: "destructive"
+      });
+    }
+  }, [error, toast]);
   
   const handleToggleUserStatus = async (userId: string, isEnabled: boolean) => {
     try {
@@ -147,10 +147,8 @@ function UserManagement() {
           description: `User ${isEnabled ? 'enabled' : 'disabled'} successfully`
         });
         
-        // Update the local state
-        setUsers(users.map(user => 
-          user.id === userId ? { ...user, isEnabled } : user
-        ));
+        // Invalidate the users query to refresh the data
+        queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       } else {
         throw new Error('Failed to update user status');
       }
@@ -179,7 +177,7 @@ function UserManagement() {
             <CreateUserForm onSuccess={() => {
               setIsCreateUserDialogOpen(false);
               // Refresh the user list
-              window.location.reload();
+              queryClient.invalidateQueries({ queryKey: ['/api/users'] });
             }} />
           </DialogContent>
         </Dialog>
@@ -209,7 +207,7 @@ function UserManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
+                {users.map((user: any) => (
                   <TableRow key={user.id}>
                     <TableCell>{user.username || '-'}</TableCell>
                     <TableCell>{user.firstName} {user.lastName}</TableCell>
@@ -217,19 +215,35 @@ function UserManagement() {
                     <TableCell>
                       {user.authProvider === 'direct' ? 'Username/Password' : 
                        user.authProvider === 'microsoft' ? 'Microsoft' : 
-                       user.authProvider === 'replit' ? 'Replit' : user.authProvider}
+                       user.authProvider === 'replit' ? 'Replit' : 
+                       user.authProvider || 'Unknown'}
                     </TableCell>
-                    <TableCell>{user.isAdmin ? 'Admin' : 'User'}</TableCell>
+                    <TableCell>
+                      {user.isAdmin ? (
+                        <div className="flex items-center text-primary">
+                          <Shield className="h-4 w-4 mr-1" />
+                          Admin
+                        </div>
+                      ) : 'User'}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center">
-                        <Switch 
-                          checked={user.isEnabled !== false} 
-                          onCheckedChange={(checked) => handleToggleUserStatus(user.id, checked)}
-                          disabled={user.authProvider !== 'direct'}
-                        />
-                        <span className="ml-2">
-                          {user.isEnabled !== false ? 'Active' : 'Disabled'}
-                        </span>
+                        {user.authProvider === 'direct' ? (
+                          <>
+                            <Switch 
+                              checked={user.isEnabled !== false} 
+                              onCheckedChange={(checked) => handleToggleUserStatus(user.id, checked)}
+                            />
+                            <span className="ml-2">
+                              {user.isEnabled !== false ? 'Active' : 'Disabled'}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="flex items-center">
+                            <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
+                            Active
+                          </span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -515,7 +529,7 @@ function AuthSettings() {
   const [settings, setSettings] = useState({
     directLoginEnabled: true,
     microsoftLoginEnabled: false,
-    replitLoginEnabled: true
+    replitLoginEnabled: false
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -530,15 +544,15 @@ function AuthSettings() {
         if (response.ok) {
           const data = await response.json();
           setSettings({
-            directLoginEnabled: data.directLoginEnabled,
-            microsoftLoginEnabled: data.microsoftLoginEnabled,
-            replitLoginEnabled: data.replitLoginEnabled
+            directLoginEnabled: data.directLoginEnabled ?? true,
+            microsoftLoginEnabled: data.microsoftLoginEnabled ?? false,
+            replitLoginEnabled: data.replitLoginEnabled ?? false
           });
         } else {
           throw new Error('Failed to fetch authentication settings');
         }
       } catch (error) {
-        console.error('Error fetching settings:', error);
+        console.error('Error fetching auth settings:', error);
         toast({
           title: "Error",
           description: "Failed to load authentication settings",
@@ -572,7 +586,7 @@ function AuthSettings() {
         throw new Error('Failed to update authentication settings');
       }
     } catch (error) {
-      console.error('Error saving settings:', error);
+      console.error('Error updating auth settings:', error);
       toast({
         title: "Error",
         description: "Failed to update authentication settings",
@@ -584,76 +598,70 @@ function AuthSettings() {
   };
   
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Authentication Methods</CardTitle>
-        <CardDescription>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold">Authentication Settings</h2>
+        <p className="text-muted-foreground">
           Configure which authentication methods are available for users
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {isLoading ? (
-          <div className="flex justify-center items-center py-4">
-            <RefreshCw className="h-6 w-6 animate-spin text-primary" />
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="directLogin">Username & Password</Label>
-                <p className="text-sm text-muted-foreground">
-                  Allow users to log in with username and password
-                </p>
-              </div>
-              <Switch
-                id="directLogin"
-                checked={settings.directLoginEnabled}
-                onCheckedChange={(checked) => setSettings({ ...settings, directLoginEnabled: checked })}
-              />
+        </p>
+      </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Login Methods</CardTitle>
+          <CardDescription>
+            Enable or disable different authentication methods
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isLoading ? (
+            <div className="flex justify-center">
+              <RefreshCw className="h-6 w-6 animate-spin text-primary" />
             </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="microsoftLogin">Microsoft Authentication</Label>
-                <p className="text-sm text-muted-foreground">
-                  Allow users to log in with Microsoft Entra ID
-                </p>
-              </div>
-              <Switch
-                id="microsoftLogin"
-                checked={settings.microsoftLoginEnabled}
-                onCheckedChange={(checked) => setSettings({ ...settings, microsoftLoginEnabled: checked })}
-              />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="replitLogin">Replit Authentication</Label>
-                <p className="text-sm text-muted-foreground">
-                  Allow users to log in with Replit
-                </p>
-              </div>
-              <Switch
-                id="replitLogin"
-                checked={settings.replitLoginEnabled}
-                onCheckedChange={(checked) => setSettings({ ...settings, replitLoginEnabled: checked })}
-              />
-            </div>
-          </>
-        )}
-      </CardContent>
-      <CardFooter>
-        <Button onClick={handleSaveSettings} disabled={isLoading || isSaving}>
-          {isSaving ? (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
           ) : (
-            'Save Settings'
+            <>
+              <div className="flex items-center justify-between py-2">
+                <div>
+                  <h3 className="font-medium">Username/Password</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Allow users to log in with a username and password
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.directLoginEnabled}
+                  onCheckedChange={(checked) => setSettings({ ...settings, directLoginEnabled: checked })}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between py-2">
+                <div>
+                  <h3 className="font-medium">Microsoft Entra ID</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Allow users to log in with their Microsoft account (Coming Soon)
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.microsoftLoginEnabled}
+                  onCheckedChange={(checked) => setSettings({ ...settings, microsoftLoginEnabled: checked })}
+                  disabled={true}
+                />
+              </div>
+            </>
           )}
-        </Button>
-      </CardFooter>
-    </Card>
+        </CardContent>
+        <CardFooter>
+          <Button onClick={handleSaveSettings} disabled={isLoading || isSaving}>
+            {isSaving ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save Settings'
+            )}
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
   );
 }
