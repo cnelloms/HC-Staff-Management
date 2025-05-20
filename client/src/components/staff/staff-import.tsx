@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import * as XLSX from 'xlsx';
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -60,8 +61,9 @@ import {
 import { Upload, FileText, AlertCircle, Info, Check } from "lucide-react";
 
 // Define the schema for CSV upload and mapping
-const csvImportSchema = z.object({
-  csvData: z.string().min(1, { message: "CSV data is required" }),
+const importSchema = z.object({
+  fileData: z.string().min(1, { message: "File data is required" }),
+  fileType: z.enum(["csv", "xlsx"]),
   firstRowHeaders: z.boolean().default(true),
   delimiter: z.string().default(","),
   mappings: z.record(z.string(), z.string()).optional(),
@@ -95,10 +97,19 @@ export function StaffImport() {
     errors: [],
   });
 
-  const form = useForm<z.infer<typeof csvImportSchema>>({
-    resolver: zodResolver(csvImportSchema),
+  // Check if the import feature is enabled
+  const { data: featureFlags } = useQuery({
+    queryKey: ['/api/feature-flags'],
+  });
+
+  const isImportEnabled = featureFlags?.staffImport?.enabled || false;
+  const focusLMS = featureFlags?.focusLMS || false;
+
+  const form = useForm<z.infer<typeof importSchema>>({
+    resolver: zodResolver(importSchema),
     defaultValues: {
-      csvData: "",
+      fileData: "",
+      fileType: "csv",
       firstRowHeaders: true,
       delimiter: ",",
       mappings: {},
@@ -171,24 +182,77 @@ export function StaffImport() {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    
+    // Detect file type from extension
+    const fileType = file.name.toLowerCase().endsWith('.xlsx') ? 'xlsx' : 'csv';
+    form.setValue("fileType", fileType);
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      const content = e.target?.result as string;
-      form.setValue("csvData", content);
+      const content = e.target?.result;
       
-      // Parse and preview the CSV data
-      const delimiter = form.getValues("delimiter");
-      const hasHeaders = form.getValues("firstRowHeaders");
-      const { headers, data } = parseCSV(content, delimiter, hasHeaders);
+      let headers: string[] = [];
+      let parsedData: any[] = [];
+      
+      if (fileType === 'xlsx') {
+        // Parse Excel file
+        const data = new Uint8Array(content as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        // Get the first worksheet
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        
+        // Convert to JSON
+        const jsonData = XLSX.utils.sheet_to_json<any>(firstSheet, { header: 1 });
+        
+        if (jsonData.length > 0) {
+          const hasHeaders = form.getValues("firstRowHeaders");
+          
+          if (hasHeaders && jsonData.length > 0) {
+            headers = jsonData[0].map((h: any) => String(h));
+            parsedData = jsonData.slice(1).map(row => {
+              const obj: Record<string, any> = {};
+              headers.forEach((header, i) => {
+                obj[header] = row[i] !== undefined ? row[i] : '';
+              });
+              return obj;
+            });
+          } else {
+            // No headers, use column indices
+            headers = jsonData[0].map((_, i) => `Column ${i + 1}`);
+            parsedData = jsonData.map(row => {
+              const obj: Record<string, any> = {};
+              headers.forEach((header, i) => {
+                obj[header] = row[i] !== undefined ? row[i] : '';
+              });
+              return obj;
+            });
+          }
+        }
+        
+        // Store the stringified data
+        form.setValue("fileData", JSON.stringify(jsonData));
+      } else {
+        // Parse CSV file
+        const textContent = content as string;
+        form.setValue("fileData", textContent);
+        
+        // Parse and preview the CSV data
+        const delimiter = form.getValues("delimiter");
+        const hasHeaders = form.getValues("firstRowHeaders");
+        const result = parseCSV(textContent, delimiter, hasHeaders);
+        
+        headers = result.headers;
+        parsedData = result.data;
+      }
       
       setHeaders(headers);
-      setPreviewData(data.slice(0, 5)); // Show first 5 rows for preview
+      setPreviewData(parsedData.slice(0, 5)); // Show first 5 rows for preview
       
       // Initialize mappings
       const initialMappings: Record<string, string> = {};
       headers.forEach(header => {
-        // Try to match CSV headers with expected field names
+        // Try to match headers with expected field names
         const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '');
         
         if (normalizedHeader.includes('first') && normalizedHeader.includes('name')) {
@@ -207,28 +271,37 @@ export function StaffImport() {
           initialMappings[header] = 'hireDate';
         } else if (normalizedHeader.includes('manager')) {
           initialMappings[header] = 'managerId';
+        } else if (normalizedHeader.includes('lms') || normalizedHeader.includes('academy') || normalizedHeader.includes('training')) {
+          initialMappings[header] = 'lmsStatus';
         }
       });
       
       form.setValue("mappings", initialMappings);
     };
     
-    reader.readAsText(file);
+    if (fileType === 'xlsx') {
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.readAsText(file);
+    }
   };
 
   const handleDelimiterChange = () => {
-    const csvData = form.getValues("csvData");
-    if (!csvData) return;
+    const fileData = form.getValues("fileData");
+    const fileType = form.getValues("fileType");
+    if (!fileData) return;
     
-    const delimiter = form.getValues("delimiter");
-    const hasHeaders = form.getValues("firstRowHeaders");
-    const { headers, data } = parseCSV(csvData, delimiter, hasHeaders);
-    
-    setHeaders(headers);
-    setPreviewData(data.slice(0, 5));
-    
-    // Reset mappings when delimiter changes
-    form.setValue("mappings", {});
+    if (fileType === 'csv') {
+      const delimiter = form.getValues("delimiter");
+      const hasHeaders = form.getValues("firstRowHeaders");
+      const { headers, data } = parseCSV(fileData, delimiter, hasHeaders);
+      
+      setHeaders(headers);
+      setPreviewData(data.slice(0, 5));
+      
+      // Reset mappings when delimiter changes
+      form.setValue("mappings", {});
+    }
   };
 
   const updateMapping = (csvHeader: string, fieldName: string) => {
@@ -246,6 +319,15 @@ export function StaffImport() {
   };
 
   const handleImport = () => {
+    if (!isImportEnabled) {
+      toast({
+        title: "Import disabled",
+        description: "Staff import feature is currently disabled",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!mappingComplete) {
       toast({
         title: "Mapping incomplete",
@@ -261,24 +343,55 @@ export function StaffImport() {
   const confirmImport = () => {
     setShowConfirmDialog(false);
     
-    const csvData = form.getValues("csvData");
-    const delimiter = form.getValues("delimiter");
+    const fileData = form.getValues("fileData");
+    const fileType = form.getValues("fileType");
     const hasHeaders = form.getValues("firstRowHeaders");
     const mappings = form.getValues("mappings") || {};
     
-    const { data } = parseCSV(csvData, delimiter, hasHeaders);
+    let parsedData: any[] = [];
+    
+    if (fileType === 'xlsx') {
+      // Parse Excel data from the stored JSON string
+      const jsonData = JSON.parse(fileData);
+      
+      if (hasHeaders && jsonData.length > 0) {
+        const headers = jsonData[0].map((h: any) => String(h));
+        parsedData = jsonData.slice(1).map((row: any) => {
+          const obj: Record<string, any> = {};
+          headers.forEach((header: string, i: number) => {
+            obj[header] = row[i] !== undefined ? row[i] : '';
+          });
+          return obj;
+        });
+      }
+    } else {
+      // Parse CSV data
+      const delimiter = form.getValues("delimiter");
+      const { data } = parseCSV(fileData, delimiter, hasHeaders);
+      parsedData = data;
+    }
     
     // Transform the data based on the field mappings
-    const transformedData = data.map(row => {
+    const transformedData = parsedData.map(row => {
       const transformedRow: Record<string, any> = {};
       
-      Object.entries(mappings).forEach(([csvHeader, fieldName]) => {
+      Object.entries(mappings).forEach(([header, fieldName]) => {
         if (fieldName) {
           // Special handling for departmentId and managerId (convert to number)
           if (fieldName === 'departmentId' || fieldName === 'managerId') {
-            transformedRow[fieldName] = parseInt(row[csvHeader]) || null;
+            transformedRow[fieldName] = parseInt(row[header]) || null;
+          } else if (fieldName === 'lmsStatus') {
+            // Handle LMS status - convert to boolean or appropriate status
+            const value = row[header]?.toString().toLowerCase();
+            if (value === 'yes' || value === 'true' || value === 'complete' || value === 'completed' || value === '1') {
+              transformedRow.lmsStatus = 'completed';
+            } else if (value === 'in progress' || value === 'inprogress' || value === 'started') {
+              transformedRow.lmsStatus = 'in_progress';
+            } else {
+              transformedRow.lmsStatus = 'not_started';
+            }
           } else {
-            transformedRow[fieldName] = row[csvHeader];
+            transformedRow[fieldName] = row[header];
           }
         }
       });
@@ -291,7 +404,10 @@ export function StaffImport() {
       return transformedRow;
     });
     
-    importMutation.mutate({ employees: transformedData });
+    importMutation.mutate({ 
+      employees: transformedData,
+      focusLMS: focusLMS
+    });
   };
 
   return (

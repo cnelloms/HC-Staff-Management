@@ -9,6 +9,23 @@ import {
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Feature flags
+  app.get('/api/feature-flags', async (req, res) => {
+    try {
+      // Feature toggle settings
+      const featureFlags = {
+        staffImport: {
+          enabled: true  // Set to false to disable staff import feature
+        },
+        focusLMS: true  // Focus on Health Carousel Academy LMS
+      };
+      
+      res.json(featureFlags);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to fetch feature flags' });
+    }
+  });
+  
   // Dashboard routes
   app.get('/api/dashboard/stats', async (req, res) => {
     try {
@@ -872,7 +889,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Staff Import route
   app.post('/api/employees/import', async (req, res) => {
     try {
-      const { employees } = req.body;
+      const { employees, focusLMS } = req.body;
+      
+      // Check if import feature is enabled
+      const featureFlags = {
+        staffImport: { enabled: true },
+        focusLMS: true
+      };
+      
+      if (!featureFlags.staffImport.enabled) {
+        return res.status(403).json({ 
+          message: 'Staff import feature is currently disabled',
+          total: 0,
+          successful: 0,
+          failed: 0,
+          errors: ['Feature disabled']
+        });
+      }
       
       if (!employees || !Array.isArray(employees) || employees.length === 0) {
         return res.status(400).json({ 
@@ -918,16 +951,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Create the employee
-          await storage.createEmployee(employeeData);
+          const newEmployee = await storage.createEmployee(employeeData);
           successful++;
+          
+          // If focusLMS is enabled and LMS status is provided, create LMS training record
+          if (featureFlags.focusLMS && newEmployee && employeeData.lmsStatus) {
+            // Create a system access entry for Health Carousel Academy LMS
+            await storage.createSystemAccess({
+              employeeId: newEmployee.id,
+              systemId: 1, // Assuming system ID 1 is for Health Carousel Academy
+              accessLevel: 'user',
+              status: employeeData.lmsStatus === 'completed' ? 'active' : 'pending',
+              granted: employeeData.lmsStatus === 'completed',
+              grantedById: 1, // Admin user
+              grantedAt: employeeData.lmsStatus === 'completed' ? new Date() : null,
+              expiresAt: null
+            });
+            
+            // Create activity for LMS status
+            await storage.createActivity({
+              employeeId: newEmployee.id,
+              activityType: 'system_access',
+              description: `Health Carousel Academy training status: ${employeeData.lmsStatus}`,
+              metadata: {
+                systemId: 1,
+                status: employeeData.lmsStatus
+              }
+            });
+          }
           
           // Create activity for new employee
           await storage.createActivity({
-            employeeId: successful,  // This is not correct but a placeholder since we don't know the new ID
+            employeeId: newEmployee.id,
             activityType: 'onboarding',
-            description: `Employee imported via CSV: ${employeeData.firstName} ${employeeData.lastName}`,
+            description: `Employee imported via ${employeeData.fileType || 'file'}: ${employeeData.firstName} ${employeeData.lastName}`,
             metadata: {
-              importMethod: 'csv',
+              importMethod: employeeData.fileType || 'import',
               departmentId: employeeData.departmentId,
               position: employeeData.position
             }
