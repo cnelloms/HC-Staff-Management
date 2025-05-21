@@ -101,6 +101,40 @@ export const insertSystemAccessSchema = createInsertSchema(systemAccess).pick({
   status: true,
 });
 
+// Ticket Template table
+export const ticketTemplates = pgTable("ticket_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull().unique(), // new_staff_request, it_support, etc.
+  description: text("description"),
+  isEnabled: boolean("is_enabled").default(true).notNull(),
+  defaultPriority: text("default_priority").default("medium").notNull(),
+  defaultAssigneeId: integer("default_assignee_id"),
+  templateFields: json("template_fields").notNull(), // JSON array of task fields
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedById: varchar("updated_by_id").references(() => users.id),
+});
+
+export const insertTicketTemplateSchema = createInsertSchema(ticketTemplates, {
+  templateFields: z.array(z.object({
+    id: z.number(),
+    name: z.string(),
+    type: z.string(),
+    required: z.boolean().optional(),
+    options: z.array(z.string()).optional()
+  }))
+}).pick({
+  name: true,
+  type: true,
+  description: true,
+  isEnabled: true,
+  defaultPriority: true,
+  defaultAssigneeId: true,
+  templateFields: true,
+  updatedById: true,
+});
+
 // Ticket table
 export const tickets = pgTable("tickets", {
   id: serial("id").primaryKey(),
@@ -110,7 +144,7 @@ export const tickets = pgTable("tickets", {
   assigneeId: integer("assignee_id"),
   status: text("status").default("open").notNull(), // open, in_progress, closed
   priority: text("priority").default("medium").notNull(), // low, medium, high
-  type: text("type").notNull(), // system_access, onboarding, issue, request, new_staff_request
+  type: text("type").notNull(), // new_staff_request, it_support, etc.
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   closedAt: timestamp("closed_at"),
@@ -226,6 +260,9 @@ export type InsertSystem = z.infer<typeof insertSystemSchema>;
 
 export type SystemAccess = typeof systemAccess.$inferSelect;
 export type InsertSystemAccess = z.infer<typeof insertSystemAccessSchema>;
+
+export type TicketTemplate = typeof ticketTemplates.$inferSelect;
+export type InsertTicketTemplate = z.infer<typeof insertTicketTemplateSchema>;
 
 export type Ticket = typeof tickets.$inferSelect;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
