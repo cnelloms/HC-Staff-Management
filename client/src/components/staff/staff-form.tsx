@@ -69,11 +69,11 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
   const [, navigate] = useLocation();
   const isEditing = !!employeeId;
 
-  const { data: departments } = useQuery({
+  const { data: departments = [] } = useQuery<any[]>({
     queryKey: ['/api/departments'],
   });
 
-  const { data: employees } = useQuery({
+  const { data: employees = [] } = useQuery<any[]>({
     queryKey: ['/api/employees'],
   });
 
@@ -232,7 +232,7 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {departments?.map((department) => (
+                        {Array.isArray(departments) && departments.map((department: any) => (
                           <SelectItem 
                             key={department.id} 
                             value={department.id.toString()}
@@ -285,14 +285,16 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="none">No Manager</SelectItem>
-                        {employees?.filter(e => e.id !== employeeId).map((employee) => (
-                          <SelectItem 
-                            key={employee.id} 
-                            value={employee.id.toString()}
-                          >
-                            {employee.firstName} {employee.lastName}
-                          </SelectItem>
-                        ))}
+                        {Array.isArray(employees) && employees
+                          .filter((e: any) => e.id !== employeeId && e.status === 'active')
+                          .map((employee: any) => (
+                            <SelectItem 
+                              key={employee.id} 
+                              value={employee.id.toString()}
+                            >
+                              {employee.firstName} {employee.lastName}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                     <FormDescription>

@@ -244,9 +244,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee | undefined> {
+    // Handle the case where managerId comes in as null, undefined or a special string value
+    const updateData = {
+      ...employee,
+      // Clear managerId if it's explicitly set to null or undefined
+      managerId: employee.managerId === null || employee.managerId === undefined ? null : employee.managerId
+    };
+    
+    // Get the original employee to check for unchanged values (to avoid unique constraint violations)
+    const [existingEmployee] = await db.select().from(employees).where(eq(employees.id, id));
+    
+    // If email is not changing, don't include it in the update to avoid unique constraint violations
+    if (existingEmployee && updateData.email === existingEmployee.email) {
+      delete updateData.email;
+    }
+    
     const [updatedEmployee] = await db
       .update(employees)
-      .set(employee)
+      .set(updateData)
       .where(eq(employees.id, id))
       .returning();
     return updatedEmployee || undefined;
