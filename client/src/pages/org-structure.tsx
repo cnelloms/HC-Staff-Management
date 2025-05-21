@@ -504,7 +504,7 @@ export default function OrgStructurePage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {departments?.map((department: any) => (
+                  {departments.map((department) => (
                     <TableRow key={department.id}>
                       <TableCell className="font-medium">{department.id}</TableCell>
                       <TableCell>{department.name}</TableCell>
@@ -606,7 +606,7 @@ export default function OrgStructurePage() {
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="">None</SelectItem>
-                              {employees?.map((employee: any) => (
+                              {employees.map((employee) => (
                                 <SelectItem key={employee.id} value={employee.id.toString()}>
                                   {employee.firstName} {employee.lastName}
                                 </SelectItem>
