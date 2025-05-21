@@ -87,7 +87,12 @@ export function Sidebar({ user: defaultUser }: SidebarProps) {
       <div className="border-t border-border p-4 space-y-3">
         {isAuthenticated ? (
           <>
-            <div className="flex items-center">
+            <Link
+              href={isImpersonating && impersonatingEmployee
+                ? `/employee/${impersonatingEmployee.id}`
+                : employee ? `/employee/${employee.id}` : "/settings"}
+              className="flex items-center hover:bg-gray-50 p-2 rounded-md transition-colors"
+            >
               <Avatar className="h-10 w-10">
                 <AvatarImage 
                   src={isImpersonating && impersonatingEmployee 
@@ -122,7 +127,7 @@ export function Sidebar({ user: defaultUser }: SidebarProps) {
                   {isAdmin && <span className="ml-1 text-primary">(Admin)</span>}
                 </p>
               </div>
-            </div>
+            </Link>
             
             {/* Impersonation badge - only shows when actively impersonating */}
             {isImpersonating && impersonatingEmployee && (
