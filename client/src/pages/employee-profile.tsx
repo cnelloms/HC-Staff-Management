@@ -6,7 +6,7 @@ import { Employee, Ticket, Activity } from "@/types";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { EmployeeOrgChart } from "@/components/staff/employee-org-chart";
-import { SystemAccessTab } from "@/components/staff/system-access-tab";
+import { SystemAccessTab } from "@/components/access/system-access-tab";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
