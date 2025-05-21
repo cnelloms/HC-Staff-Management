@@ -35,7 +35,23 @@ export function ProfileHeader() {
 
   const initials = getInitials(profileData.firstName, profileData.lastName);
   const fullName = `${profileData.firstName || ''} ${profileData.lastName || ''}`.trim() || 'User';
-  const positionOrDepartment = profileData.position || profileData.department || (profileData.isAdmin ? 'Administrator' : 'User');
+  
+  // Handle position/department that could be objects
+  let positionDisplay = '';
+  if (profileData.position) {
+    positionDisplay = typeof profileData.position === 'object' && 'title' in profileData.position 
+      ? profileData.position.title 
+      : (typeof profileData.position === 'string' ? profileData.position : '');
+  }
+  
+  let departmentDisplay = '';
+  if (profileData.department) {
+    departmentDisplay = typeof profileData.department === 'object' && 'name' in profileData.department
+      ? profileData.department.name
+      : (typeof profileData.department === 'string' ? profileData.department : '');
+  }
+  
+  const positionOrDepartment = positionDisplay || departmentDisplay || (profileData.isAdmin ? 'Administrator' : 'User');
 
   return (
     <DropdownMenu>
