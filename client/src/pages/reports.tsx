@@ -28,7 +28,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { StatusBadge } from "@/components/ui/status-badge";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X, ChevronDown } from "lucide-react";
+import TicketDetailReport from "@/components/reports/ticket-detail-report";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 export default function Reports() {
   // State for drill-down dialog
@@ -38,11 +45,11 @@ export default function Reports() {
   const [filterType, setFilterType] = useState<'status' | 'type' | null>(null);
   
   // Get data for reports
-  const { data: employees } = useQuery<Employee[]>({
+  const { data: employees, isLoading: employeesLoading } = useQuery<Employee[]>({
     queryKey: ['/api/employees'],
   });
 
-  const { data: tickets } = useQuery<Ticket[]>({
+  const { data: tickets, isLoading: ticketsLoading } = useQuery<Ticket[]>({
     queryKey: ['/api/tickets'],
   });
 
@@ -181,10 +188,9 @@ export default function Reports() {
     <Layout title="Reports">
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-6">Staff Onboarding Analytics</h2>
+          <h2 className="text-2xl font-bold tracking-tight mb-6">Staff Management Reports</h2>
           <p className="text-muted-foreground mb-6">
-            View key metrics and reports on staff onboarding progress and ticket management.
-            Click on chart segments to see related tickets.
+            View key metrics and detailed reports on staff onboarding, ticket management, and system access.
           </p>
         </div>
         
@@ -261,142 +267,161 @@ export default function Reports() {
           </DialogContent>
         </Dialog>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {/* Department Distribution */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Staff by Department</CardTitle>
-              <CardDescription>Distribution of employees across departments</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[300px]">
-              {departmentData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={departmentData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      paddingAngle={5}
-                      dataKey="value"
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      labelLine={false}
-                    >
-                      {departmentData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Legend />
-                    <RechartsTooltip formatter={(value) => [`${value} employees`, 'Count']} />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex h-full items-center justify-center">
-                  <p className="text-muted-foreground">No department data available</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="ticket-details">Ticket Details</TabsTrigger>
+          </TabsList>
+          <TabsContent value="overview" className="mt-4">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {/* Department Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Staff by Department</CardTitle>
+                  <CardDescription>Distribution of employees across departments</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  {departmentData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={departmentData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          paddingAngle={5}
+                          dataKey="value"
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          labelLine={false}
+                        >
+                          {departmentData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Legend />
+                        <RechartsTooltip formatter={(value) => [`${value} employees`, 'Count']} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <p className="text-muted-foreground">No department data available</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-          {/* Ticket Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Ticket Status</CardTitle>
-              <CardDescription>Current distribution of ticket statuses (click for details)</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[300px]">
-              {ticketStatusData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={ticketStatusData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <RechartsTooltip />
-                    <Bar 
-                      dataKey="value" 
-                      name="Tickets" 
-                      fill="#0052CC" 
-                      onClick={handleStatusClick}
-                      cursor="pointer"
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex h-full items-center justify-center">
-                  <p className="text-muted-foreground">No ticket data available</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              {/* Ticket Status */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ticket Status</CardTitle>
+                  <CardDescription>Current distribution of ticket statuses (click for details)</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  {ticketStatusData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={ticketStatusData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <RechartsTooltip />
+                        <Bar 
+                          dataKey="value" 
+                          name="Tickets" 
+                          fill="#0052CC" 
+                          onClick={handleStatusClick}
+                          cursor="pointer"
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <p className="text-muted-foreground">No ticket data available</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-          {/* Ticket Types */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Ticket Types</CardTitle>
-              <CardDescription>Distribution of different ticket types (click for details)</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[300px]">
-              {ticketTypeData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={ticketTypeData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      onClick={handleTypeClick}
-                      cursor="pointer"
-                    >
-                      {ticketTypeData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip formatter={(value) => [`${value} tickets`, 'Count']} />
-                    <Legend onClick={handleTypeClick} />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex h-full items-center justify-center">
-                  <p className="text-muted-foreground">No ticket type data available</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              {/* Ticket Types */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ticket Types</CardTitle>
+                  <CardDescription>Distribution of different ticket types (click for details)</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  {ticketTypeData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={ticketTypeData}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          onClick={handleTypeClick}
+                          cursor="pointer"
+                        >
+                          {ticketTypeData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip formatter={(value) => [`${value} tickets`, 'Count']} />
+                        <Legend onClick={handleTypeClick} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <p className="text-muted-foreground">No ticket type data available</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-          {/* Staff Onboarding Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Staff Onboarding Status</CardTitle>
-              <CardDescription>Current status of employee onboarding</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[300px]">
-              {onboardingData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={onboardingData}
-                    layout="vertical"
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="name" type="category" width={150} />
-                    <RechartsTooltip />
-                    <Bar dataKey="value" name="Employees" fill="#36B37E" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex h-full items-center justify-center">
-                  <p className="text-muted-foreground">No onboarding status data available</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              {/* Staff Onboarding Status */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Staff Onboarding Status</CardTitle>
+                  <CardDescription>Current status of employee onboarding</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  {onboardingData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={onboardingData}
+                        layout="vertical"
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis type="number" />
+                        <YAxis dataKey="name" type="category" width={150} />
+                        <RechartsTooltip />
+                        <Bar dataKey="value" name="Employees" fill="#36B37E" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <p className="text-muted-foreground">No onboarding status data available</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          <TabsContent value="ticket-details" className="mt-4">
+            {!ticketsLoading && !employeesLoading && tickets && employees ? (
+              <TicketDetailReport tickets={tickets} employees={employees} />
+            ) : (
+              <Card>
+                <CardContent className="flex items-center justify-center h-[300px]">
+                  <p className="text-muted-foreground">Loading ticket data...</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );
