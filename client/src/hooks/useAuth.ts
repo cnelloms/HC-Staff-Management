@@ -21,13 +21,7 @@ export function useAuth() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
   
-  // Get impersonated employee details if the user is impersonating
-  const { data: impersonatedEmployee } = useQuery({
-    queryKey: ["/api/employees", userData?.impersonatingId],
-    enabled: !!userData?.impersonatingId,
-    refetchOnWindowFocus: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  // Removed impersonation functionality as requested
   
   // On mount, check localStorage for saved user data
   useEffect(() => {
@@ -56,22 +50,15 @@ export function useAuth() {
   // Use server user if available, fall back to localStorage user
   const user = userData || localUser;
   const isLoading = isServerLoading && !localUser;
-  const isImpersonating = !!user?.impersonatingId;
   
-  // Store the original admin status before impersonation
-  const rawIsAdmin = user?.isAdmin === true;
-  
-  // For impersonated users, we respect their permission level, not the admin's
-  const effectiveIsAdmin = isImpersonating ? false : rawIsAdmin;
+  // Simplified admin status check (removed impersonation)
+  const isAdmin = user?.isAdmin === true;
   
   return {
     user,
     isLoading,
     isAuthenticated: !!user,
-    isAdmin: effectiveIsAdmin,
-    employee: employeeData || null,
-    isImpersonating,
-    impersonatingEmployee: impersonatedEmployee || null,
-    rawIsAdmin
+    isAdmin,
+    employee: employeeData || null
   };
 }
