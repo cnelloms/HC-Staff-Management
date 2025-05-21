@@ -1,6 +1,6 @@
 import Layout from "@/components/layout";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
   Card,
