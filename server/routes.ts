@@ -1171,9 +1171,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Filter the results if user is not an admin
       const isUserAdmin = req.session.directUser?.isAdmin || false;
-      if (!isUserAdmin && req.user?.employeeId) {
+      
+      // Check if user has an associated employee record
+      let userEmployeeId: number | null = null;
+      
+      if (req.user && 'id' in req.user) {
+        const user = await storage.getUser(req.user.id);
+        if (user && user.employeeId) {
+          userEmployeeId = user.employeeId;
+        }
+      }
+      
+      if (!isUserAdmin && userEmployeeId) {
         // Regular employees can only see their own access
-        systemAccess = systemAccess.filter(access => access.employeeId === req.user?.employeeId);
+        systemAccess = systemAccess.filter(access => access.employeeId === userEmployeeId);
       }
       
       // Get the full system and employee details for each access entry
@@ -1246,8 +1257,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Update a system access entry (admin only)
-  app.patch('/api/system-access/:id', isAdmin, async (req: Request, res: Response) => {
+  // Update a system access entry (authenticated users)
+  app.patch('/api/system-access/:id', isAuthenticated, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -1303,8 +1314,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Delete a system access entry (admin only)
-  app.delete('/api/system-access/:id', isAdmin, async (req: Request, res: Response) => {
+  // Delete a system access entry (authenticated users)
+  app.delete('/api/system-access/:id', isAuthenticated, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
