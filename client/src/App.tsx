@@ -75,6 +75,11 @@ function Router() {
   
   // Show login page if not authenticated
   if (!isAuthenticated) {
+    // Check if we're on emergency login page
+    if (window.location.pathname === '/emergency-login') {
+      return <EmergencyLoginPage />;
+    }
+    // Default to regular login
     return <SimpleLoginPage />;
   }
 
