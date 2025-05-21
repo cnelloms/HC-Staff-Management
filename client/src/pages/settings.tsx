@@ -49,6 +49,10 @@ export default function UserSettings() {
   // Fetch the employee data directly if we have the ID
   const employeeId = employee?.id || user?.employeeId;
   
+  // Debug the auth info to understand what's happening
+  console.log('Auth state:', { user, employee, employeeId });
+  
+  // Fetch employee data directly from the auth endpoint if possible
   const { data: employeeData, isLoading: isEmployeeLoading } = useQuery<Employee>({
     queryKey: [`/api/employees/${employeeId}`],
     enabled: !!employeeId,
