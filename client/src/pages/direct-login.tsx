@@ -46,13 +46,27 @@ export default function DirectLoginPage() {
       
       // Store user data from response in localStorage to ensure immediate auth state
       try {
-        localStorage.setItem("auth_user", JSON.stringify(data.user));
+        // Important: This ensures we have user data cached for authentication
+        const userData = data.user || {
+          id: username, 
+          username,
+          isAdmin: data.isAdmin,
+          authProvider: 'direct'
+        };
+        
+        console.log("Saving user data to localStorage:", userData);
+        localStorage.setItem("auth_user", JSON.stringify(userData));
+        
+        // Force a slight delay to ensure session is properly saved
+        setTimeout(() => {
+          // Successful login - redirect to dashboard
+          window.location.href = "/";
+        }, 500);
       } catch (err) {
-        console.error("Error saving user data to localStorage:", err);
+        console.error("Error during login process:", err);
+        // Still try to redirect even if localStorage fails
+        window.location.href = "/";
       }
-      
-      // Successful login - force a page reload to refresh all state
-      window.location.href = "/";
       
     } catch (err: any) {
       console.error("Login error:", err);
