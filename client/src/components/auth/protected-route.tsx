@@ -16,7 +16,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   useEffect(() => {
     // Redirect to login if not authenticated and not still loading
     if (!isLoading && !isAuthenticated) {
-      navigate("/login");
+      navigate("/direct-login");
     }
   }, [isAuthenticated, isLoading, navigate]);
 
@@ -48,7 +48,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
             <p>You need to be logged in to access this page.</p>
           </CardContent>
           <CardFooter>
-            <Button onClick={() => navigate("/login")} className="w-full">
+            <Button onClick={() => navigate("/direct-login")} className="w-full">
               Go to Login
             </Button>
           </CardFooter>
