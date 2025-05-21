@@ -573,7 +573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
       
-      const { firstName, lastName, email, username, password, isAdmin: newUserIsAdmin } = req.body;
+      const { firstName, lastName, email, username, password, isAdmin: newUserIsAdmin, departmentId } = req.body;
       
       // Validate required fields
       if (!firstName || !lastName || !email || !username || !password) {
@@ -583,13 +583,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create a unique user ID for direct authentication
       const userId = `direct_${username}_${Date.now()}`;
       
-      // Create user record
+      // First, create an employee record
+      let employee;
+      try {
+        employee = await storage.createEmployee({
+          firstName,
+          lastName,
+          email,
+          phone: null,
+          position: "Staff",  // Default position
+          departmentId: departmentId || null,
+          managerId: null,
+          status: "active",
+          avatar: null
+        });
+        
+        console.log('Created employee record:', employee);
+      } catch (employeeError) {
+        console.error('Error creating employee record:', employeeError);
+        return res.status(500).json({ message: 'Failed to create employee record' });
+      }
+      
+      // Create user record with link to the employee
       const user = await storage.upsertUser({
         id: userId,
         firstName,
         lastName,
         email,
         isAdmin: newUserIsAdmin === true,
+        employeeId: employee.id, // Link to the employee record
         authProvider: 'direct'
       });
       
@@ -608,7 +630,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           updatedAt: new Date()
         });
       
-      return res.status(201).json({ message: "User created successfully", user });
+      // Log the account creation
+      await storage.createActivity({
+        type: "user_account_creation",
+        description: `User account created for ${firstName} ${lastName} (${username})`,
+        employeeId: employee.id,
+        metadata: {
+          source: "user_management",
+          username: username
+        }
+      });
+      
+      return res.status(201).json({ 
+        message: "User created successfully with linked employee record", 
+        user,
+        employee 
+      });
     } catch (error) {
       console.error('Error creating user:', error);
       return res.status(500).json({ message: 'Failed to create user' });
