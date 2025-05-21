@@ -1036,6 +1036,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'Failed to fetch systems' });
     }
   });
+  
+  // Get system access entries for an employee
+  app.get('/api/employees/:employeeId/systems', async (req: Request, res: Response) => {
+    try {
+      const employeeId = parseInt(req.params.employeeId);
+      if (isNaN(employeeId)) {
+        return res.status(400).json({ message: 'Invalid employee ID' });
+      }
+      
+      // Get employee's system access entries
+      const systemAccess = await storage.getSystemAccessByEmployeeId(employeeId);
+      
+      // If no access entries exist, return an empty array
+      if (!systemAccess || systemAccess.length === 0) {
+        return res.json([]);
+      }
+      
+      // Get the full system details for each access entry
+      const systemsWithDetails = await Promise.all(
+        systemAccess.map(async (access) => {
+          const system = await storage.getSystemById(access.systemId);
+          return {
+            ...access,
+            system: system || { name: 'Unknown System', description: '', category: '' }
+          };
+        })
+      );
+      
+      return res.json(systemsWithDetails);
+    } catch (error) {
+      console.error(`Error fetching system access for employee ${req.params.employeeId}:`, error);
+      return res.status(500).json({ message: 'Error retrieving system access' });
+    }
+  });
 
   // Permission routes
   app.get('/api/permissions', async (req: Request, res: Response) => {
