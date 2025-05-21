@@ -369,6 +369,35 @@ export class DatabaseStorage implements IStorage {
     const [newSystem] = await db.insert(systems).values(system).returning();
     return newSystem;
   }
+  
+  async updateSystem(id: number, data: Partial<InsertSystem>): Promise<System | undefined> {
+    const [updatedSystem] = await db
+      .update(systems)
+      .set(data)
+      .where(eq(systems.id, id))
+      .returning();
+    
+    return updatedSystem;
+  }
+  
+  async deleteSystem(id: number): Promise<boolean> {
+    const result = await db
+      .delete(systems)
+      .where(eq(systems.id, id));
+    
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+  
+  // Check if a system is being used by any employees
+  async isSystemInUse(systemId: number): Promise<boolean> {
+    const access = await db
+      .select()
+      .from(systemAccess)
+      .where(eq(systemAccess.systemId, systemId))
+      .limit(1);
+    
+    return access.length > 0;
+  }
 
   // System Access operations
   async getSystemAccessEntries(): Promise<SystemAccess[]> {
