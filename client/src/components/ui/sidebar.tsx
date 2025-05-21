@@ -64,6 +64,7 @@ export function Sidebar({ user: defaultUser }: SidebarProps) {
   
   // Admin-only navigation items
   const adminNavItems = [
+    { href: "/admin-dashboard", label: "Admin Dashboard", icon: <BarChart2 className="sidebar-icon" /> },
     { href: "/staff-import", label: "Import Staff", icon: <FileUp className="sidebar-icon" /> },
     { href: "/permissions", label: "Permissions", icon: <Shield className="sidebar-icon" /> },
     { href: "/user-management", label: "User Management", icon: <Users className="sidebar-icon" /> },
