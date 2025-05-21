@@ -109,6 +109,9 @@ export function AdminDatabaseSettings() {
   const [currentPosition, setCurrentPosition] = useState<PositionFormValues | null>(null);
   const [currentSystem, setCurrentSystem] = useState<SystemFormValues | null>(null);
   
+  // State for position filtering
+  const [filteredDepartmentId, setFilteredDepartmentId] = useState<number | null>(null);
+  
   // Setup query hooks for fetching data
   const { 
     data: departments, 
