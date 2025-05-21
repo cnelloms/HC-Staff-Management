@@ -16,11 +16,25 @@ interface Employee {
   phone?: string;
   avatar?: string;
   departmentId?: number;
-  department?: { id: number; name: string };
+  department?: { id: number; name: string } | string;
   positionId?: number;
-  position?: { id: number; title: string };
+  position?: { id: number; title: string } | string;
   hireDate?: string;
   status?: string;
+}
+
+// Interface for the user returned from auth endpoint
+interface User {
+  id: string;
+  username: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  isAdmin: boolean;
+  employeeId?: number;
+  authProvider?: string;
+  department?: string;
+  position?: string;
 }
 import { useForm } from "react-hook-form";
 import { AdminDatabaseSettings } from "@/components/settings/admin-database";
@@ -55,24 +69,34 @@ const userSettingsSchema = z.object({
 type UserSettingsFormValues = z.infer<typeof userSettingsSchema>;
 
 export default function UserSettings() {
-  const { user, employee, isLoading: isAuthLoading } = useAuth();
+  // Explicitly type the auth return values
+  const { user, employee, isLoading: isAuthLoading } = useAuth() as { 
+    user: User | null;
+    employee: Employee | null;
+    isLoading: boolean;
+    isAuthenticated: boolean;
+    isAdmin: boolean;
+  };
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("profile");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
-  // Get employee ID safely 
-  const employeeId = employee?.id || (user && typeof user === 'object' && 'employeeId' in user ? user.employeeId : null);
+  // Use type assertion to work with the user data
+  const userData = user as User | null;
+  
+  // Get employee ID from user data
+  const employeeId = userData?.employeeId;
   
   // Add debugging to see what's happening
   console.log('Settings page data:', { 
-    user, 
+    userData, 
     employee, 
     employeeId,
     isAuthLoading
   });
   
-  // Fetch employee data from API if not already in auth context
+  // Fetch employee data from API if we have an employee ID
   const { data: employeeData, isLoading: isEmployeeLoading } = useQuery<Employee>({
     queryKey: [`/api/employees/${employeeId}`],
     enabled: !!employeeId,
@@ -80,8 +104,18 @@ export default function UserSettings() {
     retry: 2,
   });
   
-  // Use either the employee data from auth context or from the API query
-  const profileData: Employee | undefined = employee || employeeData;
+  // Create a fallback profile if we don't have employee data but have user data
+  const fallbackProfile = userData && !employeeData ? {
+    id: employeeId || 0,
+    firstName: userData.firstName || '',
+    lastName: userData.lastName || '',
+    email: userData.email || '',
+    department: userData.department,
+    position: userData.position
+  } as Employee : undefined;
+  
+  // Use employee data from API query or create a fallback from user data
+  const profileData: Employee | undefined = employeeData || employee || fallbackProfile;
 
   const isLoading = isAuthLoading || isEmployeeLoading;
 
@@ -353,7 +387,11 @@ export default function UserSettings() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
                       <div>
                         <label className="text-sm font-medium">Department</label>
-                        <p className="text-muted-foreground">{profileData.department?.name || 'Not assigned'}</p>
+                        <p className="text-muted-foreground">
+                          {typeof profileData.department === 'string' 
+                            ? profileData.department 
+                            : profileData.department?.name || 'Not assigned'}
+                        </p>
                       </div>
                       <div>
                         <label className="text-sm font-medium">Position</label>
