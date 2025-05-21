@@ -30,7 +30,147 @@ export default function TicketTemplatesPage() {
   // Update template mutation
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("PATCH", `/api/ticket-templates/${data.id}`, data);
+      // Convert our UI template format back to API format
+      const apiData = {
+        name: data.name,
+        description: data.description,
+        type: data.type,
+        isEnabled: true,
+        defaultPriority: data.defaultPriority || "medium",
+        templateFields: []
+      };
+      
+      // Convert required fields to template fields
+      if (data.config && data.config.requiredFields) {
+        // Create a map of existing fields to preserve their IDs and other properties
+        const existingFieldsMap = {};
+        if (data.templateFields && Array.isArray(data.templateFields)) {
+          data.templateFields.forEach((field: any) => {
+            existingFieldsMap[field.name.toLowerCase().replace(' ', '')] = field;
+          });
+        }
+        
+        // Add template fields for required fields and non-checklist items
+        if (data.type === 'new_staff_request') {
+          // Staff request fields
+          apiData.templateFields.push(
+            { 
+              ...(existingFieldsMap['firstname'] || {}),
+              name: "First Name", 
+              type: "text", 
+              required: data.config.requiredFields.includes('firstname')
+            },
+            { 
+              ...(existingFieldsMap['lastname'] || {}),
+              name: "Last Name", 
+              type: "text", 
+              required: data.config.requiredFields.includes('lastname')
+            },
+            { 
+              ...(existingFieldsMap['positionid'] || {}),
+              name: "Position", 
+              type: "select", 
+              options: ["positionId"], 
+              required: data.config.requiredFields.includes('positionid')
+            },
+            { 
+              ...(existingFieldsMap['departmentid'] || {}),
+              name: "Department", 
+              type: "select", 
+              options: ["departmentId"], 
+              required: data.config.requiredFields.includes('departmentid')
+            },
+            { 
+              ...(existingFieldsMap['reportingmanagerid'] || {}),
+              name: "Manager", 
+              type: "select", 
+              options: ["managerId"], 
+              required: data.config.requiredFields.includes('reportingmanagerid')
+            },
+            { 
+              ...(existingFieldsMap['startdate'] || {}),
+              name: "Start Date", 
+              type: "date", 
+              required: data.config.requiredFields.includes('startdate')
+            },
+            { 
+              ...(existingFieldsMap['email'] || {}),
+              name: "Email", 
+              type: "email", 
+              required: data.config.requiredFields.includes('email')
+            },
+            { 
+              ...(existingFieldsMap['phone'] || {}),
+              name: "Phone", 
+              type: "text", 
+              required: data.config.requiredFields.includes('phone')
+            }
+          );
+        } else if (data.type === 'it_support') {
+          // IT support fields
+          apiData.templateFields.push(
+            { 
+              ...(existingFieldsMap['issuecategory'] || {}),
+              name: "Issue Category", 
+              type: "select", 
+              options: data.config.categories || ["Hardware", "Software", "Network", "Account Access", "Other"], 
+              required: data.config.requiredFields.includes('issuecategory')
+            },
+            { 
+              ...(existingFieldsMap['devicetype'] || {}),
+              name: "Device Type", 
+              type: "select", 
+              options: data.config.deviceTypes || ["Desktop", "Laptop", "Mobile", "Printer", "Server", "Other"], 
+              required: data.config.requiredFields.includes('devicetype')
+            },
+            { 
+              ...(existingFieldsMap['urgency'] || {}),
+              name: "Urgency", 
+              type: "select", 
+              options: ["Low", "Medium", "High", "Critical"], 
+              required: data.config.requiredFields.includes('urgency')
+            },
+            { 
+              ...(existingFieldsMap['issuedetails'] || {}),
+              name: "Issue Details", 
+              type: "textarea", 
+              required: data.config.requiredFields.includes('issuedetails')
+            },
+            { 
+              ...(existingFieldsMap['reproducibility'] || {}),
+              name: "Steps to Reproduce", 
+              type: "textarea", 
+              required: data.config.requiredFields.includes('reproducibility')
+            },
+            { 
+              ...(existingFieldsMap['stepstaken'] || {}),
+              name: "Steps Already Taken", 
+              type: "textarea", 
+              required: data.config.requiredFields.includes('stepstaken')
+            }
+          );
+        }
+      }
+      
+      // Add checklist items as task fields
+      if (data.config && data.config.checklist) {
+        data.config.checklist.forEach((item: any) => {
+          apiData.templateFields.push({
+            name: item.task,
+            type: "task",
+            description: item.description,
+            category: item.category,
+            phase: item.phase
+          });
+        });
+      }
+      
+      // Store config as metadata field to preserve our custom structure
+      apiData['metadata'] = {
+        config: data.config || {}
+      };
+      
+      return apiRequest("PATCH", `/api/ticket-templates/${data.id}`, apiData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/ticket-templates'] });
@@ -155,9 +295,57 @@ export default function TicketTemplatesPage() {
     });
   };
 
+  // Process templates to ensure they have the expected structure
+  const processTemplateData = (templates: any[]) => {
+    if (!templates || !Array.isArray(templates)) return [];
+    
+    return templates.map(template => {
+      // Initialize config structure if it doesn't exist
+      if (!template.config) {
+        template.config = {
+          requiredFields: [],
+          checklist: [],
+          titleTemplate: '',
+          descriptionTemplate: ''
+        };
+      }
+      
+      // Extract required fields from templateFields
+      if (template.templateFields && Array.isArray(template.templateFields)) {
+        template.config.requiredFields = template.templateFields
+          .filter(field => field.required)
+          .map(field => field.name.toLowerCase().replace(' ', ''));
+        
+        // Extract checklist items from task-type templateFields
+        template.config.checklist = template.templateFields
+          .filter(field => field.type === 'task')
+          .map((field, index) => ({
+            task: field.name,
+            description: field.description || '',
+            required: true,
+            category: template.type === 'it_support' ? 'support' : 'general',
+            phase: template.type === 'it_support' ? Math.min(index + 1, 3).toString() : '1'
+          }));
+      }
+      
+      // Set up default title templates if not present
+      if (!template.config.titleTemplate) {
+        if (template.type === 'new_staff_request') {
+          template.config.titleTemplate = 'New Staff Request: {{firstName}} {{lastName}} ({{position}})';
+        } else if (template.type === 'it_support') {
+          template.config.titleTemplate = 'IT Support: {{issueCategory}} issue with {{deviceType}}';
+        }
+      }
+      
+      return template;
+    });
+  };
+
+  const processedTemplates = processTemplateData(templates || []);
+  
   // Filter templates by type for each tab
-  const staffRequestTemplates = templates?.filter((t: any) => t.type === 'new_staff_request') || [];
-  const itSupportTemplates = templates?.filter((t: any) => t.type === 'it_support') || [];
+  const staffRequestTemplates = processedTemplates.filter((t: any) => t.type === 'new_staff_request') || [];
+  const itSupportTemplates = processedTemplates.filter((t: any) => t.type === 'it_support') || [];
 
   // Loading state
   if (isLoading) {
