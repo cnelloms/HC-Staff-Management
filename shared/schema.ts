@@ -25,11 +25,13 @@ export const departments = pgTable("departments", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
+  managerId: integer("manager_id"),
 });
 
 export const insertDepartmentSchema = createInsertSchema(departments).pick({
   name: true,
   description: true,
+  managerId: true,
 });
 
 // Employee table
