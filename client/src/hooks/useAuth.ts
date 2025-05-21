@@ -35,9 +35,10 @@ export function useAuth() {
   // Try to get user from server first
   const { data: userData, isLoading: isServerLoading, error } = useQuery<User>({
     queryKey: ["/api/auth/user"],
-    retry: false,
-    refetchOnWindowFocus: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 3, // Retry a few times to handle potential session loading delay
+    retryDelay: 1000, // Wait 1 second between retries
+    refetchOnWindowFocus: true, // Refresh when window regains focus
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
   
   // Get the employee details if we have a user
