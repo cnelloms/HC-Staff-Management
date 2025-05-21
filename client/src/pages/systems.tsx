@@ -9,13 +9,17 @@ import { Server, LockKeyhole } from "lucide-react";
 export default function SystemsPage() {
   const { isAdmin, isAuthenticated } = useAuth();
 
+  const [, navigate] = useLocation();
+  
   // If not authenticated or not an admin, redirect to home
   if (!isAuthenticated) {
-    return <Navigate to="/login" />;
+    navigate("/login");
+    return null;
   }
 
   if (!isAdmin) {
-    return <Navigate to="/" />;
+    navigate("/");
+    return null;
   }
 
   return (
