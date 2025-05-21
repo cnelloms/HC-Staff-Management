@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Link } from "wouter";
 import Layout from "@/components/layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -16,8 +17,26 @@ import {
 } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { Employee, Ticket } from "@/types";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 
 export default function Reports() {
+  // State for drill-down dialog
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedTickets, setSelectedTickets] = useState<Ticket[]>([]);
+  const [filterType, setFilterType] = useState<'status' | 'type' | null>(null);
+  
   // Get data for reports
   const { data: employees } = useQuery<Employee[]>({
     queryKey: ['/api/employees'],
@@ -108,6 +127,53 @@ export default function Reports() {
     }));
   }, [employees]);
 
+  // Functions to handle drill down
+  const handleStatusClick = (data: any) => {
+    if (!tickets) return;
+    
+    // Convert display name back to status value
+    let statusValue = data.name.toLowerCase();
+    if (statusValue === 'in progress') statusValue = 'in_progress';
+    
+    const filteredTickets = tickets.filter(ticket => ticket.status === statusValue);
+    setSelectedTickets(filteredTickets);
+    setSelectedCategory(data.name);
+    setFilterType('status');
+    setDialogOpen(true);
+  };
+  
+  const handleTypeClick = (data: any) => {
+    if (!tickets) return;
+    
+    // Convert display name back to type value
+    let typeValue = data.name.toLowerCase().replace(' ', '_');
+    if (typeValue === 'new_staff_request' || typeValue === 'it_support' || typeValue === 'system_access') {
+      typeValue = typeValue; // Keep as is
+    } else if (typeValue === 'in_progress') {
+      typeValue = 'in_progress';
+    }
+    
+    const filteredTickets = tickets.filter(ticket => ticket.type === typeValue);
+    setSelectedTickets(filteredTickets);
+    setSelectedCategory(data.name);
+    setFilterType('type');
+    setDialogOpen(true);
+  };
+  
+  // Format ticket type for display
+  const formatTicketType = (type: string) => {
+    switch (type) {
+      case 'new_staff_request':
+        return 'New Staff Request';
+      case 'it_support':
+        return 'IT Support';
+      case 'system_access':
+        return 'System Access';
+      default:
+        return type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ');
+    }
+  };
+  
   // Chart colors
   const COLORS = ['#0052CC', '#36B37E', '#FF5630', '#6554C0', '#FFAB00'];
 
@@ -164,7 +230,7 @@ export default function Reports() {
           <Card>
             <CardHeader>
               <CardTitle>Ticket Status</CardTitle>
-              <CardDescription>Current distribution of ticket statuses</CardDescription>
+              <CardDescription>Current distribution of ticket statuses (click for details)</CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">
               {ticketStatusData.length > 0 ? (
@@ -174,7 +240,13 @@ export default function Reports() {
                     <XAxis dataKey="name" />
                     <YAxis />
                     <RechartsTooltip />
-                    <Bar dataKey="value" name="Tickets" fill="#0052CC" />
+                    <Bar 
+                      dataKey="value" 
+                      name="Tickets" 
+                      fill="#0052CC" 
+                      onClick={handleStatusClick}
+                      cursor="pointer"
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
