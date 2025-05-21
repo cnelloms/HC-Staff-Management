@@ -38,6 +38,8 @@ function Router() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   useEffect(() => {
+    let isMounted = true;
+    
     // Check if user is authenticated
     async function checkAuth() {
       try {
@@ -47,7 +49,7 @@ function Router() {
         
         if (response.ok) {
           const userData = await response.json();
-          if (userData) {
+          if (userData && isMounted) {
             setIsAuthenticated(true);
             localStorage.setItem('auth_user', JSON.stringify(userData));
           }
@@ -55,11 +57,27 @@ function Router() {
       } catch (error) {
         console.error('Error checking authentication:', error);
       } finally {
-        setIsLoading(false);
+        // Only update state if component is still mounted
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     }
     
+    // Set a timeout to ensure loading state is cleared even if fetch request fails
+    const timeoutId = setTimeout(() => {
+      if (isMounted) {
+        setIsLoading(false);
+      }
+    }, 3000);
+    
     checkAuth();
+    
+    // Cleanup function to prevent memory leaks
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
   }, []);
   
   // Show loading screen while checking authentication
@@ -137,7 +155,7 @@ function Router() {
       </Route>
       
       <Route path="/ticket-templates">
-        {() => <TicketTemplatesPage />}
+        {() => <AdminRoute><TicketTemplatesPage /></AdminRoute>}
       </Route>
       
       <Route path="/user-management">

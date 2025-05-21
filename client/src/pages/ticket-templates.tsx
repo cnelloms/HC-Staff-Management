@@ -25,6 +25,17 @@ export default function TicketTemplatesPage() {
   // Fetch all ticket templates
   const { data: templates, isLoading } = useQuery({
     queryKey: ['/api/ticket-templates'],
+    retry: 1,
+    refetchOnWindowFocus: false,
+    // Handle error gracefully
+    onError: (error: any) => {
+      console.error("Error fetching templates:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load ticket templates. Please try again.",
+        variant: "destructive",
+      });
+    }
   });
 
   // Update template mutation
