@@ -40,21 +40,21 @@ const userSettingsSchema = z.object({
 type UserSettingsFormValues = z.infer<typeof userSettingsSchema>;
 
 export default function UserSettings() {
-  const { user, employee, isLoading: isUserLoading } = useAuth();
+  const { user, employee, isLoading: isAuthLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("profile");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
-  // Fetch detailed user information - use employee data directly from useAuth
-  const { data: userDetails, isLoading: isDetailsLoading } = useQuery<Employee>({
-    queryKey: [`/api/employees/${employee?.id}`],
-    enabled: !!employee?.id,
+  // Fetch the employee data directly if we have the ID
+  const employeeId = employee?.id || user?.employeeId;
+  
+  const { data: employeeData, isLoading: isEmployeeLoading } = useQuery<Employee>({
+    queryKey: [`/api/employees/${employeeId}`],
+    enabled: !!employeeId,
   });
 
-  // Use either the detailed user data or the auth employee
-  const employeeData = userDetails || employee;
-  const isLoading = isUserLoading || isDetailsLoading;
+  const isLoading = isAuthLoading || isEmployeeLoading;
 
   // Setup form with default values
   const form = useForm<UserSettingsFormValues>({
@@ -104,11 +104,14 @@ export default function UserSettings() {
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (data: UserSettingsFormValues) => {
-      if (!employeeData?.id) throw new Error("Employee ID not found");
-      return apiRequest("PATCH", `/api/employees/${employeeData.id}`, data);
+      if (!employeeId) throw new Error("Employee ID not found");
+      return apiRequest(`/api/employees/${employeeId}`, {
+        method: 'PATCH',
+        data
+      });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/employees/${employeeData?.id}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/employees/${employeeId}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
       toast({
         title: "Profile updated",
@@ -161,7 +164,7 @@ export default function UserSettings() {
         {/* Back to profile link */}
         <div>
           <Button variant="ghost" className="p-0" onClick={() => {
-            if (employeeData && employeeData.id) {
+            if (employeeData.id) {
               window.location.href = `/employee/${employeeData.id}`;
             } else {
               // Default to employee listing if no specific profile
@@ -201,7 +204,9 @@ export default function UserSettings() {
                           src={avatarPreview || employeeData.avatar} 
                           alt={`${employeeData.firstName} ${employeeData.lastName}`} 
                         />
-                        <AvatarFallback className="text-2xl">{employeeData.firstName[0]}{employeeData.lastName[0]}</AvatarFallback>
+                        <AvatarFallback className="text-2xl">
+                          {employeeData.firstName[0]}{employeeData.lastName[0]}
+                        </AvatarFallback>
                       </Avatar>
                       
                       <div className="flex items-center">
@@ -291,15 +296,19 @@ export default function UserSettings() {
                       </div>
                       <div>
                         <label className="text-sm font-medium">Position</label>
-                        <p className="text-muted-foreground">{employeeData.position}</p>
+                        <p className="text-muted-foreground">{employeeData.position || 'Not assigned'}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium">Hire Date</label>
-                        <p className="text-muted-foreground">{format(new Date(employeeData.hireDate), 'MMM d, yyyy')}</p>
+                        <p className="text-muted-foreground">
+                          {employeeData.hireDate 
+                            ? format(new Date(employeeData.hireDate), 'MMM d, yyyy')
+                            : 'Not set'}
+                        </p>
                       </div>
                       <div>
                         <label className="text-sm font-medium">Status</label>
-                        <p className="text-muted-foreground capitalize">{employeeData.status}</p>
+                        <p className="text-muted-foreground capitalize">{employeeData.status || 'Active'}</p>
                       </div>
                     </div>
 
