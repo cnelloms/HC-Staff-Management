@@ -6,6 +6,7 @@ import { Employee, Ticket, Activity } from "@/types";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { EmployeeOrgChart } from "@/components/staff/employee-org-chart";
+import { EmployeeSystems } from "@/components/staff/employee-systems";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -266,10 +267,11 @@ export default function EmployeeProfile() {
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols-3 w-full max-w-md">
+            <TabsList className="grid grid-cols-4 w-full max-w-md">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="tickets">Tickets</TabsTrigger>
               <TabsTrigger value="org-chart">Org Chart</TabsTrigger>
+              <TabsTrigger value="systems">Systems</TabsTrigger>
             </TabsList>
 
             {/* Overview Tab */}
@@ -363,6 +365,19 @@ export default function EmployeeProfile() {
                 </CardHeader>
                 <CardContent>
                   <EmployeeOrgChart managerId={employee.id} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Systems Tab */}
+            <TabsContent value="systems">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Assigned Systems</CardTitle>
+                  <CardDescription>Systems that {employee.firstName} has access to</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <EmployeeSystems employeeId={employee.id} />
                 </CardContent>
               </Card>
             </TabsContent>
