@@ -54,14 +54,22 @@ export default function DirectLoginPage() {
           authProvider: 'direct'
         };
         
+        // Include business unit data for organization structure
+        if (!userData.businessUnit) {
+          userData.businessUnit = "Health Carousel";
+        }
+        
         console.log("Saving user data to localStorage:", userData);
         localStorage.setItem("auth_user", JSON.stringify(userData));
         
-        // Force a slight delay to ensure session is properly saved
+        // Clear any stale data
+        sessionStorage.removeItem("last_auth_error");
+        
+        // Force a longer delay to ensure session is properly saved
         setTimeout(() => {
           // Successful login - redirect to dashboard
           window.location.href = "/";
-        }, 500);
+        }, 1000);
       } catch (err) {
         console.error("Error during login process:", err);
         // Still try to redirect even if localStorage fails
