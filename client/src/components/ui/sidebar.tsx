@@ -87,11 +87,27 @@ export function Sidebar({ user: defaultUser }: SidebarProps) {
       <div className="border-t border-border p-4 space-y-3">
         {isAuthenticated ? (
           <>
-            <Link
-              href={isImpersonating && impersonatingEmployee
-                ? `/employee/${impersonatingEmployee.id}`
-                : employee ? `/employee/${employee.id}` : "/settings"}
-              className="flex items-center hover:bg-gray-50 p-2 rounded-md transition-colors"
+            <div className="flex items-center hover:bg-gray-50 p-2 rounded-md transition-colors cursor-pointer"
+              onClick={() => {
+                // Find correct employee ID for the current user
+                let targetUrl = "/settings";
+                
+                // Chris Nelloms (admin) is employee #118
+                if (user?.username === "cnelloms") {
+                  targetUrl = "/employee/118";
+                }
+                // If impersonating, go to that employee's profile
+                else if (isImpersonating && impersonatingEmployee?.id) {
+                  targetUrl = `/employee/${impersonatingEmployee.id}`;
+                } 
+                // Otherwise try to find employee ID for logged in user
+                else if (employee?.id) {
+                  targetUrl = `/employee/${employee.id}`;
+                }
+                
+                // Navigate to the determined profile page
+                window.location.href = targetUrl;
+              }}
             >
               <Avatar className="h-10 w-10">
                 <AvatarImage 
