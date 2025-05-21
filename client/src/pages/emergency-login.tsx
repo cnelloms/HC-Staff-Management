@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
 
 export default function EmergencyLoginPage() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("cnelloms");
+  const [password, setPassword] = useState("password");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -25,10 +25,6 @@ export default function EmergencyLoginPage() {
     
     try {
       console.log("Attempting emergency direct login with:", { username });
-      
-      // First clear any existing session/storage that might be causing problems
-      localStorage.removeItem("auth_user");
-      
       const response = await fetch("/api/login/direct", {
         method: "POST",
         headers: {
@@ -43,9 +39,9 @@ export default function EmergencyLoginPage() {
         throw new Error(data.message || "Invalid username or password");
       }
       
-      // Successful login - force reload to dashboard
+      // Successful login - redirect to dashboard
       window.location.href = "/";
-      
+      return;
     } catch (err: any) {
       console.error("Login error:", err);
       setError(err.message || "Login failed");
@@ -106,7 +102,7 @@ export default function EmergencyLoginPage() {
                     Signing in...
                   </>
                 ) : (
-                  "Emergency Sign in"
+                  "Sign in"
                 )}
               </Button>
             </form>
