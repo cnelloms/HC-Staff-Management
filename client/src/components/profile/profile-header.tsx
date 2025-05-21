@@ -15,18 +15,23 @@ import {
   LayoutDashboard, Briefcase, ShieldCheck 
 } from "lucide-react";
 
+interface ProfileHeaderProps {
+  compact?: boolean;
+}
+
 /**
  * Profile header component with dropdown menu for site header
  * Ensures consistent display of profile data
+ * @param compact - Display compact version for mobile (avatar only)
  */
-export function ProfileHeader() {
+export function ProfileHeader({ compact = false }: ProfileHeaderProps) {
   const { profileData, isLoading } = useProfileData();
   
   // Show empty state while loading
   if (isLoading || !profileData) {
     return (
       <div className="flex items-center gap-2">
-        <Avatar className="h-8 w-8">
+        <Avatar className={compact ? "h-7 w-7" : "h-8 w-8"}>
           <AvatarFallback>...</AvatarFallback>
         </Avatar>
       </div>
@@ -40,14 +45,14 @@ export function ProfileHeader() {
   let positionDisplay = '';
   if (profileData.position) {
     positionDisplay = typeof profileData.position === 'object' && 'title' in profileData.position 
-      ? profileData.position.title 
+      ? profileData.position.title as string
       : (typeof profileData.position === 'string' ? profileData.position : '');
   }
   
   let departmentDisplay = '';
   if (profileData.department) {
     departmentDisplay = typeof profileData.department === 'object' && 'name' in profileData.department
-      ? profileData.department.name
+      ? profileData.department.name as string
       : (typeof profileData.department === 'string' ? profileData.department : '');
   }
   
@@ -57,17 +62,21 @@ export function ProfileHeader() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="flex items-center gap-2 rounded-full outline-none focus:ring-2 focus:ring-primary/50">
-          <Avatar className="h-8 w-8 cursor-pointer">
+          <Avatar className={compact ? "h-7 w-7" : "h-8 w-8"}>
             <AvatarImage src={profileData.avatar} alt={fullName} />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
-          <div className="hidden md:flex flex-col items-start mr-1 text-left">
-            <span className="text-sm font-medium truncate max-w-[150px]">{fullName}</span>
-            <span className="text-xs text-muted-foreground truncate max-w-[150px]">
-              {positionOrDepartment}
-              {profileData.isAdmin && <span className="ml-1 text-primary">(Admin)</span>}
-            </span>
-          </div>
+          
+          {/* Only show name and role on desktop or non-compact mode */}
+          {!compact && (
+            <div className="hidden md:flex flex-col items-start mr-1 text-left">
+              <span className="text-sm font-medium truncate max-w-[150px]">{fullName}</span>
+              <span className="text-xs text-muted-foreground truncate max-w-[150px]">
+                {positionOrDepartment}
+                {profileData.isAdmin && <span className="ml-1 text-primary">(Admin)</span>}
+              </span>
+            </div>
+          )}
         </button>
       </DropdownMenuTrigger>
 
@@ -122,7 +131,7 @@ export function ProfileHeader() {
         </Link>
         
         {profileData.isAdmin && (
-          <Link href="/admin">
+          <Link href="/permissions">
             <DropdownMenuItem className="cursor-pointer">
               <ShieldCheck className="mr-2 h-4 w-4" />
               <span>Admin Console</span>
