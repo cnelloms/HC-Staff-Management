@@ -6,14 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function UserSettings() {
-  // Get current user data with minimal dependencies
-  const { data: userData, isLoading: userLoading } = useQuery({
+  const { data: userData, isLoading } = useQuery({
     queryKey: ["/api/auth/user"],
     retry: false,
   });
 
-  // Simple loading state
-  if (userLoading) {
+  if (isLoading) {
     return (
       <Layout title="Settings">
         <div className="flex justify-center items-center h-64">
@@ -23,7 +21,6 @@ export default function UserSettings() {
     );
   }
 
-  // Not authenticated
   if (!userData) {
     return (
       <Layout title="Settings">
@@ -42,7 +39,6 @@ export default function UserSettings() {
     );
   }
 
-  // Simple display for user data
   return (
     <Layout title="Settings">
       <div className="space-y-6">
@@ -60,28 +56,39 @@ export default function UserSettings() {
           <CardContent>
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h3 className="font-medium text-sm">Username</h3>
-                  <p>{userData?.username || 'N/A'}</p>
-                </div>
-                <div>
-                  <h3 className="font-medium text-sm">Name</h3>
-                  <p>{userData?.firstName || ''} {userData?.lastName || ''}</p>
-                </div>
-                <div>
-                  <h3 className="font-medium text-sm">Email</h3>
-                  <p>{userData?.email || "Not set"}</p>
-                </div>
+                {userData?.username && (
+                  <div>
+                    <h3 className="font-medium text-sm">Username</h3>
+                    <p>{userData.username}</p>
+                  </div>
+                )}
+                
+                {(userData?.firstName || userData?.lastName) && (
+                  <div>
+                    <h3 className="font-medium text-sm">Name</h3>
+                    <p>{userData?.firstName || ''} {userData?.lastName || ''}</p>
+                  </div>
+                )}
+                
+                {userData?.email && (
+                  <div>
+                    <h3 className="font-medium text-sm">Email</h3>
+                    <p>{userData.email}</p>
+                  </div>
+                )}
+                
                 <div>
                   <h3 className="font-medium text-sm">Role</h3>
                   <p>{userData?.isAdmin ? "Administrator" : "User"}</p>
                 </div>
+                
                 {userData?.position && (
                   <div>
                     <h3 className="font-medium text-sm">Position</h3>
                     <p>{userData.position}</p>
                   </div>
                 )}
+                
                 {userData?.department && (
                   <div>
                     <h3 className="font-medium text-sm">Department</h3>
@@ -92,440 +99,6 @@ export default function UserSettings() {
             </div>
           </CardContent>
         </Card>
-      </div>
-    </Layout>
-  );
-}
-    enabled: !!userData?.employeeId
-  });
-  
-  const isLoading = userLoading || employeeLoading;
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("profile");
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-
-  // Use type assertion to work with the user data
-  const userData = user as User | null;
-  
-  // Get employee ID from user data
-  const employeeId = userData?.employeeId;
-  
-  // Add debugging to see what's happening
-  console.log('Settings page data:', { 
-    userData, 
-    employee, 
-    employeeId,
-    isAuthLoading
-  });
-  
-  // Fetch employee data from API if we have an employee ID
-  const { data: employeeData, isLoading: isEmployeeLoading } = useQuery<Employee>({
-    queryKey: [`/api/employees/${employeeId}`],
-    enabled: !!employeeId,
-    staleTime: 60000, // 1 minute
-    retry: 2,
-  });
-  
-  // Create a fallback profile if we don't have employee data but have user data
-  const fallbackProfile = userData && !employeeData ? {
-    id: employeeId || 0,
-    firstName: userData.firstName || '',
-    lastName: userData.lastName || '',
-    email: userData.email || '',
-    department: userData.department,
-    position: userData.position
-  } as Employee : undefined;
-  
-  // Use employee data from API query or create a fallback from user data
-  const profileData: Employee | undefined = employeeData || employee || fallbackProfile;
-
-  const isLoading = isAuthLoading || isEmployeeLoading;
-
-  // Setup form with default values
-  const form = useForm<UserSettingsFormValues>({
-    resolver: zodResolver(userSettingsSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      avatar: "",
-    },
-  });
-
-  // Update form values when profile data is loaded
-  useEffect(() => {
-    if (profileData) {
-      form.reset({
-        firstName: profileData.firstName,
-        lastName: profileData.lastName,
-        email: profileData.email,
-        phone: profileData.phone || "",
-        avatar: profileData.avatar || "",
-      });
-      
-      if (profileData.avatar) {
-        setAvatarPreview(profileData.avatar);
-      }
-    }
-  }, [profileData, form]);
-
-  // Handle avatar upload
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // In a real implementation, you would upload the file to a server
-    // For now, we'll just set a preview using a data URL
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      setAvatarPreview(result);
-      form.setValue("avatar", result);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Update profile mutation
-  const updateProfileMutation = useMutation({
-    mutationFn: async (data: UserSettingsFormValues) => {
-      if (!employeeId) throw new Error("Employee ID not found");
-      
-      // Use the API request helper
-      const response = await fetch(`/api/employees/${employeeId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update profile");
-      }
-      
-      return await response.json();
-    },
-    onSuccess: () => {
-      // Invalidate all queries that might be affected by this update
-      queryClient.invalidateQueries({ queryKey: [`/api/employees/${employeeId}`] });
-      queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-      
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update profile. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Form submission handler
-  const onSubmit = (data: UserSettingsFormValues) => {
-    updateProfileMutation.mutate(data);
-  };
-
-  if (isLoading) {
-    return (
-      <Layout title="Account Settings">
-        <div className="p-8 flex justify-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      </Layout>
-    );
-  }
-
-  // Display loading screen when either auth or employee data is loading
-  if (isLoading) {
-    return (
-      <Layout title="Account Settings">
-        <div className="p-8 flex justify-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      </Layout>
-    );
-  }
-  
-  // Fallback if profile data is not available even after loading
-  if (!profileData) {
-    return (
-      <Layout title="Account Settings">
-        <div className="text-center p-8">
-          <h2 className="text-2xl font-bold">Profile Not Found</h2>
-          <p className="text-muted-foreground mt-2">
-            We couldn't load your profile information. Please try signing in again.
-          </p>
-          <div className="space-y-2 mt-4">
-            <Button asChild>
-              <Link href="/">Back to Dashboard</Link>
-            </Button>
-            <Button variant="outline" asChild className="ml-2">
-              <Link href="/api/logout">Sign Out</Link>
-            </Button>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  return (
-    <Layout title="Account Settings">
-      <div className="space-y-6">
-        {/* Back to profile link */}
-        <div>
-          <Button variant="ghost" className="p-0" onClick={() => {
-            if (profileData.id) {
-              window.location.href = `/employee/${profileData.id}`;
-            } else {
-              // Default to employee listing if no specific profile
-              window.location.href = "/directory";
-            }
-          }}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Profile
-          </Button>
-        </div>
-
-        {/* Settings Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-4 w-full max-w-md">
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="account">Account</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
-            <TabsTrigger value="admin">Admin</TabsTrigger>
-          </TabsList>
-
-          {/* Profile Settings */}
-          <TabsContent value="profile">
-            <Card>
-              <CardHeader>
-                <CardTitle>Profile Information</CardTitle>
-                <CardDescription>
-                  Update your personal information and profile picture
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    {/* Avatar upload */}
-                    <div className="flex flex-col items-center mb-6">
-                      <Avatar className="h-24 w-24 mb-4">
-                        <AvatarImage 
-                          src={avatarPreview || profileData.avatar} 
-                          alt={`${profileData.firstName} ${profileData.lastName}`} 
-                        />
-                        <AvatarFallback className="text-2xl">
-                          {profileData.firstName[0]}{profileData.lastName[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      <div className="flex items-center">
-                        <label 
-                          htmlFor="avatar-upload" 
-                          className="cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium"
-                        >
-                          Change picture
-                        </label>
-                        <input
-                          id="avatar-upload"
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleAvatarChange}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* First Name */}
-                      <FormField
-                        control={form.control}
-                        name="firstName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>First Name</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {/* Last Name */}
-                      <FormField
-                        control={form.control}
-                        name="lastName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Last Name</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {/* Email */}
-                      <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email</FormLabel>
-                            <FormControl>
-                              <Input {...field} type="email" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {/* Phone */}
-                      <FormField
-                        control={form.control}
-                        name="phone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Phone</FormLabel>
-                            <FormControl>
-                              <Input {...field} type="tel" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {/* Non-editable fields */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
-                      <div>
-                        <label className="text-sm font-medium">Department</label>
-                        <p className="text-muted-foreground">
-                          {typeof profileData.department === 'string' 
-                            ? profileData.department 
-                            : profileData.department?.name || 'Not assigned'}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Position</label>
-                        <p className="text-muted-foreground">
-                          {profileData.position ? 
-                            (typeof profileData.position === 'object' ? 
-                              profileData.position.title : 
-                              profileData.position) : 
-                            'Not assigned'}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Hire Date</label>
-                        <p className="text-muted-foreground">
-                          {profileData.hireDate 
-                            ? format(new Date(profileData.hireDate), 'MMM d, yyyy')
-                            : 'Not set'}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Status</label>
-                        <p className="text-muted-foreground capitalize">{profileData.status || 'Active'}</p>
-                      </div>
-                    </div>
-
-                    <Button 
-                      type="submit" 
-                      className="w-full md:w-auto"
-                      disabled={updateProfileMutation.isPending}
-                    >
-                      {updateProfileMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-4 w-4" />
-                          Save Changes
-                        </>
-                      )}
-                    </Button>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Account Settings */}
-          <TabsContent value="account">
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
-                <CardDescription>
-                  Manage your account preferences and security settings
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">
-                      Account settings are managed by your system administrator.
-                    </p>
-                    <p className="mt-2">
-                      Please contact IT support for any changes to your account permissions.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Notification Settings */}
-          <TabsContent value="notifications">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Preferences</CardTitle>
-                <CardDescription>
-                  Manage how and when you receive notifications
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">
-                      Notification preferences will be available in a future update.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          {/* Admin Settings */}
-          <TabsContent value="admin">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ShieldAlert className="h-5 w-5" />
-                  Admin Settings
-                </CardTitle>
-                <CardDescription>
-                  Manage system-wide database entries and configurations
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AdminDatabaseSettings />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
       </div>
     </Layout>
   );
