@@ -61,6 +61,15 @@ const newStaffMetadataSchema = z.object({
   notes: z.string().optional(),
 }).optional();
 
+// IT Support Ticket metadata schema
+const itSupportMetadataSchema = z.object({
+  issueCategory: z.string().min(1, { message: "Issue category is required" }),
+  deviceType: z.string().min(1, { message: "Device type is required" }),
+  urgency: z.string().min(1, { message: "Urgency level is required" }),
+  issueDetails: z.string().min(10, { message: "Please provide detailed information about the issue" }),
+  stepsToReproduce: z.string().optional(),
+}).optional();
+
 const ticketFormSchema = z.object({
   title: z.string().min(5, {
     message: "Title must be at least 5 characters.",
@@ -76,7 +85,7 @@ const ticketFormSchema = z.object({
     required_error: "Please select a status.",
   }),
   priority: z.enum(["low", "medium", "high"]).default("low"),
-  type: z.literal("new_staff_request"),
+  type: z.enum(["new_staff_request", "it_support"]),
   systemId: z.coerce.number().optional(),
   metadata: z.any().optional(), // Will contain different structures based on ticket type
 });
@@ -116,6 +125,14 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
     initialRequestorId = currentUser.id;
   }
   
+  // Get available ticket templates
+  const { data: ticketTemplates } = useQuery({
+    queryKey: ['/api/ticket-templates'],
+  });
+  
+  // Determine initial ticket type, maintaining backward compatibility
+  const initialTicketType = defaultValues?.type || "new_staff_request";
+  
   const initialFormValues = {
     ...defaultValues,
     requestorId: defaultValues?.requestorId || initialRequestorId || undefined,
@@ -123,7 +140,7 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
     description: defaultValues?.description || "",
     status: defaultValues?.status || "open",
     priority: defaultValues?.priority || "low",
-    type: "new_staff_request",
+    type: initialTicketType,
     metadata: defaultValues?.metadata || {}
   };
 
@@ -140,6 +157,9 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
       systemId: undefined,
     },
   });
+  
+  // Track the currently selected ticket type
+  const [selectedTicketType, setSelectedTicketType] = React.useState(initialTicketType);
 
   const createMutation = useMutation({
     mutationFn: async (values: z.infer<typeof ticketFormSchema>) => {
@@ -194,7 +214,7 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
     // Prepare form values for submission
     const formData = { ...values };
     
-    // For new staff request tickets, validate the required metadata fields
+    // Process form data based on ticket type
     if (values.type === 'new_staff_request') {
       // Validate required fields for new staff request
       const requiredFields = ['firstName', 'lastName', 'positionId', 'reportingManagerId', 'departmentId', 'startDate'];
@@ -229,6 +249,44 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
           { task: "Create work email for new staff", completed: false, category: "accounts" },
           { task: "Generate a secure 12-character password (letters and numbers, human-readable)", completed: false, category: "accounts" },
           { task: "Provide login information with copy button for manual sharing", completed: false, category: "accounts" }
+        ],
+        progress: 0,
+        status: "pending"
+      };
+    } 
+    else if (values.type === 'it_support') {
+      // Validate required fields for IT support ticket
+      const requiredFields = ['issueCategory', 'deviceType', 'urgency', 'issueDetails'];
+      const missingFields = requiredFields.filter(field => !values.metadata?.[field]);
+      
+      if (missingFields.length > 0) {
+        toast({
+          title: "Validation Error",
+          description: `Please fill in all required IT support fields: ${missingFields.join(', ')}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Create a default title if not provided or generic
+      if (!values.title || values.title === 'IT Support Request') {
+        const issueCategory = values.metadata.issueCategory;
+        const deviceType = values.metadata.deviceType;
+        formData.title = `IT Support: ${issueCategory} issue with ${deviceType}`;
+      }
+      
+      // Set the priority based on urgency if not explicitly changed
+      if (values.metadata.urgency === 'Critical' && values.priority === 'low') {
+        formData.priority = 'high';
+      }
+      
+      // Add IT support checklist tasks
+      formData.metadata = {
+        ...values.metadata,
+        checklist: [
+          { task: "Run initial diagnostics", completed: false, category: "support" },
+          { task: "Implement solution", completed: false, category: "support" },
+          { task: "Verify issue is resolved", completed: false, category: "support" }
         ],
         progress: 0,
         status: "pending"
@@ -303,12 +361,49 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Hidden fields for internal use */}
-            <input type="hidden" {...form.register("type")} value="new_staff_request" />
+            {/* Ticket Type Selection */}
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ticket Type</FormLabel>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setSelectedTicketType(value as "new_staff_request" | "it_support");
+                      
+                      // Reset metadata when changing ticket type
+                      form.setValue('metadata', {});
+                      
+                      // Set default title based on selected type
+                      if (value === 'new_staff_request') {
+                        form.setValue('title', 'New Staff Request');
+                      } else if (value === 'it_support') {
+                        form.setValue('title', 'IT Support Request');
+                      }
+                    }}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a ticket type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="new_staff_request">New Staff Request</SelectItem>
+                      <SelectItem value="it_support">IT Support</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
-            {/* New Staff Details section - moved to the top */}
-            <div className="space-y-6 border border-border rounded-md p-4">
-              <h3 className="font-medium text-lg">New Staff Details</h3>
+            {/* Staff Request Form Fields */}
+            {selectedTicketType === "new_staff_request" && (
+              <div className="space-y-6 border border-border rounded-md p-4">
+                <h3 className="font-medium text-lg">New Staff Details</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Please provide the details for the new staff member.
               </p>
