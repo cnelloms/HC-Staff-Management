@@ -560,10 +560,28 @@ export function AdminDatabaseSettings() {
                   Manage organizational positions/job titles
                 </CardDescription>
               </div>
-              <Button onClick={openCreatePositionDialog}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add Position
-              </Button>
+              <div className="flex space-x-2">
+                <Select
+                  onValueChange={(value) => setFilteredDepartmentId(value ? parseInt(value) : null)}
+                  value={filteredDepartmentId?.toString() || ""}
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Filter by department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All Departments</SelectItem>
+                    {Array.isArray(departments) && departments.map((dept: any) => (
+                      <SelectItem key={dept.id} value={dept.id.toString()}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button onClick={openCreatePositionDialog}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add Position
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {isPositionsLoading ? (
@@ -584,7 +602,12 @@ export function AdminDatabaseSettings() {
                     </TableHeader>
                     <TableBody>
                       {Array.isArray(positions) && positions.length > 0 ? (
-                        positions.map((position: any) => (
+                        positions
+                          .filter((position: any) => 
+                            filteredDepartmentId === null || 
+                            position.departmentId === filteredDepartmentId
+                          )
+                          .map((position: any) => (
                           <TableRow key={position.id}>
                             <TableCell className="font-medium">{position.id}</TableCell>
                             <TableCell>{position.title}</TableCell>
