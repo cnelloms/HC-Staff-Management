@@ -89,13 +89,18 @@ export function SystemAccessManager() {
   const [systemFilter, setSystemFilter] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
-  // Fetch all system access entries
+  // Fetch all system access entries - use system-access-admin endpoint for admin users
   const { data: accessEntries, isLoading: accessLoading } = useQuery({
-    queryKey: ['/api/system-access'],
+    queryKey: ['/api/system-access-admin'],
     queryFn: async () => {
-      const response = await fetch('/api/system-access');
+      const response = await fetch('/api/system-access-admin', {
+        credentials: 'include', // Include cookies for authentication
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
       if (!response.ok) {
-        throw new Error('Failed to fetch system access entries');
+        throw new Error('Failed to fetch system access entries. Error: ' + await response.text());
       }
       return await response.json();
     }
@@ -154,12 +159,40 @@ export function SystemAccessManager() {
     mutationFn: async (values: SystemAccessFormValues & { accessId?: number }) => {
       const { accessId, ...data } = values;
       
+      // Include credentials with API requests
+      const options = {
+        credentials: 'include' as RequestCredentials,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      };
+      
       if (accessId) {
         // Edit existing access
-        return await apiRequest('PATCH', `/api/system-access/${accessId}`, data);
+        return await fetch(`/api/system-access/${accessId}`, {
+          method: 'PATCH',
+          ...options,
+          body: JSON.stringify(data)
+        }).then(async response => {
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to update system access: ${errorText}`);
+          }
+          return await response.json();
+        });
       } else {
         // Add new access
-        return await apiRequest('POST', '/api/system-access', data);
+        return await fetch('/api/system-access', {
+          method: 'POST',
+          ...options,
+          body: JSON.stringify(data)
+        }).then(async response => {
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to create system access: ${errorText}`);
+          }
+          return await response.json();
+        });
       }
     },
     onSuccess: () => {
@@ -187,7 +220,20 @@ export function SystemAccessManager() {
   // Mutation for revoking system access
   const revokeMutation = useMutation({
     mutationFn: async (accessId: number) => {
-      return await apiRequest('DELETE', `/api/system-access/${accessId}`);
+      const response = await fetch(`/api/system-access/${accessId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to revoke system access: ${errorText}`);
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/system-access'] });
@@ -212,7 +258,21 @@ export function SystemAccessManager() {
   // Mutation for updating access status
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number, status: string }) => {
-      return await apiRequest('PATCH', `/api/system-access/${id}`, { status });
+      const response = await fetch(`/api/system-access/${id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status })
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to update system access status: ${errorText}`);
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/system-access'] });

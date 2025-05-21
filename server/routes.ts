@@ -1302,8 +1302,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Update a system access entry
-  app.patch('/api/system-access/:id', isAuthenticated, async (req: Request, res: Response) => {
+  app.patch('/api/system-access/:id', async (req: Request, res: Response) => {
     try {
+      // Check session status
+      if (!req.session || !req.session.directUser) {
+        console.log('PATCH /api/system-access/:id - No valid session found');
+        return res.status(401).json({ message: 'Unauthorized - Please log in' });
+      }
+      
+      console.log('PATCH /api/system-access/:id - Full endpoint request:', {
+        params: req.params,
+        body: req.body,
+        session: JSON.stringify(req.session),
+        headers: req.headers,
+        cookies: req.cookies
+      });
+
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: 'Invalid system access ID' });
@@ -1316,9 +1330,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Always allow Global Admin to update system access
-      const isAdmin = req.session?.directUser?.isAdmin === true;
+      const isAdmin = req.session.directUser.isAdmin === true;
       console.log('System access update - Admin check:', isAdmin);
-      console.log('Session state:', JSON.stringify(req.session.directUser));
       
       // Admin bypass - if the user is a global admin, allow the operation
       if (isAdmin) {
@@ -1327,7 +1340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // For non-admin users, check if they're modifying their own record
         let userEmployeeId = null;
         
-        if (req.session?.directUser?.id) {
+        if (req.session.directUser.id) {
           const user = await storage.getUser(req.session.directUser.id);
           console.log('User record found:', user ? 'yes' : 'no');
           if (user && user.employeeId) {
