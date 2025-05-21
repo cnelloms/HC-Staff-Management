@@ -1,29 +1,21 @@
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/layout";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ProfileCard } from "@/components/profile/profile-card";
+import { useProfileData } from "@/hooks/useProfileData";
 
+/**
+ * Settings page with user profile information
+ * Uses the shared profile components and hooks for data consistency
+ */
 export default function UserSettings() {
-  // First fetch user data from auth endpoint
-  const { data: userData, isLoading: isUserLoading } = useQuery({
-    queryKey: ["/api/auth/user"],
-    retry: false,
-  });
+  const { profileData, isLoading } = useProfileData();
+  const [activeTab, setActiveTab] = React.useState("profile");
 
-  // If user has an employee ID, fetch the complete employee data as well
-  const { data: employeeData, isLoading: isEmployeeLoading } = useQuery({
-    queryKey: [`/api/employees/${userData?.employeeId}`],
-    enabled: !!userData?.employeeId,
-    retry: false,
-  });
-
-  const isLoading = isUserLoading || isEmployeeLoading;
-
-  // Show loading state while fetching data
-  if (isLoading) {
+  if (isLoading || !profileData) {
     return (
       <Layout title="Settings">
         <div className="flex justify-center items-center h-64">
@@ -33,43 +25,6 @@ export default function UserSettings() {
     );
   }
 
-  // Not authenticated
-  if (!userData) {
-    return (
-      <Layout title="Settings">
-        <Card className="mx-auto max-w-md mt-8">
-          <CardHeader>
-            <CardTitle>Login Required</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="mb-4">Please sign in to access your settings</p>
-            <Button asChild>
-              <Link href="/api/login">Sign In</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </Layout>
-    );
-  }
-
-  // Prepare display data, preferring employee data when available
-  const displayData = {
-    id: userData.id,
-    firstName: employeeData?.firstName || userData?.firstName || '',
-    lastName: employeeData?.lastName || userData?.lastName || '',
-    email: employeeData?.email || userData?.email || '',
-    username: userData.username,
-    isAdmin: userData.isAdmin,
-    position: employeeData?.position || userData?.position || '',
-    department: employeeData?.department || userData?.department || '',
-    // Additional employee fields
-    phone: employeeData?.phone || '',
-    status: employeeData?.status || 'Active',
-    hireDate: employeeData?.hireDate || '',
-    avatar: employeeData?.avatar || '',
-  };
-
-  // Display profile with enhanced layout
   return (
     <Layout title="Settings">
       <div className="space-y-6">
@@ -79,102 +34,120 @@ export default function UserSettings() {
             <Link href="/">Back to Dashboard</Link>
           </Button>
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>User Profile</CardTitle>
-            <CardDescription>
-              Your profile information synchronized from Staff Management
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col md:flex-row gap-6">
-              {/* Profile avatar */}
-              <div className="flex flex-col items-center gap-2">
-                <Avatar className="h-24 w-24">
-                  <AvatarImage 
-                    src={displayData.avatar} 
-                    alt={`${displayData.firstName} ${displayData.lastName}`} 
-                  />
-                  <AvatarFallback className="text-2xl">
-                    {displayData.firstName.charAt(0)}{displayData.lastName.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="text-sm text-muted-foreground">
-                  {userData.employeeId ? 'Employee ID: ' + userData.employeeId : 'User Account'}
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full max-w-md grid-cols-3">
+            <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="preferences">Preferences</TabsTrigger>
+            <TabsTrigger value="security">Security</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="profile" className="space-y-6">
+            {/* Profile information from shared component */}
+            <ProfileCard />
+            
+            {/* Additional profile settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Profile Settings</CardTitle>
+                <CardDescription>
+                  Manage how your profile appears throughout the system
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Your profile information is synchronized from Staff Management. To make changes to your profile information, 
+                  please contact your department manager or HR representative.
+                </p>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-medium">Profile Visibility</h3>
+                    <p className="text-sm text-muted-foreground">Control who can see your profile in the staff directory</p>
+                  </div>
+                  <div>
+                    <select className="rounded border p-1 text-sm" defaultValue="everyone">
+                      <option value="everyone">Everyone</option>
+                      <option value="team">Team Only</option>
+                      <option value="private">Private</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
-
-              {/* Profile details */}
-              <div className="flex-1">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="font-medium text-sm">Username</h3>
-                    <p>{displayData.username}</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="preferences" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>System Preferences</CardTitle>
+                <CardDescription>
+                  Customize your experience within the system
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-medium">Theme</h3>
+                      <p className="text-sm text-muted-foreground">Choose your preferred theme</p>
+                    </div>
+                    <div>
+                      <select className="rounded border p-1 text-sm" defaultValue="system">
+                        <option value="system">System Default</option>
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                      </select>
+                    </div>
                   </div>
                   
-                  <div>
-                    <h3 className="font-medium text-sm">Name</h3>
-                    <p>{displayData.firstName} {displayData.lastName}</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-medium">Email Notifications</h3>
+                      <p className="text-sm text-muted-foreground">Receive email updates about system activities</p>
+                    </div>
+                    <div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" defaultChecked className="sr-only peer" />
+                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                      </label>
+                    </div>
                   </div>
-                  
-                  <div>
-                    <h3 className="font-medium text-sm">Email</h3>
-                    <p>{displayData.email || "Not set"}</p>
-                  </div>
-
-                  {displayData.phone && (
-                    <div>
-                      <h3 className="font-medium text-sm">Phone</h3>
-                      <p>{displayData.phone}</p>
-                    </div>
-                  )}
-                  
-                  <div>
-                    <h3 className="font-medium text-sm">Role</h3>
-                    <p>{displayData.isAdmin ? "Administrator" : "User"}</p>
-                  </div>
-                  
-                  {displayData.position && (
-                    <div>
-                      <h3 className="font-medium text-sm">Position</h3>
-                      <p>{typeof displayData.position === 'object' ? displayData.position.title : displayData.position}</p>
-                    </div>
-                  )}
-                  
-                  {displayData.department && (
-                    <div>
-                      <h3 className="font-medium text-sm">Department</h3>
-                      <p>{typeof displayData.department === 'object' ? displayData.department.name : displayData.department}</p>
-                    </div>
-                  )}
-
-                  {displayData.status && (
-                    <div>
-                      <h3 className="font-medium text-sm">Status</h3>
-                      <p className="capitalize">{displayData.status}</p>
-                    </div>
-                  )}
-
-                  {displayData.hireDate && (
-                    <div>
-                      <h3 className="font-medium text-sm">Hire Date</h3>
-                      <p>{new Date(displayData.hireDate).toLocaleDateString()}</p>
-                    </div>
-                  )}
                 </div>
-
-                {employeeData && (
-                  <div className="mt-4 pt-4 border-t">
-                    <Button asChild size="sm" variant="outline">
-                      <Link href={`/employee/${userData.employeeId}`}>View Full Profile</Link>
-                    </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="security" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Account Security</CardTitle>
+                <CardDescription>
+                  Manage your account security settings
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-medium">Two-Factor Authentication</h3>
+                      <p className="text-sm text-muted-foreground">Add an extra layer of security to your account</p>
+                    </div>
+                    <Button variant="outline" size="sm">Enable</Button>
                   </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-medium">Password</h3>
+                      <p className="text-sm text-muted-foreground">Change your password</p>
+                    </div>
+                    <Button variant="outline" size="sm">Update</Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );

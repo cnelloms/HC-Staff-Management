@@ -1,0 +1,122 @@
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Employee, User } from "@/types";
+
+/**
+ * A central hook for accessing unified profile data throughout the application
+ * Handles fetching and merging user and employee data with proper priority
+ */
+export function useProfileData(userId?: string | number, employeeId?: number) {
+  // State for combined profile
+  const [profileData, setProfileData] = useState<any>(null);
+  
+  // Fetch logged in user from auth API
+  const { 
+    data: userData, 
+    isLoading: isUserLoading, 
+    error: userError 
+  } = useQuery({
+    queryKey: ["/api/auth/user"],
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Determine which employee ID to use in priority order:
+  // 1. Explicitly provided employeeId parameter
+  // 2. User's associated employeeId from auth
+  const targetEmployeeId = employeeId || userData?.employeeId;
+  
+  // Fetch complete employee data if we have an ID
+  const { 
+    data: employeeData, 
+    isLoading: isEmployeeLoading, 
+    error: employeeError 
+  } = useQuery({
+    queryKey: [`/api/employees/${targetEmployeeId}`],
+    enabled: !!targetEmployeeId,
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Merge profile data, with employee data taking precedence
+  useEffect(() => {
+    if (!userData && !employeeData) {
+      setProfileData(null);
+      return;
+    }
+    
+    // Start with user data as the base
+    const baseProfile = {
+      id: userData?.id || '',
+      username: userData?.username || '',
+      firstName: userData?.firstName || '',
+      lastName: userData?.lastName || '',
+      email: userData?.email || '',
+      isAdmin: userData?.isAdmin || false,
+      employeeId: userData?.employeeId || null,
+      authProvider: userData?.authProvider || 'direct',
+      position: userData?.position || '',
+      department: userData?.department || '',
+      phone: '',
+      avatar: '',
+      status: 'Active',
+      hireDate: null,
+    };
+    
+    // If we have employee data, it overrides the base profile
+    if (employeeData) {
+      Object.assign(baseProfile, {
+        // Employee data has priority for these fields
+        firstName: employeeData.firstName || baseProfile.firstName,
+        lastName: employeeData.lastName || baseProfile.lastName,
+        email: employeeData.email || baseProfile.email,
+        position: employeeData.position || baseProfile.position,
+        department: employeeData.department || baseProfile.department,
+        
+        // Employee-specific fields
+        employeeId: employeeData.id,
+        phone: employeeData.phone || '',
+        avatar: employeeData.avatar || '',
+        status: employeeData.status || 'Active',
+        hireDate: employeeData.hireDate || null,
+        departmentId: employeeData.departmentId,
+        reportingManagerId: employeeData.reportingManagerId,
+        
+        // Keep employee reference for access to complete data
+        employeeData: employeeData,
+      });
+    }
+    
+    // Set the combined profile
+    setProfileData(baseProfile);
+  }, [userData, employeeData]);
+
+  return {
+    profileData,
+    isLoading: isUserLoading || isEmployeeLoading,
+    error: userError || employeeError,
+    userData,
+    employeeData,
+  };
+}
+
+/**
+ * Helper function to get initials from name
+ */
+export function getInitials(firstName?: string, lastName?: string): string {
+  if (!firstName && !lastName) return 'U';
+  
+  let initials = '';
+  if (firstName) initials += firstName.charAt(0);
+  if (lastName) initials += lastName.charAt(0);
+  
+  return initials.toUpperCase();
+}
+
+/**
+ * Helper function to get full name
+ */
+export function getFullName(firstName?: string, lastName?: string): string {
+  if (!firstName && !lastName) return 'User';
+  return `${firstName || ''} ${lastName || ''}`.trim();
+}
