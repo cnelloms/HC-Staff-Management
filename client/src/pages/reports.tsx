@@ -184,8 +184,82 @@ export default function Reports() {
           <h2 className="text-2xl font-bold tracking-tight mb-6">Staff Onboarding Analytics</h2>
           <p className="text-muted-foreground mb-6">
             View key metrics and reports on staff onboarding progress and ticket management.
+            Click on chart segments to see related tickets.
           </p>
         </div>
+        
+        {/* Ticket Drill Down Dialog */}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center justify-between">
+                <span>
+                  {filterType === 'status' 
+                    ? `Tickets with Status: ${selectedCategory}` 
+                    : `${selectedCategory} Tickets`}
+                </span>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setDialogOpen(false)}
+                  className="h-8 w-8 rounded-full"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </DialogTitle>
+              <DialogDescription>
+                Showing {selectedTickets.length} ticket{selectedTickets.length !== 1 ? 's' : ''}
+              </DialogDescription>
+            </DialogHeader>
+            
+            {selectedTickets.length > 0 ? (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedTickets.map((ticket) => (
+                      <TableRow key={ticket.id}>
+                        <TableCell>#{ticket.id}</TableCell>
+                        <TableCell className="font-medium">{ticket.title}</TableCell>
+                        <TableCell>{formatTicketType(ticket.type)}</TableCell>
+                        <TableCell>
+                          <StatusBadge status={ticket.status as any} />
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={ticket.priority as any} />
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(ticket.createdAt), 'MMM d, yyyy')}
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/tickets/${ticket.id}`}>
+                              View
+                            </Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="py-10 text-center">
+                <p className="text-muted-foreground">No tickets found for this selection</p>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {/* Department Distribution */}
@@ -261,7 +335,7 @@ export default function Reports() {
           <Card>
             <CardHeader>
               <CardTitle>Ticket Types</CardTitle>
-              <CardDescription>Distribution of different ticket types</CardDescription>
+              <CardDescription>Distribution of different ticket types (click for details)</CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">
               {ticketTypeData.length > 0 ? (
@@ -275,13 +349,15 @@ export default function Reports() {
                       fill="#8884d8"
                       dataKey="value"
                       label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      onClick={handleTypeClick}
+                      cursor="pointer"
                     >
                       {ticketTypeData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
                     <RechartsTooltip formatter={(value) => [`${value} tickets`, 'Count']} />
-                    <Legend />
+                    <Legend onClick={handleTypeClick} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
