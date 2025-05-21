@@ -347,6 +347,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cookies: req.headers.cookie
       });
       
+      // Check if cookie exists but session is not loaded - wait for store
+      if (req.headers.cookie && req.headers.cookie.includes('staff_mgmt_sid=') && !req.session.directUser) {
+        console.log('Cookie exists but session not loaded yet, waiting...');
+        // Give the session store a moment to load
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
       // Check if user is authenticated through direct login
       if (req.session && req.session.directUser) {
         console.log('User authenticated with direct login:', req.session.directUser);
