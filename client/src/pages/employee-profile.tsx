@@ -6,7 +6,7 @@ import { Employee, Ticket, Activity } from "@/types";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { EmployeeOrgChart } from "@/components/staff/employee-org-chart";
-import { EmployeeSystems } from "@/components/staff/employee-systems";
+import { SystemAccessTab } from "@/components/staff/system-access-tab";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -377,7 +377,7 @@ export default function EmployeeProfile() {
                   <CardDescription>Systems that {employee.firstName} has access to</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <EmployeeSystems employeeId={employee.id} />
+                  <SystemAccessTab employeeId={employee.id} isAdmin={true} />
                 </CardContent>
               </Card>
             </TabsContent>
