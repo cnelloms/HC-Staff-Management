@@ -46,8 +46,16 @@ export default function UserSettings() {
   const [activeTab, setActiveTab] = useState("profile");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
-  // Fetch the employee data directly from auth context if available
-  const employeeId = employee?.id || (user && 'employeeId' in user ? user.employeeId : null);
+  // Fetch the employee data directly from auth context or user object
+  const employeeId = employee?.id || (user && user.employeeId);
+  
+  // Add debugging to see what's happening
+  console.log('Settings page data:', { 
+    user, 
+    employee, 
+    employeeId,
+    isAuthLoading
+  });
   
   // Fetch employee data from API if not already in auth context
   const { data: employeeData, isLoading: isEmployeeLoading } = useQuery<Employee>({
@@ -55,8 +63,8 @@ export default function UserSettings() {
     enabled: !!employeeId,
   });
   
-  // Use employee data from auth context if available, otherwise use from API
-  const profileData: Employee | undefined = employee || employeeData || undefined;
+  // Guard against type issues with proper fallbacks
+  const profileData = employee || employeeData;
 
   const isLoading = isAuthLoading || isEmployeeLoading;
 
@@ -161,17 +169,34 @@ export default function UserSettings() {
     );
   }
 
+  // Display loading screen when either auth or employee data is loading
+  if (isLoading) {
+    return (
+      <Layout title="Account Settings">
+        <div className="p-8 flex justify-center">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </Layout>
+    );
+  }
+  
+  // Fallback if profile data is not available even after loading
   if (!profileData) {
     return (
       <Layout title="Account Settings">
         <div className="text-center p-8">
           <h2 className="text-2xl font-bold">Profile Not Found</h2>
           <p className="text-muted-foreground mt-2">
-            We couldn't load your profile information. Please try again later.
+            We couldn't load your profile information. Please try signing in again.
           </p>
-          <Button className="mt-4" asChild>
-            <Link href="/">Back to Dashboard</Link>
-          </Button>
+          <div className="space-y-2 mt-4">
+            <Button asChild>
+              <Link href="/">Back to Dashboard</Link>
+            </Button>
+            <Button variant="outline" asChild className="ml-2">
+              <Link href="/api/logout">Sign Out</Link>
+            </Button>
+          </div>
         </div>
       </Layout>
     );
