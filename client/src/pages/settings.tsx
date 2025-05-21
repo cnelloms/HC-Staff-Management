@@ -56,7 +56,7 @@ export default function UserSettings() {
   });
   
   // Use employee data from auth context if available, otherwise use from API
-  const profileData = employee || employeeData;
+  const profileData: Employee | undefined = employee || employeeData || undefined;
 
   const isLoading = isAuthLoading || isEmployeeLoading;
 
@@ -72,22 +72,22 @@ export default function UserSettings() {
     },
   });
 
-  // Update form values when employee data is loaded
+  // Update form values when profile data is loaded
   useEffect(() => {
-    if (employeeData) {
+    if (profileData) {
       form.reset({
-        firstName: employeeData.firstName,
-        lastName: employeeData.lastName,
-        email: employeeData.email,
-        phone: employeeData.phone || "",
-        avatar: employeeData.avatar || "",
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        email: profileData.email,
+        phone: profileData.phone || "",
+        avatar: profileData.avatar || "",
       });
       
-      if (employeeData.avatar) {
-        setAvatarPreview(employeeData.avatar);
+      if (profileData.avatar) {
+        setAvatarPreview(profileData.avatar);
       }
     }
-  }, [employeeData, form]);
+  }, [profileData, form]);
 
   // Handle avatar upload
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,14 +109,29 @@ export default function UserSettings() {
   const updateProfileMutation = useMutation({
     mutationFn: async (data: UserSettingsFormValues) => {
       if (!employeeId) throw new Error("Employee ID not found");
-      return apiRequest(`/api/employees/${employeeId}`, {
+      
+      // Use the API request helper
+      const response = await fetch(`/api/employees/${employeeId}`, {
         method: 'PATCH',
-        data
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update profile");
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
+      // Invalidate all queries that might be affected by this update
       queryClient.invalidateQueries({ queryKey: [`/api/employees/${employeeId}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      
       toast({
         title: "Profile updated",
         description: "Your profile has been updated successfully.",
@@ -146,7 +161,7 @@ export default function UserSettings() {
     );
   }
 
-  if (!employeeData) {
+  if (!profileData) {
     return (
       <Layout title="Account Settings">
         <div className="text-center p-8">
@@ -168,8 +183,8 @@ export default function UserSettings() {
         {/* Back to profile link */}
         <div>
           <Button variant="ghost" className="p-0" onClick={() => {
-            if (employeeData.id) {
-              window.location.href = `/employee/${employeeData.id}`;
+            if (profileData.id) {
+              window.location.href = `/employee/${profileData.id}`;
             } else {
               // Default to employee listing if no specific profile
               window.location.href = "/directory";
@@ -205,11 +220,11 @@ export default function UserSettings() {
                     <div className="flex flex-col items-center mb-6">
                       <Avatar className="h-24 w-24 mb-4">
                         <AvatarImage 
-                          src={avatarPreview || employeeData.avatar} 
-                          alt={`${employeeData.firstName} ${employeeData.lastName}`} 
+                          src={avatarPreview || profileData.avatar} 
+                          alt={`${profileData.firstName} ${profileData.lastName}`} 
                         />
                         <AvatarFallback className="text-2xl">
-                          {employeeData.firstName[0]}{employeeData.lastName[0]}
+                          {profileData.firstName[0]}{profileData.lastName[0]}
                         </AvatarFallback>
                       </Avatar>
                       
@@ -296,23 +311,23 @@ export default function UserSettings() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
                       <div>
                         <label className="text-sm font-medium">Department</label>
-                        <p className="text-muted-foreground">{employeeData.department?.name || 'Not assigned'}</p>
+                        <p className="text-muted-foreground">{profileData.department?.name || 'Not assigned'}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium">Position</label>
-                        <p className="text-muted-foreground">{employeeData.position || 'Not assigned'}</p>
+                        <p className="text-muted-foreground">{profileData.position || 'Not assigned'}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium">Hire Date</label>
                         <p className="text-muted-foreground">
-                          {employeeData.hireDate 
-                            ? format(new Date(employeeData.hireDate), 'MMM d, yyyy')
+                          {profileData.hireDate 
+                            ? format(new Date(profileData.hireDate), 'MMM d, yyyy')
                             : 'Not set'}
                         </p>
                       </div>
                       <div>
                         <label className="text-sm font-medium">Status</label>
-                        <p className="text-muted-foreground capitalize">{employeeData.status || 'Active'}</p>
+                        <p className="text-muted-foreground capitalize">{profileData.status || 'Active'}</p>
                       </div>
                     </div>
 
