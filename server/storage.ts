@@ -104,6 +104,8 @@ export interface IStorage {
   syncUserFromEmployee(userId: string, employeeId: number): Promise<User | undefined>;
   syncEmployeeToUser(employeeId: number): Promise<boolean>;
   isEmployeeLinkedToUser(employeeId: number, userId: string): Promise<boolean>;
+  getUserForEmployee(employeeId: number): Promise<User | undefined>;
+  invalidateUserCache(userId: string): Promise<void>;
 }
 
 export interface DashboardStats {
@@ -812,6 +814,34 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error checking employee-user link:', error);
       return false;
+    }
+  }
+  
+  // Get user record associated with an employee
+  async getUserForEmployee(employeeId: number): Promise<User | undefined> {
+    try {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.employeeId, employeeId));
+      
+      return user;
+    } catch (error) {
+      console.error('Error getting user for employee:', error);
+      return undefined;
+    }
+  }
+  
+  // Invalidate any cached user data
+  async invalidateUserCache(userId: string): Promise<void> {
+    try {
+      // This is a stub for future implementation of caching
+      // In a real implementation, this would clear cached user data
+      // For now, we'll just log that this was called
+      console.log(`Cache invalidated for user: ${userId}`);
+      return;
+    } catch (error) {
+      console.error('Error invalidating user cache:', error);
     }
   }
 

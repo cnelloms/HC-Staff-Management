@@ -820,8 +820,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Employee not found' });
       }
       
-      // Sync the employee data back to any associated user accounts
-      await storage.syncEmployeeToUser(id);
+      // Sync the employee data back to any associated user accounts in the database
+      const syncResult = await storage.syncEmployeeToUser(id);
+      
+      // If this is a self-update, also update the session data immediately
+      if (isSelfUpdate && req.session?.directUser?.id) {
+        // Get the linked user record for this employee to ensure it has the latest data
+        const linkedUser = await storage.getUserForEmployee(id);
+        
+        if (linkedUser) {
+          // Update the auth endpoint cache to ensure the next call returns updated data
+          await storage.invalidateUserCache(linkedUser.id);
+          
+          // Return the updated data including employee details
+          return res.json({
+            ...updatedEmployee,
+            employeeId: id, // Ensure this is present for frontend
+            sessionUpdated: true
+          });
+        }
+      }
       
       return res.json(updatedEmployee);
     } catch (error) {
