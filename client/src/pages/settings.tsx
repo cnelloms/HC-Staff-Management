@@ -1,12 +1,27 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/layout";
-import { Employee } from "@/types";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+
+// Define types for the settings page
+interface Employee {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  avatar?: string;
+  departmentId?: number;
+  department?: { id: number; name: string };
+  positionId?: number;
+  position?: { id: number; title: string };
+  hireDate?: string;
+  status?: string;
+}
 import { useForm } from "react-hook-form";
 import { AdminDatabaseSettings } from "@/components/settings/admin-database";
 
@@ -46,8 +61,8 @@ export default function UserSettings() {
   const [activeTab, setActiveTab] = useState("profile");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
-  // Fetch the employee data directly from auth context or user object
-  const employeeId = employee?.id || (user && user.employeeId);
+  // Get employee ID safely 
+  const employeeId = employee?.id || (user && typeof user === 'object' && 'employeeId' in user ? user.employeeId : null);
   
   // Add debugging to see what's happening
   console.log('Settings page data:', { 
@@ -61,10 +76,12 @@ export default function UserSettings() {
   const { data: employeeData, isLoading: isEmployeeLoading } = useQuery<Employee>({
     queryKey: [`/api/employees/${employeeId}`],
     enabled: !!employeeId,
+    staleTime: 60000, // 1 minute
+    retry: 2,
   });
   
-  // Guard against type issues with proper fallbacks
-  const profileData = employee || employeeData;
+  // Use either the employee data from auth context or from the API query
+  const profileData: Employee | undefined = employee || employeeData;
 
   const isLoading = isAuthLoading || isEmployeeLoading;
 
@@ -340,7 +357,13 @@ export default function UserSettings() {
                       </div>
                       <div>
                         <label className="text-sm font-medium">Position</label>
-                        <p className="text-muted-foreground">{profileData.position || 'Not assigned'}</p>
+                        <p className="text-muted-foreground">
+                          {profileData.position ? 
+                            (typeof profileData.position === 'object' ? 
+                              profileData.position.title : 
+                              profileData.position) : 
+                            'Not assigned'}
+                        </p>
                       </div>
                       <div>
                         <label className="text-sm font-medium">Hire Date</label>
