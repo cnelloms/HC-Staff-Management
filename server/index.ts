@@ -74,27 +74,7 @@ app.use('/api/kv', keyValueRouter);
 (async () => {
   const server = await registerRoutes(app);
 
-  // Add cookie-parser middleware 
-  app.use(cookieParser());
-  
-  // Add express-session middleware for handling sessions properly
-  app.use(session({
-    name: 'staff_mgmt_sid',
-    secret: process.env.SESSION_SECRET || 'local-dev-secret-key',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    },
-    store: new (pgSession(session))({
-      pool,
-      tableName: 'session',
-      createTableIfMissing: true
-    })
-  }));
+  // Session is already configured above, removing duplicate code
   
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

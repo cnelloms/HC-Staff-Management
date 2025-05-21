@@ -60,10 +60,20 @@ export default function LoginPage() {
       // Store user data in localStorage for persistence
       if (data.user) {
         localStorage.setItem("auth_user", JSON.stringify(data.user));
+        
+        // Invalidate previous queries to ensure fresh data
+        queryClient.invalidateQueries(["/api/auth/user"]);
+        
+        // Add a small delay to let the session be properly set
+        setTimeout(() => {
+          // Navigate using window.location for a full page reload
+          // This ensures all contexts and providers are re-initialized with the new auth state
+          window.location.href = "/";
+        }, 500);
+      } else {
+        throw new Error("No user data received from server");
       }
       
-      // Force navigation to the dashboard
-      window.location.href = "/";
       return;
     } catch (err: any) {
       console.error("Login error:", err);
