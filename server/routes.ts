@@ -16,6 +16,8 @@ import { db } from "./db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
+import notificationRoutes from "./notification-routes";
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
   await setupAuth(app);
@@ -1498,6 +1500,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'Failed to delete ticket' });
     }
   });
+  
+  // Register notification routes
+  app.use('/api', notificationRoutes);
   
   const httpServer = createServer(app);
   return httpServer;
