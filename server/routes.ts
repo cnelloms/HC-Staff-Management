@@ -1318,7 +1318,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.patch('/api/ticket-templates/:id', isDirectAdmin, async (req: Request, res: Response) => {
+  app.patch('/api/ticket-templates/:id', isAuthenticatedWithDirect, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
