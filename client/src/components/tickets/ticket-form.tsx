@@ -46,7 +46,7 @@ interface TicketFormProps {
   employeeId?: number;
 }
 
-// Define ticket schema
+// Define ticket schema - this needs to match what our API expects
 const ticketFormSchema = z.object({
   title: z.string().min(5, {
     message: "Title must be at least 5 characters.",
@@ -62,6 +62,7 @@ const ticketFormSchema = z.object({
     required_error: "Please select a status.",
   }),
   priority: z.enum(["low", "medium", "high"]).default("low"),
+  // Make sure we only allow these two ticket types in the form, regardless of what's in the API
   type: z.enum(["new_staff_request", "it_support"]),
   systemId: z.coerce.number().optional(),
   metadata: z.any().optional(), // Will contain different structures based on ticket type
@@ -76,8 +77,11 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
 
   // Determine ticket type
   let initialTicketType = "new_staff_request";
-  if (defaultValues?.type === "it_support") {
-    initialTicketType = "it_support";
+  if (defaultValues?.type) {
+    // Make sure we set the initial ticket type properly
+    if (["new_staff_request", "it_support"].includes(defaultValues.type)) {
+      initialTicketType = defaultValues.type;
+    }
   }
 
   const [selectedTicketType, setSelectedTicketType] = useState(initialTicketType);
@@ -110,13 +114,14 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
   
   // Set initial form values
   const initialFormValues = {
-    ...defaultValues,
     requestorId: defaultValues?.requestorId || initialRequestorId || undefined,
     title: defaultValues?.title || "",
     description: defaultValues?.description || "",
     status: defaultValues?.status || "open",
     priority: defaultValues?.priority || "low",
-    type: defaultValues?.type || "new_staff_request",
+    // Only use "new_staff_request" or "it_support" as valid types
+    type: defaultValues?.type === "it_support" ? "it_support" : "new_staff_request",
+    systemId: defaultValues?.systemId,
     metadata: defaultValues?.metadata || {}
   };
 
