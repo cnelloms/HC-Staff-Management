@@ -26,13 +26,13 @@ const sessionStore = new pgStore({
 app.use(session({
   store: sessionStore,
   secret: process.env.SESSION_SECRET || 'your-secret-key',
-  resave: true, // Changed to true to ensure session is saved on each request
-  saveUninitialized: true, // Changed to true to create session for all requests
+  resave: true, // Always save session on each request
+  saveUninitialized: true, // Create session for all requests
   name: 'staff_mgmt_sid', // Explicit name for the session cookie
   cookie: {
-    secure: 'auto', // Only use secure cookies in production
+    secure: false, // Allow non-HTTPS for development (Replit handles HTTPS)
     httpOnly: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for longer sessions
     sameSite: 'lax',
     path: '/'
   }
