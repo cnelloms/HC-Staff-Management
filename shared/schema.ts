@@ -27,7 +27,7 @@ export const departments = pgTable("departments", {
   name: text("name").notNull(),
   description: text("description"),
   managerId: integer("manager_id"),
-  businessUnit: text("business_unit"),
+  businessUnit: text("business_unit").default("Health Carousel"),
 });
 
 export const insertDepartmentSchema = createInsertSchema(departments).pick({
