@@ -19,7 +19,7 @@ import MyTickets from "@/pages/my-tickets";
 import Reports from "@/pages/reports";
 import Settings from "@/pages/settings";
 import EmployeeProfile from "@/pages/employee-profile";
-import UserProfile from "@/pages/profile";
+import UserProfile from "@/pages/profile-new";
 import TicketDetail from "@/pages/ticket-detail";
 import EditTicket from "@/pages/edit-ticket";
 import NewEmployee from "@/pages/new-employee";
