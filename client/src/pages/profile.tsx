@@ -40,20 +40,14 @@ import {
 import { Link } from "wouter";
 
 export default function UserProfile() {
-  const { currentUser, isLoading: isUserLoading } = useCurrentUser();
+  const { profileData, isLoading, employeeData } = useProfileData();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
 
-  // If user context exists but we need more details, fetch them
-  const { data: userDetails, isLoading: isDetailsLoading } = useQuery<Employee>({
-    queryKey: [`/api/employees/${currentUser?.id}`],
-    enabled: !!currentUser?.id,
-  });
-
-  // Use either the detailed user data or the context user
-  const user = userDetails || currentUser;
-  const isLoading = isUserLoading || isDetailsLoading;
+  // For backwards compatibility, user is set to either the full employee data 
+  // or our combined profile data to ensure everything works
+  const user = employeeData || profileData;
 
   if (isLoading) {
     return (

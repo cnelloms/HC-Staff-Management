@@ -82,12 +82,12 @@ export function ProfileHeader() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        <Link href="/profile">
+        <a href="/profile">
           <DropdownMenuItem className="cursor-pointer">
             <User className="mr-2 h-4 w-4" />
             <span>My Profile</span>
           </DropdownMenuItem>
-        </Link>
+        </a>
         
         <Link href="/settings">
           <DropdownMenuItem className="cursor-pointer">

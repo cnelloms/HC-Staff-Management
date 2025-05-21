@@ -27,7 +27,10 @@ interface SidebarProps {
 
 export function Sidebar({ user: defaultUser }: SidebarProps) {
   const [location] = useLocation();
-  const { isAuthenticated, user, employee, isAdmin, isImpersonating, impersonatingEmployee } = useAuth();
+  const { isAuthenticated, user, employee, isAdmin } = useAuth();
+  // These properties were removed from useAuth, so we'll provide defaults
+  const isImpersonating = false;
+  const impersonatingEmployee = null;
 
   // Basic navigation items for all users
   const baseNavItems = [
@@ -150,15 +153,7 @@ export function Sidebar({ user: defaultUser }: SidebarProps) {
               })()}
             </Link>
             
-            {/* Impersonation badge - only shows when actively impersonating */}
-            {isImpersonating && impersonatingEmployee && (
-              <div className="flex items-center p-2 my-2 bg-amber-50 border border-amber-200 rounded-md text-sm">
-                <span className="text-amber-600 font-medium flex items-center">
-                  <UserX className="h-4 w-4 mr-1" />
-                  Viewing as: {impersonatingEmployee.firstName} {impersonatingEmployee.lastName}
-                </span>
-              </div>
-            )}
+            {/* Impersonation badge now removed since we don't have impersonation */}
             
             {/* Login/Logout button */}
             <LoginButton className="w-full" />
