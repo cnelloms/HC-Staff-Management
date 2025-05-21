@@ -15,6 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { LoginButton } from "@/components/auth/login-button";
+import { useProfileData, getInitials } from "@/hooks/useProfileData";
 
 interface SidebarProps {
   user?: {
@@ -87,63 +88,67 @@ export function Sidebar({ user: defaultUser }: SidebarProps) {
       <div className="border-t border-border p-4 space-y-3">
         {isAuthenticated ? (
           <>
-            <div className="flex items-center hover:bg-gray-50 p-2 rounded-md transition-colors cursor-pointer"
-              onClick={() => {
-                // Find correct employee ID for the current user
-                let targetUrl = "/settings";
+            <Link href="/profile" className="flex items-center hover:bg-gray-50 p-2 rounded-md transition-colors cursor-pointer">
+              {/* Use the same profile data hook that's used in the header */}
+              {(() => {
+                // Get consistent profile data from our hook
+                const { profileData, isLoading } = useProfileData();
                 
-                // Chris Nelloms (admin) is employee #118
-                if (user?.username === "cnelloms") {
-                  targetUrl = "/employee/118";
-                }
-                // If impersonating, go to that employee's profile
-                else if (isImpersonating && impersonatingEmployee?.id) {
-                  targetUrl = `/employee/${impersonatingEmployee.id}`;
-                } 
-                // Otherwise try to find employee ID for logged in user
-                else if (employee?.id) {
-                  targetUrl = `/employee/${employee.id}`;
+                if (isLoading || !profileData) {
+                  return (
+                    <>
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback>...</AvatarFallback>
+                      </Avatar>
+                      <div className="ml-3">
+                        <p className="text-sm font-medium">Loading...</p>
+                        <p className="text-xs text-muted-foreground">...</p>
+                      </div>
+                    </>
+                  );
                 }
                 
-                // Navigate to the determined profile page
-                window.location.href = targetUrl;
-              }}
-            >
-              <Avatar className="h-10 w-10">
-                <AvatarImage 
-                  src={isImpersonating && impersonatingEmployee 
-                    ? impersonatingEmployee.avatar 
-                    : employee?.avatar || user?.profileImageUrl} 
-                  alt={isImpersonating && impersonatingEmployee && impersonatingEmployee.firstName
-                    ? `${impersonatingEmployee.firstName} ${impersonatingEmployee.lastName || ''}`
-                    : employee && employee.firstName
-                      ? `${employee.firstName} ${employee.lastName || ''}`
-                      : user?.firstName || "User"} 
-                />
-                <AvatarFallback>
-                  {isImpersonating && impersonatingEmployee && impersonatingEmployee.firstName
-                    ? `${impersonatingEmployee.firstName[0]}${impersonatingEmployee.lastName ? impersonatingEmployee.lastName[0] : ''}`
-                    : employee && employee.firstName
-                      ? `${employee.firstName[0]}${employee.lastName ? employee.lastName[0] : ''}`
-                      : user?.firstName?.[0] || "U"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="ml-3">
-                <p className="text-sm font-medium">
-                  {isImpersonating && impersonatingEmployee && impersonatingEmployee.firstName
-                    ? `${impersonatingEmployee.firstName} ${impersonatingEmployee.lastName || ''}`
-                    : employee && employee.firstName
-                      ? `${employee.firstName} ${employee.lastName || ''}`
-                      : user?.firstName || "User"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {isImpersonating && impersonatingEmployee 
-                    ? (impersonatingEmployee.position || "Staff")
-                    : employee?.position || "User"}
-                  {isAdmin && <span className="ml-1 text-primary">(Admin)</span>}
-                </p>
-              </div>
-            </div>
+                const initials = getInitials(profileData.firstName, profileData.lastName);
+                const fullName = `${profileData.firstName || ''} ${profileData.lastName || ''}`.trim() || 'User';
+                
+                // Handle position/department display
+                let positionDisplay = '';
+                if (profileData.position) {
+                  if (typeof profileData.position === 'object' && 'title' in profileData.position) {
+                    positionDisplay = profileData.position.title as string;
+                  } else if (typeof profileData.position === 'string') {
+                    positionDisplay = profileData.position;
+                  }
+                }
+                
+                let departmentDisplay = '';
+                if (profileData.department) {
+                  if (typeof profileData.department === 'object' && 'name' in profileData.department) {
+                    departmentDisplay = profileData.department.name as string;
+                  } else if (typeof profileData.department === 'string') {
+                    departmentDisplay = profileData.department;
+                  }
+                }
+                
+                const positionOrDepartment = positionDisplay || departmentDisplay || "User";
+                
+                return (
+                  <>
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={profileData.avatar} alt={fullName} />
+                      <AvatarFallback>{initials}</AvatarFallback>
+                    </Avatar>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium">{fullName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {positionOrDepartment}
+                        {profileData.isAdmin && <span className="ml-1 text-primary">(Admin)</span>}
+                      </p>
+                    </div>
+                  </>
+                );
+              })()}
+            </Link>
             
             {/* Impersonation badge - only shows when actively impersonating */}
             {isImpersonating && impersonatingEmployee && (
