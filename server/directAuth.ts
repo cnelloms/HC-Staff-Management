@@ -110,6 +110,18 @@ export function setupDirectAuth(app: Express) {
       // Store user data in session directly first
       req.session.directUser = userProfile;
       
+      // Create a complete user object for the response
+      const userResponse = {
+        id: user.id,
+        username: userCredentials.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        isAdmin: user.isAdmin === true,
+        employeeId: user.employeeId,
+        authProvider: 'direct'
+      };
+      
       // Save session before responding
       req.session.save((err) => {
         if (err) {
@@ -123,19 +135,10 @@ export function setupDirectAuth(app: Express) {
           isAdmin: user.isAdmin === true
         });
           
-        // Get additional user details to return in response
+        // Return the complete user object in the response
         return res.status(200).json({ 
           message: 'Logged in successfully', 
-          user: {
-            id: user.id,
-            username: userCredentials.username,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            isAdmin: user.isAdmin === true,
-            employeeId: user.employeeId,
-            authProvider: 'direct'
-          },
+          user: userResponse,
           redirectTo: '/'
         });
       });
