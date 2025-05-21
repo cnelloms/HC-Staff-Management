@@ -49,21 +49,21 @@ export default function OrgStructurePage() {
   });
 
   // Get departments data
-  const { data: departments, isLoading: isLoadingDepartments } = useQuery({
+  const { data: departments = [], isLoading: isLoadingDepartments } = useQuery<any[]>({
     queryKey: ['/api/departments'],
     retry: 1,
     refetchOnWindowFocus: false
   });
 
   // Get positions data
-  const { data: positions, isLoading: isLoadingPositions } = useQuery({
+  const { data: positions = [], isLoading: isLoadingPositions } = useQuery<any[]>({
     queryKey: ['/api/positions'],
     retry: 1,
     refetchOnWindowFocus: false
   });
 
   // Get employees data for manager selection
-  const { data: employees, isLoading: isLoadingEmployees } = useQuery({
+  const { data: employees = [], isLoading: isLoadingEmployees } = useQuery<any[]>({
     queryKey: ['/api/employees'],
     retry: 1,
     refetchOnWindowFocus: false
@@ -302,14 +302,14 @@ export default function OrgStructurePage() {
 
   // Get manager name by ID
   const getManagerName = (managerId: number | null | undefined) => {
-    if (!managerId || !employees) return "None";
+    if (!managerId || employees.length === 0) return "None";
     const manager = employees.find((emp: any) => emp.id === managerId);
     return manager ? `${manager.firstName} ${manager.lastName}` : "None";
   };
 
   // Get department name by ID
   const getDepartmentName = (departmentId: number | undefined) => {
-    if (!departmentId || !departments) return "Unknown";
+    if (!departmentId || departments.length === 0) return "Unknown";
     const department = departments.find((dept: any) => dept.id === departmentId);
     return department ? department.name : "Unknown";
   };

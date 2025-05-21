@@ -32,6 +32,7 @@ import DirectLoginPage from "@/pages/direct-login";
 import UserManagementPage from "@/pages/user-management";
 import TestLoginPage from "@/pages/test-login";
 import TicketTemplatesPage from "@/pages/ticket-templates";
+import OrgStructurePage from "@/pages/org-structure";
 
 function Router() {
   const [isLoading, setIsLoading] = useState(true);
@@ -161,6 +162,10 @@ function Router() {
       
       <Route path="/ticket-templates">
         {() => <AdminRoute><TicketTemplatesPage /></AdminRoute>}
+      </Route>
+      
+      <Route path="/org-structure">
+        {() => <AdminRoute><OrgStructurePage /></AdminRoute>}
       </Route>
       
       <Route path="/user-management">
