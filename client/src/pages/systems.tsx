@@ -1,5 +1,6 @@
 import Layout from "@/components/layout";
 import { SystemsManagement } from "@/components/admin/systems-management";
+import { SystemAccessManager } from "@/components/admin/system-access-manager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
@@ -67,11 +68,7 @@ export default function SystemsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {/* We'll implement the system access management table here in a future update */}
-                <p className="text-muted-foreground">
-                  The global access management table will be implemented in a future update. 
-                  Currently, system access can be managed from individual employee profiles.
-                </p>
+                <SystemAccessManager />
               </CardContent>
             </Card>
           </TabsContent>
