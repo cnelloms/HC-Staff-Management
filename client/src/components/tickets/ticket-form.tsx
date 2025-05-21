@@ -75,14 +75,8 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
   const isEditing = !!ticketId;
   const { currentUser } = useCurrentUser();
 
-  // Determine ticket type
+  // Determine ticket type - default to staff request
   let initialTicketType = "new_staff_request";
-  if (defaultValues?.type) {
-    // Make sure we set the initial ticket type properly
-    if (["new_staff_request", "it_support"].includes(defaultValues.type)) {
-      initialTicketType = defaultValues.type;
-    }
-  }
 
   const [selectedTicketType, setSelectedTicketType] = useState(initialTicketType);
 
@@ -112,15 +106,14 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
     initialRequestorId = currentUser.employeeId;
   }
   
-  // Set initial form values
+  // Set initial form values with default type of "new_staff_request"
   const initialFormValues = {
     requestorId: defaultValues?.requestorId || initialRequestorId || undefined,
     title: defaultValues?.title || "",
     description: defaultValues?.description || "",
     status: defaultValues?.status || "open",
     priority: defaultValues?.priority || "low",
-    // Only use "new_staff_request" or "it_support" as valid types
-    type: defaultValues?.type === "it_support" ? "it_support" : "new_staff_request",
+    type: "new_staff_request", // Always start with new staff request type
     systemId: defaultValues?.systemId,
     metadata: defaultValues?.metadata || {}
   };
