@@ -74,7 +74,18 @@ export function useAuth() {
   
   // Use server user if available, fall back to localStorage user
   const user = userData || localUser;
+  
+  // Make sure we don't stay in loading state forever
+  // Only consider the app loading if we're actively fetching server data and don't have a local user
   const isLoading = isServerLoading && !localUser;
+  
+  // Debug: Log authentication state to help troubleshoot issues
+  console.log("Auth state:", { 
+    user: user ? { ...user, id: user.id } : null, 
+    isAuthenticated: !!user,
+    isAdmin: user?.isAdmin === true,
+    isLoading
+  });
   
   // Simplified admin status check (removed impersonation)
   const isAdmin = user?.isAdmin === true;
