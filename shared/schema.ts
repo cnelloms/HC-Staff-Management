@@ -27,12 +27,14 @@ export const departments = pgTable("departments", {
   name: text("name").notNull(),
   description: text("description"),
   managerId: integer("manager_id"),
+  businessUnit: text("business_unit"),
 });
 
 export const insertDepartmentSchema = createInsertSchema(departments).pick({
   name: true,
   description: true,
   managerId: true,
+  businessUnit: true,
 });
 
 // Employee table
