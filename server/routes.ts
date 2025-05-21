@@ -1165,6 +1165,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'Failed to fetch employee roles' });
     }
   });
+  
+  // Add role to employee
+  app.post('/api/employees/:employeeId/roles', async (req: Request, res: Response) => {
+    try {
+      const employeeId = parseInt(req.params.employeeId);
+      const { roleId } = req.body;
+      
+      if (isNaN(employeeId) || isNaN(roleId)) {
+        return res.status(400).json({ message: 'Invalid employee ID or role ID' });
+      }
+      
+      const employeeRole = await storage.addRoleToEmployee({
+        employeeId,
+        roleId
+      });
+      
+      return res.json(employeeRole);
+    } catch (error) {
+      console.error('Error adding role to employee:', error);
+      return res.status(500).json({ message: 'Failed to add role to employee' });
+    }
+  });
+  
+  // Remove role from employee
+  app.delete('/api/employees/:employeeId/roles/:roleId', async (req: Request, res: Response) => {
+    try {
+      const employeeId = parseInt(req.params.employeeId);
+      const roleId = parseInt(req.params.roleId);
+      
+      if (isNaN(employeeId) || isNaN(roleId)) {
+        return res.status(400).json({ message: 'Invalid employee ID or role ID' });
+      }
+      
+      const success = await storage.removeRoleFromEmployee(employeeId, roleId);
+      if (!success) {
+        return res.status(404).json({ message: 'Employee role not found' });
+      }
+      
+      return res.json({ message: 'Role removed from employee successfully' });
+    } catch (error) {
+      console.error('Error removing role from employee:', error);
+      return res.status(500).json({ message: 'Failed to remove role from employee' });
+    }
+  });
 
   // Feature flag endpoint (placeholder for now)
   app.get('/api/feature-flags', async (req: Request, res: Response) => {
