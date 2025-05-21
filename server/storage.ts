@@ -163,6 +163,19 @@ export class DatabaseStorage implements IStorage {
     const [newDepartment] = await db.insert(departments).values(department).returning();
     return newDepartment;
   }
+  
+  async updateDepartment(id: number, department: Partial<InsertDepartment>): Promise<Department | undefined> {
+    const [updatedDepartment] = await db
+      .update(departments)
+      .set({
+        ...department,
+        // Clear managerId if it's explicitly set to null or empty string
+        managerId: department.managerId === null || department.managerId === undefined ? null : department.managerId
+      })
+      .where(eq(departments.id, id))
+      .returning();
+    return updatedDepartment || undefined;
+  }
 
   // Employee operations
   async getEmployees(): Promise<Employee[]> {

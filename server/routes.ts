@@ -888,6 +888,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'Failed to create department' });
     }
   });
+  
+  app.patch('/api/departments/:id', async (req: Request, res: Response) => {
+    try {
+      const departmentId = parseInt(req.params.id);
+      if (isNaN(departmentId)) {
+        return res.status(400).json({ message: 'Invalid department ID' });
+      }
+      
+      const departmentData = req.body;
+      const updatedDepartment = await storage.updateDepartment(departmentId, departmentData);
+      
+      if (!updatedDepartment) {
+        return res.status(404).json({ message: 'Department not found' });
+      }
+      
+      return res.json(updatedDepartment);
+    } catch (error) {
+      console.error('Error updating department:', error);
+      return res.status(500).json({ message: 'Failed to update department' });
+    }
+  });
 
   // Position routes
   app.get('/api/positions', async (req: Request, res: Response) => {
