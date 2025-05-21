@@ -70,7 +70,7 @@ export interface Ticket {
   assigneeId?: number;
   status: "open" | "in_progress" | "closed";
   priority: "low" | "medium" | "high";
-  type: "system_access" | "onboarding" | "issue" | "request" | "new_staff_request";
+  type: "system_access" | "onboarding" | "issue" | "request" | "new_staff_request" | "it_support";
   createdAt: string;
   updatedAt: string;
   closedAt?: string;
