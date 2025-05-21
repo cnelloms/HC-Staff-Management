@@ -118,13 +118,21 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
     mutationFn: async (values: z.infer<typeof employeeFormSchema>) => {
       return apiRequest("PATCH", `/api/employees/${employeeId}`, values);
     },
-    onSuccess: () => {
+    onSuccess: async (response) => {
+      // Get the updated employee data with ID
+      const data = await response.json();
+      
+      // Invalidate both list and specific employee queries
       queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
       queryClient.invalidateQueries({ queryKey: [`/api/employees/${employeeId}`] });
+      
+      // Show success message
       toast({
         title: "Employee updated",
         description: "The employee has been successfully updated.",
       });
+      
+      // Navigate to the correct profile page using the employee ID
       navigate(`/employee/${employeeId}`);
     },
     onError: (error) => {
