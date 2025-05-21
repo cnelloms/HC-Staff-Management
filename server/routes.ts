@@ -1272,6 +1272,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Ticket Template routes
+  app.get('/api/ticket-templates', async (req: Request, res: Response) => {
+    try {
+      const templates = await storage.getTicketTemplates();
+      return res.json(templates);
+    } catch (error) {
+      console.error('Error fetching ticket templates:', error);
+      return res.status(500).json({ message: 'Failed to fetch ticket templates' });
+    }
+  });
+  
+  app.get('/api/ticket-templates/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid template ID' });
+      }
+      
+      const template = await storage.getTicketTemplateById(id);
+      if (!template) {
+        return res.status(404).json({ message: 'Template not found' });
+      }
+      
+      return res.json(template);
+    } catch (error) {
+      console.error('Error fetching ticket template:', error);
+      return res.status(500).json({ message: 'Failed to fetch ticket template' });
+    }
+  });
+  
+  app.get('/api/ticket-templates/type/:type', async (req: Request, res: Response) => {
+    try {
+      const type = req.params.type;
+      
+      const template = await storage.getTicketTemplateByType(type);
+      if (!template) {
+        return res.status(404).json({ message: 'Template not found' });
+      }
+      
+      return res.json(template);
+    } catch (error) {
+      console.error('Error fetching ticket template by type:', error);
+      return res.status(500).json({ message: 'Failed to fetch ticket template' });
+    }
+  });
+  
+  app.patch('/api/ticket-templates/:id', isDirectAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid template ID' });
+      }
+      
+      const templateData = req.body;
+      
+      // Add the current user as the updater
+      if (req.user && 'id' in req.user) {
+        templateData.updatedById = req.user.id;
+      }
+      
+      const updatedTemplate = await storage.updateTicketTemplate(id, templateData);
+      
+      return res.json(updatedTemplate);
+    } catch (error) {
+      console.error('Error updating ticket template:', error);
+      return res.status(500).json({ message: 'Failed to update ticket template' });
+    }
+  });
+
   // Ticket routes
   app.get('/api/tickets', async (req: Request, res: Response) => {
     try {
