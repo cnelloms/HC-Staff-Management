@@ -279,7 +279,7 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
                     <Select
                       onValueChange={(value) => {
                         if (value === "none") {
-                          field.onChange(undefined);
+                          field.onChange(null);
                         } else {
                           field.onChange(parseInt(value));
                         }
