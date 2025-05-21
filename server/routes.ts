@@ -1214,15 +1214,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertSystemAccessSchema.parse(req.body);
       
+      // Check authorization - only admins or users creating for their own linked employee can create
+      const isAdmin = req.session?.directUser?.isAdmin === true;
+      let userEmployeeId = null;
+      
+      if (req.user && 'id' in req.user) {
+        const user = await storage.getUser(req.user.id as string);
+        if (user && user.employeeId) {
+          userEmployeeId = user.employeeId;
+        }
+      } else if (req.session?.directUser?.id) {
+        const user = await storage.getUser(req.session.directUser.id);
+        if (user && user.employeeId) {
+          userEmployeeId = user.employeeId;
+        }
+      }
+      
+      // If not admin and not the employee's own record, deny access
+      if (!isAdmin && userEmployeeId !== validatedData.employeeId) {
+        return res.status(403).json({ message: 'You do not have permission to grant system access to this employee' });
+      }
+      
       // If granted is true, set grantedAt to current time and grantedById to current user
       if (validatedData.granted) {
         validatedData.grantedAt = new Date();
         
-        // Use the admin user's employee ID if available
+        // Use the current user's employee ID if available
         if (req.session.directUser && req.session.directUser.id) {
-          const adminUser = await storage.getUser(req.session.directUser.id);
-          if (adminUser && adminUser.employeeId) {
-            validatedData.grantedById = adminUser.employeeId;
+          const currentUser = await storage.getUser(req.session.directUser.id);
+          if (currentUser && currentUser.employeeId) {
+            validatedData.grantedById = currentUser.employeeId;
           }
         }
       }
@@ -1271,6 +1292,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'System access not found' });
       }
       
+      // Check authorization - only admins or users managing their own linked employee can update
+      const isAdmin = req.session?.directUser?.isAdmin === true;
+      let userEmployeeId = null;
+      
+      if (req.user && 'id' in req.user) {
+        const user = await storage.getUser(req.user.id);
+        if (user && user.employeeId) {
+          userEmployeeId = user.employeeId;
+        }
+      } else if (req.session?.directUser?.id) {
+        const user = await storage.getUser(req.session.directUser.id);
+        if (user && user.employeeId) {
+          userEmployeeId = user.employeeId;
+        }
+      }
+      
+      // If not admin and not the employee's own record, deny access
+      if (!isAdmin && userEmployeeId !== existingAccess.employeeId) {
+        return res.status(403).json({ message: 'You do not have permission to update this system access' });
+      }
+      
       // Validate the update data
       const updateData = req.body;
       
@@ -1278,11 +1320,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!existingAccess.granted && updateData.granted) {
         updateData.grantedAt = new Date();
         
-        // Use the admin user's employee ID if available
-        if (req.session.directUser && req.session.directUser.id) {
-          const adminUser = await storage.getUser(req.session.directUser.id);
-          if (adminUser && adminUser.employeeId) {
-            updateData.grantedById = adminUser.employeeId;
+        // Use the user's employee ID if available
+        if (req.session?.directUser?.id) {
+          const currentUser = await storage.getUser(req.session.directUser.id);
+          if (currentUser && currentUser.employeeId) {
+            updateData.grantedById = currentUser.employeeId;
           }
         }
       }
@@ -1326,6 +1368,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingAccess = await storage.getSystemAccessById(id);
       if (!existingAccess) {
         return res.status(404).json({ message: 'System access not found' });
+      }
+      
+      // Check authorization - only admins or users managing their own linked employee can delete
+      const isAdmin = req.session?.directUser?.isAdmin === true;
+      let userEmployeeId = null;
+      
+      if (req.user && 'id' in req.user) {
+        const user = await storage.getUser(req.user.id);
+        if (user && user.employeeId) {
+          userEmployeeId = user.employeeId;
+        }
+      } else if (req.session?.directUser?.id) {
+        const user = await storage.getUser(req.session?.directUser?.id);
+        if (user && user.employeeId) {
+          userEmployeeId = user.employeeId;
+        }
+      }
+      
+      // If not admin and not the employee's own record, deny access
+      if (!isAdmin && userEmployeeId !== existingAccess.employeeId) {
+        return res.status(403).json({ message: 'You do not have permission to delete this system access' });
       }
       
       // Delete the system access entry
