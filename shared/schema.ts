@@ -116,7 +116,7 @@ export const ticketTemplates = pgTable("ticket_templates", {
   updatedById: varchar("updated_by_id").references(() => users.id),
 });
 
-export const insertTicketTemplateSchema = createInsertSchema(ticketTemplates, {
+export const insertTicketTemplateSchema = createInsertSchema(ticketTemplates).extend({
   templateFields: z.array(z.object({
     id: z.number(),
     name: z.string(),
