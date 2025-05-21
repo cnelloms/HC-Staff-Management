@@ -34,49 +34,10 @@ export function useAuth() {
   const [localUser, setLocalUser] = useState<User | null>(null);
   const [localEmployee, setLocalEmployee] = useState<Employee | null>(null);
   
-  // Track login status and errors
-  const [loginAttempted, setLoginAttempted] = useState(false);
-  const [authError, setAuthError] = useState<Error | null>(null);
-  
-  // Try to get user from server with more fault tolerance
-  const { data: userData, isLoading: isServerLoading, error } = useQuery<User>({
-    queryKey: ["/api/auth/user"],
-    retry: 2, 
-    retryDelay: 1000,
-    refetchOnWindowFocus: false, // Don't refetch too aggressively
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    // Capture server errors but don't let them disrupt the app
-    onError: (err) => {
-      console.error("Auth API error:", err);
-      setAuthError(err as Error);
-      setLoginAttempted(true);
-    },
-    // Don't fail completely on server 500 errors
-    onSuccess: (data) => {
-      setLoginAttempted(true);
-      setAuthError(null);
-    }
-  });
-  
-  // Get employee data if we have a user with employeeId
-  const { data: employeeData } = useQuery<Employee>({
-    queryKey: ["/api/employees", userData?.employeeId || localUser?.employeeId],
-    enabled: !!(userData?.employeeId || localUser?.employeeId),
-    refetchOnWindowFocus: false,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    onSuccess: (data) => {
-      if (data) {
-        // Cache employee data
-        setLocalEmployee(data);
-        localStorage.setItem("auth_employee", JSON.stringify(data));
-      }
-    }
-  });
-  
-  // On mount, load cached user data
+  // On mount, load cached user data - this needs to happen first to prevent loading flicker
   useEffect(() => {
     try {
-      // Load cached auth user
+      // Check for direct login data - higher priority for this project
       const savedUser = localStorage.getItem("auth_user");
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser);
@@ -102,6 +63,22 @@ export function useAuth() {
     }
   }, []);
   
+  // Try to get user from server
+  const { data: userData, isLoading: isServerLoading } = useQuery({
+    queryKey: ["/api/auth/user"],
+    retry: false, // Don't retry automatically
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
+  // Get employee data if we have a user with employeeId
+  const { data: employeeData } = useQuery({
+    queryKey: ["/api/employees", localUser?.employeeId],
+    enabled: !!localUser?.employeeId, 
+    refetchOnWindowFocus: false,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+  
   // Update local storage when server data changes
   useEffect(() => {
     if (userData) {
@@ -113,7 +90,6 @@ export function useAuth() {
         };
         
         localStorage.setItem("auth_user", JSON.stringify(userWithDefaults));
-        setLocalUser(userWithDefaults);
       } catch (err) {
         console.error("Error saving auth to localStorage:", err);
       }
@@ -124,25 +100,19 @@ export function useAuth() {
   const user = userData || localUser;
   const employee = employeeData || localEmployee;
   
-  // Consider the auth to be loading only if we haven't tried yet
-  const isLoading = isServerLoading && !loginAttempted && !localUser;
+  // Only consider loading if we're querying the server and don't have a cached user
+  const isLoading = isServerLoading && !localUser;
   
-  // Determine authentication status with fault tolerance
+  // Determine authentication status
   const isAuthenticated = !!user;
-  const isAdmin = user?.isAdmin === true;
-  
-  // Add business unit to user if missing
-  if (user && !user.businessUnit) {
-    user.businessUnit = "Health Carousel";
-  }
+  const isAdmin = !!user?.isAdmin;
   
   // Debug: Log authentication state for troubleshooting
   console.log("Auth state:", { 
     user: user ? { ...user } : null, 
     isAuthenticated,
     isAdmin,
-    isLoading,
-    serverError: authError?.message
+    isLoading
   });
   
   // Return authentication details
@@ -151,7 +121,6 @@ export function useAuth() {
     isLoading,
     isAuthenticated,
     isAdmin,
-    employee,
-    error: authError
+    employee
   };
 }
