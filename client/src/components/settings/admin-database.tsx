@@ -69,6 +69,7 @@ const departmentSchema = z.object({
   id: z.number().optional(),
   name: z.string().min(2, "Name is required and must be at least 2 characters"),
   description: z.string().optional(),
+  managerId: z.number().optional(),
 });
 
 const positionSchema = z.object({
