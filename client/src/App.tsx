@@ -140,6 +140,10 @@ function Router() {
         {() => <NewEmployee />}
       </Route>
       
+      <Route path="/employee/:id/edit">
+        {() => <NewEmployee />}
+      </Route>
+      
       <Route path="/employee/:id">
         {() => <EmployeeProfile />}
       </Route>

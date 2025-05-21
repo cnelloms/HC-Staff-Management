@@ -148,9 +148,9 @@ export default function EmployeeProfile() {
             {/* Actions */}
             <div className="flex flex-col space-y-3 justify-start items-start md:items-end">
               <Button asChild>
-                <Link href={`/employee/${employeeId}/edit`}>
+                <Link href={`/employee/${employeeId}/edit`} className="flex items-center">
                   <Edit className="mr-2 h-4 w-4" />
-                  Edit Profile
+                  <span>Edit Profile</span>
                 </Link>
               </Button>
 
