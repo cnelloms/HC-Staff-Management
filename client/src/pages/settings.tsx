@@ -46,17 +46,17 @@ export default function UserSettings() {
   const [activeTab, setActiveTab] = useState("profile");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
-  // Fetch the employee data directly if we have the ID
-  const employeeId = employee?.id || user?.employeeId;
+  // Fetch the employee data directly from auth context if available
+  const employeeId = employee?.id || (user && 'employeeId' in user ? user.employeeId : null);
   
-  // Debug the auth info to understand what's happening
-  console.log('Auth state:', { user, employee, employeeId });
-  
-  // Fetch employee data directly from the auth endpoint if possible
+  // Fetch employee data from API if not already in auth context
   const { data: employeeData, isLoading: isEmployeeLoading } = useQuery<Employee>({
     queryKey: [`/api/employees/${employeeId}`],
     enabled: !!employeeId,
   });
+  
+  // Use employee data from auth context if available, otherwise use from API
+  const profileData = employee || employeeData;
 
   const isLoading = isAuthLoading || isEmployeeLoading;
 

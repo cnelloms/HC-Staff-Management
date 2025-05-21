@@ -364,9 +364,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get the user record from the database to include any additional info
         const user = await storage.getUser(userId);
         
-        // Include impersonation data
-        const impersonatingId = req.session.directUser.impersonatingId || 
-                               (user?.impersonatingId as number | undefined);
+        // Removed impersonation functionality as requested
         
         // Get employee data if available (as source of truth)
         let employeeData = null;
@@ -380,7 +378,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isAdmin: boolean;
           authProvider: string;
           employeeId: number | null | undefined;
-          impersonatingId: number | undefined;
           department?: string;
           position?: string;
         }
@@ -393,8 +390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           username: req.session.directUser.username,
           isAdmin: req.session.directUser.isAdmin === true,
           authProvider: 'direct',
-          employeeId: user?.employeeId,
-          impersonatingId: impersonatingId
+          employeeId: user?.employeeId
         };
         
         // If user has an associated employee record, get that data
@@ -425,26 +421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // If user is impersonating another employee, get that employee's data
-        if (impersonatingId) {
-          const impersonatedEmployee = await storage.getEmployeeById(impersonatingId);
-          if (impersonatedEmployee) {
-            // Override profile with impersonated employee data
-            userProfile.firstName = impersonatedEmployee.firstName;
-            userProfile.lastName = impersonatedEmployee.lastName;
-            userProfile.email = impersonatedEmployee.email;
-            userProfile.position = impersonatedEmployee.position;
-            userProfile.employeeId = impersonatingId;
-            
-            // Get department info for impersonated employee
-            if (impersonatedEmployee.departmentId) {
-              const department = await storage.getDepartmentById(impersonatedEmployee.departmentId);
-              if (department) {
-                userProfile.department = department.name;
-              }
-            }
-          }
-        }
+        // Impersonation functionality has been removed as requested
         
         return res.json(userProfile);
       } 
