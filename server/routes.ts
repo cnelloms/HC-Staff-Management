@@ -1164,25 +1164,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get all system access entries (authenticated users)
-  app.get('/api/system-access', isAuthenticated, async (req: Request, res: Response) => {
+  app.get('/api/system-access', async (req: Request, res: Response) => {
     try {
+      console.log('GET /api/system-access endpoint accessed');
+      console.log('Session info:', JSON.stringify(req.session));
+      
+      // Check if user is authenticated
+      if (!req.session || !req.session.directUser) {
+        console.log('User not authenticated, returning 401');
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      
       // Get all system access entries
       let systemAccess = await storage.getSystemAccessEntries();
       
       // Filter the results if user is not an admin
-      const isUserAdmin = req.session.directUser?.isAdmin || false;
+      const isUserAdmin = req.session.directUser?.isAdmin === true;
+      console.log('Is user admin?', isUserAdmin);
       
       // Check if user has an associated employee record
       let userEmployeeId: number | null = null;
       
-      if (req.user && 'id' in req.user) {
-        const user = await storage.getUser(req.user.id);
+      if (req.session.directUser?.id) {
+        const user = await storage.getUser(req.session.directUser.id);
+        console.log('Found user:', user?.id);
         if (user && user.employeeId) {
           userEmployeeId = user.employeeId;
+          console.log('User has employee ID:', userEmployeeId);
         }
       }
       
       if (!isUserAdmin && userEmployeeId) {
+        console.log('Filtering system access for regular employee');
         // Regular employees can only see their own access
         systemAccess = systemAccess.filter(access => access.employeeId === userEmployeeId);
       }
@@ -1210,21 +1223,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Create a new system access entry
-  app.post('/api/system-access', isAuthenticated, async (req: Request, res: Response) => {
+  app.post('/api/system-access', async (req: Request, res: Response) => {
     try {
+      // Check session status
+      if (!req.session || !req.session.directUser) {
+        console.log('POST /api/system-access - No valid session found');
+        return res.status(401).json({ message: 'Unauthorized - Please log in' });
+      }
+      
+      console.log('POST /api/system-access - Full session:', JSON.stringify(req.session));
+      
       const validatedData = insertSystemAccessSchema.parse(req.body);
       
       // Check if user is admin (direct login admin)
-      const isAdmin = req.session?.directUser?.isAdmin === true;
+      const isAdmin = req.session.directUser.isAdmin === true;
       console.log('System access create - Admin check:', isAdmin);
-      console.log('Session state:', req.session.directUser);
+      console.log('Session state:', JSON.stringify(req.session.directUser));
       
       let userEmployeeId = null;
       
       // Get employee ID from user record
-      if (req.session?.directUser?.id) {
+      if (req.session.directUser.id) {
         const user = await storage.getUser(req.session.directUser.id);
-        console.log('User record found:', user ? 'yes' : 'no');
+        console.log('User record found:', user ? 'yes' : 'no', user);
         if (user && user.employeeId) {
           userEmployeeId = user.employeeId;
           console.log('User has employee ID:', userEmployeeId);
@@ -1366,9 +1387,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Delete a system access entry
-  app.delete('/api/system-access/:id', isAuthenticated, async (req: Request, res: Response) => {
+  app.delete('/api/system-access/:id', async (req: Request, res: Response) => {
     try {
       console.log('Attempting to delete system access with ID:', req.params.id);
+      
+      // Check session status
+      if (!req.session || !req.session.directUser) {
+        console.log('DELETE /api/system-access/:id - No valid session found');
+        return res.status(401).json({ message: 'Unauthorized - Please log in' });
+      }
+      
+      console.log('DELETE /api/system-access/:id - Full request:', {
+        params: req.params,
+        session: JSON.stringify(req.session),
+        headers: req.headers
+      });
+      
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: 'Invalid system access ID' });
@@ -1381,9 +1415,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Always allow Global Admin to delete system access
-      const isAdmin = req.session?.directUser?.isAdmin === true;
+      const isAdmin = req.session.directUser.isAdmin === true;
       console.log('System access delete - Admin check:', isAdmin);
-      console.log('Session state:', JSON.stringify(req.session));
       
       // Admin bypass - if the user is a global admin, allow the operation
       if (isAdmin) {
@@ -1392,7 +1425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // For non-admin users, check if they're modifying their own record
         let userEmployeeId = null;
         
-        if (req.session?.directUser?.id) {
+        if (req.session.directUser.id) {
           const user = await storage.getUser(req.session.directUser.id);
           console.log('User record found:', user ? 'yes' : 'no');
           if (user && user.employeeId) {
@@ -1670,8 +1703,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Endpoint to get all system access entries (used by admin dashboard)
-  app.get('/api/system-access-admin', isAdmin, async (req: Request, res: Response) => {
+  app.get('/api/system-access-admin', async (req: Request, res: Response) => {
     try {
+      // Check if the user is a global admin
+      console.log('GET /api/system-access-admin - Session check:', {
+        hasSession: !!req.session,
+        directUser: req.session?.directUser,
+        isAdmin: req.session?.directUser?.isAdmin
+      });
+      
+      // Only allow access if the user is a direct login admin
+      if (!req.session?.directUser?.isAdmin) {
+        console.log('Unauthorized access attempt to system-access-admin endpoint');
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      console.log('Admin access granted - fetching all system access entries');
       const entries = await storage.getSystemAccessEntries();
       
       // Enhance access entries with employee and system data
