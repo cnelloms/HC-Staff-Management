@@ -65,12 +65,17 @@ export function useAuth() {
   useEffect(() => {
     if (userData) {
       try {
+        // Save the user data to localStorage for persistent login state
         localStorage.setItem("auth_user", JSON.stringify(userData));
       } catch (err) {
         console.error("Error saving auth to localStorage:", err);
       }
+    } else if (userData === null && error) {
+      // If there was an error and no user data, clear localStorage
+      localStorage.removeItem("auth_user");
+      setLocalUser(null);
     }
-  }, [userData]);
+  }, [userData, error]);
   
   // Use server user if available, fall back to localStorage user
   const user = userData || localUser;
