@@ -135,6 +135,10 @@ function Router() {
         {() => <Settings />}
       </Route>
       
+      <Route path="/ticket-templates">
+        {() => <TicketTemplatesPage />}
+      </Route>
+      
       <Route path="/user-management">
         {() => <UserManagementPage />}
       </Route>
