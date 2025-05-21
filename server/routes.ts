@@ -1037,6 +1037,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get a specific system by ID
+  app.get('/api/systems/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid system ID' });
+      }
+      
+      const system = await storage.getSystemById(id);
+      if (!system) {
+        return res.status(404).json({ message: 'System not found' });
+      }
+      
+      return res.json(system);
+    } catch (error) {
+      console.error(`Error fetching system ${req.params.id}:`, error);
+      return res.status(500).json({ message: 'Error retrieving system' });
+    }
+  });
+  
+  // Create a new system (admin only)
+  app.post('/api/systems', isAdmin, async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertSystemSchema.parse(req.body);
+      const newSystem = await storage.createSystem(validatedData);
+      return res.status(201).json(newSystem);
+    } catch (error) {
+      console.error('Error creating system:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid data', errors: error.errors });
+      }
+      return res.status(500).json({ message: 'Error creating system' });
+    }
+  });
+  
+  // Update a system (admin only)
+  app.patch('/api/systems/:id', isAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid system ID' });
+      }
+      
+      // Get the existing system
+      const existingSystem = await storage.getSystemById(id);
+      if (!existingSystem) {
+        return res.status(404).json({ message: 'System not found' });
+      }
+      
+      // Validate and update the system
+      const updateData = req.body;
+      const updatedSystem = await storage.updateSystem(id, updateData);
+      
+      return res.json(updatedSystem);
+    } catch (error) {
+      console.error(`Error updating system ${req.params.id}:`, error);
+      return res.status(500).json({ message: 'Error updating system' });
+    }
+  });
+  
+  // Delete a system (admin only)
+  app.delete('/api/systems/:id', isAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid system ID' });
+      }
+      
+      // Check if system exists
+      const existingSystem = await storage.getSystemById(id);
+      if (!existingSystem) {
+        return res.status(404).json({ message: 'System not found' });
+      }
+      
+      // Check if system is in use by any employees
+      const inUse = await storage.isSystemInUse(id);
+      if (inUse) {
+        return res.status(400).json({ 
+          message: 'Cannot delete system that is in use. Remove all system access assignments first.' 
+        });
+      }
+      
+      // Delete the system
+      const result = await storage.deleteSystem(id);
+      
+      return res.json({ success: true });
+    } catch (error) {
+      console.error(`Error deleting system ${req.params.id}:`, error);
+      return res.status(500).json({ message: 'Error deleting system' });
+    }
+  });
+  
   // Get system access entries for an employee
   app.get('/api/employees/:employeeId/systems', async (req: Request, res: Response) => {
     try {

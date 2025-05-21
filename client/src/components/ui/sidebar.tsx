@@ -13,7 +13,8 @@ import {
   Inbox,
   UserX,
   Menu,
-  X
+  X,
+  Server
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,7 @@ export function Sidebar({ user: defaultUser }: SidebarProps) {
     { href: "/staff-import", label: "Import Staff", icon: <FileUp className="sidebar-icon" /> },
     { href: "/permissions", label: "Permissions", icon: <Shield className="sidebar-icon" /> },
     { href: "/user-management", label: "User Management", icon: <Users className="sidebar-icon" /> },
+    { href: "/systems", label: "Systems Management", icon: <Server className="sidebar-icon" /> },
     { href: "/ticket-templates", label: "Ticket Templates", icon: <Ticket className="sidebar-icon" /> },
   ];
   
