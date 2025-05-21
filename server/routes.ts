@@ -1163,11 +1163,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get all system access entries (admin only)
-  app.get('/api/system-access', isAdmin, async (req: Request, res: Response) => {
+  // Get all system access entries (authenticated users)
+  app.get('/api/system-access', isAuthenticated, async (req: Request, res: Response) => {
     try {
       // Get all system access entries
-      const systemAccess = await storage.getSystemAccessEntries();
+      let systemAccess = await storage.getSystemAccessEntries();
+      
+      // Filter the results if user is not an admin
+      const isUserAdmin = req.session.directUser?.isAdmin || false;
+      if (!isUserAdmin && req.user?.employeeId) {
+        // Regular employees can only see their own access
+        systemAccess = systemAccess.filter(access => access.employeeId === req.user?.employeeId);
+      }
       
       // Get the full system and employee details for each access entry
       const accessWithDetails = await Promise.all(
@@ -1178,7 +1185,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return {
             ...access,
             system: system || { name: 'Unknown System', description: '', category: '' },
-            employee: employee || null
+            employee: employee || null,
+            systemName: system?.name || 'Unknown System'
           };
         })
       );
@@ -1190,8 +1198,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Create a new system access entry (admin only)
-  app.post('/api/system-access', isAdmin, async (req: Request, res: Response) => {
+  // Create a new system access entry (authenticated users)
+  app.post('/api/system-access', isAuthenticated, async (req: Request, res: Response) => {
     try {
       const validatedData = insertSystemAccessSchema.parse(req.body);
       
@@ -1571,7 +1579,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Endpoint to get all system access entries (used by admin dashboard)
-  app.get('/api/system-access', isAdmin, async (req: Request, res: Response) => {
+  app.get('/api/system-access-admin', isAdmin, async (req: Request, res: Response) => {
     try {
       const entries = await storage.getSystemAccessEntries();
       
@@ -1585,7 +1593,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           employee: employee ? {
             firstName: employee.firstName,
             lastName: employee.lastName,
-            position: employee.positionId ? await storage.getPositionById(employee.positionId) : null,
+            position: employee.position || null,
             department: employee.departmentId ? await storage.getDepartmentById(employee.departmentId) : null,
           } : null,
           system: system || null
