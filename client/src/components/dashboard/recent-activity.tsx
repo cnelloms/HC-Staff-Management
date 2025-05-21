@@ -124,7 +124,7 @@ export function RecentActivity() {
         </div>
       </CardContent>
       <CardFooter className="bg-muted pt-2 pb-2">
-        <a href="/activities" className="text-sm font-medium text-primary hover:text-primary/80">
+        <a href="/reports" className="text-sm font-medium text-primary hover:text-primary/80">
           View all activity
         </a>
       </CardFooter>
