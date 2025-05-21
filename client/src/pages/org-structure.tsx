@@ -48,26 +48,53 @@ export default function OrgStructurePage() {
     departmentId: z.number({ required_error: "Please select a department" })
   });
 
+  interface Department {
+    id: number;
+    name: string;
+    description?: string;
+    businessUnit?: string;
+    managerId?: number | null;
+  }
+
+  interface Position {
+    id: number;
+    title: string;
+    description?: string;
+    departmentId: number;
+  }
+
+  interface Employee {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email?: string;
+    position?: string;
+    departmentId?: number;
+  }
+
   // Get departments data
-  const { data: departments = [], isLoading: isLoadingDepartments } = useQuery<any[]>({
+  const { data: departmentsData, isLoading: isLoadingDepartments } = useQuery<Department[]>({
     queryKey: ['/api/departments'],
     retry: 1,
     refetchOnWindowFocus: false
   });
+  const departments: Department[] = departmentsData || [];
 
   // Get positions data
-  const { data: positions = [], isLoading: isLoadingPositions } = useQuery<any[]>({
+  const { data: positionsData, isLoading: isLoadingPositions } = useQuery<Position[]>({
     queryKey: ['/api/positions'],
     retry: 1,
     refetchOnWindowFocus: false
   });
+  const positions: Position[] = positionsData || [];
 
   // Get employees data for manager selection
-  const { data: employees = [], isLoading: isLoadingEmployees } = useQuery<any[]>({
+  const { data: employeesData, isLoading: isLoadingEmployees } = useQuery<Employee[]>({
     queryKey: ['/api/employees'],
     retry: 1,
     refetchOnWindowFocus: false
   });
+  const employees: Employee[] = employeesData || [];
 
   // Add department mutation
   const addDepartmentMutation = useMutation({
@@ -450,7 +477,7 @@ export default function OrgStructurePage() {
               <div className="flex justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : departments?.length === 0 ? (
+            ) : departments.length === 0 ? (
               <Card>
                 <CardContent className="p-8 text-center">
                   <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
