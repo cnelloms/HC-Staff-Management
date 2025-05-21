@@ -30,6 +30,7 @@ import SimpleLoginPage from "@/pages/simple-login";
 import EmergencyLoginPage from "@/pages/emergency-login";
 import DirectLoginPage from "@/pages/direct-login";
 import UserManagementPage from "@/pages/user-management";
+import TestLoginPage from "@/pages/test-login";
 
 function Router() {
   const [isLoading, setIsLoading] = useState(true);
@@ -82,6 +83,7 @@ function Router() {
       <Route path="/login" component={SimpleLoginPage} />
       <Route path="/emergency-login" component={EmergencyLoginPage} />
       <Route path="/direct-login" component={DirectLoginPage} />
+      <Route path="/test-login" component={TestLoginPage} />
       
       {/* Protected Routes - require authentication */}
       <Route path="/">

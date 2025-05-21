@@ -133,14 +133,20 @@ export function ProfileCard({
               {profileData.position && (
                 <div>
                   <h3 className="font-medium text-sm">Position</h3>
-                  <p>{typeof profileData.position === 'object' ? profileData.position.title : profileData.position}</p>
+                  <p>{typeof profileData.position === 'object' && 'title' in profileData.position 
+                    ? profileData.position.title 
+                    : (typeof profileData.position === 'string' ? profileData.position : 'Unknown')}
+                  </p>
                 </div>
               )}
               
               {profileData.department && (
                 <div>
                   <h3 className="font-medium text-sm">Department</h3>
-                  <p>{typeof profileData.department === 'object' ? profileData.department.name : profileData.department}</p>
+                  <p>{typeof profileData.department === 'object' && 'name' in profileData.department 
+                    ? profileData.department.name 
+                    : (typeof profileData.department === 'string' ? profileData.department : 'Unknown')}
+                  </p>
                 </div>
               )}
               
