@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/layout";
 import { Ticket, Employee } from "@/types";
 import { NewStaffRequestDetails } from "@/components/tickets/new-staff-request-details";
+import { ITSupportDetails } from "@/components/tickets/it-support-details";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentUser } from "@/context/user-context";
