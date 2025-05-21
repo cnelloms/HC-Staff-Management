@@ -153,10 +153,8 @@ export function StaffTable() {
                       </Avatar>
                       <div>
                         <div className="font-medium">
-                          <Link href={`/employee/${employee.id}`}>
-                            <a className="hover:underline">
+                          <Link href={`/employee/${employee.id}`} className="hover:underline">
                               {employee.firstName} {employee.lastName}
-                            </a>
                           </Link>
                         </div>
                         <div className="text-sm text-muted-foreground">{employee.phone}</div>
@@ -175,7 +173,7 @@ export function StaffTable() {
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" asChild>
                       <Link href={`/employee/${employee.id}`}>
-                        <a>View</a>
+                        View
                       </Link>
                     </Button>
                   </TableCell>
