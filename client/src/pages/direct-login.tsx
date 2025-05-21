@@ -44,6 +44,13 @@ export default function DirectLoginPage() {
         throw new Error(data.message || "Invalid username or password");
       }
       
+      // Store user data from response in localStorage to ensure immediate auth state
+      try {
+        localStorage.setItem("auth_user", JSON.stringify(data.user));
+      } catch (err) {
+        console.error("Error saving user data to localStorage:", err);
+      }
+      
       // Successful login - force a page reload to refresh all state
       window.location.href = "/";
       

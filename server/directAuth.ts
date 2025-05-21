@@ -128,11 +128,13 @@ export function setupDirectAuth(app: Express) {
           message: 'Logged in successfully', 
           user: {
             id: user.id,
+            username: userCredentials.username,
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
-            isAdmin: user.isAdmin,
-            employeeId: user.employeeId
+            isAdmin: user.isAdmin === true,
+            employeeId: user.employeeId,
+            authProvider: 'direct'
           },
           redirectTo: '/'
         });
