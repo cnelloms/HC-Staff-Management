@@ -486,8 +486,14 @@ export function AdminDatabaseSettings() {
                       <FormItem>
                         <FormLabel>Department Manager</FormLabel>
                         <Select
-                          onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
-                          value={field.value?.toString()}
+                          onValueChange={(value) => {
+                            if (value === "none") {
+                              field.onChange(null);
+                            } else {
+                              field.onChange(parseInt(value));
+                            }
+                          }}
+                          value={field.value?.toString() || "none"}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -495,7 +501,7 @@ export function AdminDatabaseSettings() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             {Array.isArray(employees) && employees.length > 0
                               ? employees
                                 .filter(employee => employee.status === 'active')
@@ -562,14 +568,14 @@ export function AdminDatabaseSettings() {
               </div>
               <div className="flex space-x-2">
                 <Select
-                  onValueChange={(value) => setFilteredDepartmentId(value ? parseInt(value) : null)}
-                  value={filteredDepartmentId?.toString() || ""}
+                  onValueChange={(value) => setFilteredDepartmentId(value === "all" ? null : parseInt(value))}
+                  value={filteredDepartmentId?.toString() || "all"}
                 >
                   <SelectTrigger className="w-[200px]">
                     <SelectValue placeholder="Filter by department" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Departments</SelectItem>
+                    <SelectItem value="all">All Departments</SelectItem>
                     {Array.isArray(departments) && departments.map((dept: any) => (
                       <SelectItem key={dept.id} value={dept.id.toString()}>
                         {dept.name}
