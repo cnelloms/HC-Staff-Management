@@ -196,9 +196,9 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
     
     const firstName = metadata.firstName || '';
     const lastName = metadata.lastName || '';
-    const position = positions && positions.find ? positions.find((p: any) => p.id === metadata.positionId)?.title || '' : '';
-    const department = departments && departments.find ? departments.find((d: any) => d.id === metadata.departmentId)?.name || '' : '';
-    const manager = employees && employees.find ? employees.find((e: any) => e.id === metadata.reportingManagerId) : null;
+    const position = positions?.find((p: any) => p.id === metadata.positionId)?.title || '';
+    const department = departments?.find((d: any) => d.id === metadata.departmentId)?.name || '';
+    const manager = employees?.find((e: any) => e.id === metadata.reportingManagerId);
     const managerName = manager ? `${manager.firstName} ${manager.lastName}` : '';
     const startDate = metadata.startDate ? format(new Date(metadata.startDate), 'PPP') : '';
     
@@ -249,7 +249,7 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
         const lastName = values.metadata.lastName;
         
         // Get position title from positionId
-        const positionObj = positions && positions.find ? positions.find((p: any) => p.id === values.metadata.positionId) : null;
+        const positionObj = positions?.find((p: any) => p.id === values.metadata.positionId);
         const positionTitle = positionObj ? positionObj.title : "New Position";
         
         formData.title = `New Staff Request: ${firstName} ${lastName} (${positionTitle})`;
@@ -339,7 +339,7 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                   <Select
                     onValueChange={(value) => {
                       field.onChange(value);
-                      setSelectedTicketType(value as any);
+                      setSelectedTicketType(value);
                       
                       // Reset metadata when changing ticket type
                       form.setValue('metadata', {});
