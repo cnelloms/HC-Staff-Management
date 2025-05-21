@@ -160,11 +160,16 @@ export default function UserSettings() {
       <div className="space-y-6">
         {/* Back to profile link */}
         <div>
-          <Button variant="ghost" asChild className="p-0">
-            <Link href="/profile">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Profile
-            </Link>
+          <Button variant="ghost" className="p-0" onClick={() => {
+            if (user && user.id) {
+              window.location.href = `/employee/${user.id}`;
+            } else {
+              // Default to employee listing if no specific profile
+              window.location.href = "/directory";
+            }
+          }}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Profile
           </Button>
         </div>
 
