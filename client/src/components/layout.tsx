@@ -2,17 +2,10 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Sidebar } from "./ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, User } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationCenter } from "./notifications/notification-center";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ProfileHeader } from "@/components/profile/profile-header";
 import { Input } from "@/components/ui/input";
 
 interface LayoutProps {
@@ -55,27 +48,7 @@ export default function Layout({ children, title }: LayoutProps) {
               
               <ThemeToggle />
               
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground">
-                    <User className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/employee/118">My Profile</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/settings">Settings</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/api/logout">Sign out</Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <ProfileHeader />
             </div>
           </div>
         </header>
