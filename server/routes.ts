@@ -1070,6 +1070,177 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'Error retrieving system access' });
     }
   });
+  
+  // Get all system access entries (admin only)
+  app.get('/api/system-access', isAdmin, async (req: Request, res: Response) => {
+    try {
+      // Get all system access entries
+      const systemAccess = await storage.getSystemAccessEntries();
+      
+      // Get the full system and employee details for each access entry
+      const accessWithDetails = await Promise.all(
+        systemAccess.map(async (access) => {
+          const system = await storage.getSystemById(access.systemId);
+          const employee = await storage.getEmployeeById(access.employeeId);
+          
+          return {
+            ...access,
+            system: system || { name: 'Unknown System', description: '', category: '' },
+            employee: employee || null
+          };
+        })
+      );
+      
+      return res.json(accessWithDetails);
+    } catch (error) {
+      console.error('Error fetching all system access entries:', error);
+      return res.status(500).json({ message: 'Error retrieving system access entries' });
+    }
+  });
+  
+  // Create a new system access entry (admin only)
+  app.post('/api/system-access', isAdmin, async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertSystemAccessSchema.parse(req.body);
+      
+      // If granted is true, set grantedAt to current time and grantedById to current user
+      if (validatedData.granted) {
+        validatedData.grantedAt = new Date();
+        
+        // Use the admin user's employee ID if available
+        if (req.session.directUser && req.session.directUser.id) {
+          const adminUser = await storage.getUser(req.session.directUser.id);
+          if (adminUser && adminUser.employeeId) {
+            validatedData.grantedById = adminUser.employeeId;
+          }
+        }
+      }
+      
+      // Create the system access entry
+      const newAccess = await storage.createSystemAccess(validatedData);
+      
+      // Create activity log
+      const employeeData = await storage.getEmployeeById(validatedData.employeeId);
+      const systemData = await storage.getSystemById(validatedData.systemId);
+      
+      if (employeeData) {
+        await storage.createActivity({
+          employeeId: employeeData.id,
+          description: `System access ${validatedData.status} for ${systemData?.name || 'Unknown System'} (${validatedData.accessLevel})`,
+          activityType: 'system_access',
+          metadata: {
+            systemId: validatedData.systemId,
+            accessLevel: validatedData.accessLevel,
+            status: validatedData.status
+          }
+        });
+      }
+      
+      return res.status(201).json(newAccess);
+    } catch (error) {
+      console.error('Error creating system access:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: 'Invalid data', errors: error.errors });
+      }
+      return res.status(500).json({ message: 'Error creating system access' });
+    }
+  });
+  
+  // Update a system access entry (admin only)
+  app.patch('/api/system-access/:id', isAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid system access ID' });
+      }
+      
+      // Get the existing access entry
+      const existingAccess = await storage.getSystemAccessById(id);
+      if (!existingAccess) {
+        return res.status(404).json({ message: 'System access not found' });
+      }
+      
+      // Validate the update data
+      const updateData = req.body;
+      
+      // If granted status changes from false to true, set grantedAt and grantedById
+      if (!existingAccess.granted && updateData.granted) {
+        updateData.grantedAt = new Date();
+        
+        // Use the admin user's employee ID if available
+        if (req.session.directUser && req.session.directUser.id) {
+          const adminUser = await storage.getUser(req.session.directUser.id);
+          if (adminUser && adminUser.employeeId) {
+            updateData.grantedById = adminUser.employeeId;
+          }
+        }
+      }
+      
+      // Update the system access entry
+      const updatedAccess = await storage.updateSystemAccess(id, updateData);
+      
+      // Create activity log
+      const employeeData = await storage.getEmployeeById(existingAccess.employeeId);
+      const systemData = await storage.getSystemById(existingAccess.systemId);
+      
+      if (employeeData) {
+        await storage.createActivity({
+          employeeId: employeeData.id,
+          description: `System access updated for ${systemData?.name || 'Unknown System'} (${updateData.status || existingAccess.status})`,
+          activityType: 'system_access_update',
+          metadata: {
+            systemId: existingAccess.systemId,
+            accessLevel: updateData.accessLevel || existingAccess.accessLevel,
+            status: updateData.status || existingAccess.status
+          }
+        });
+      }
+      
+      return res.json(updatedAccess);
+    } catch (error) {
+      console.error(`Error updating system access ${req.params.id}:`, error);
+      return res.status(500).json({ message: 'Error updating system access' });
+    }
+  });
+  
+  // Delete a system access entry (admin only)
+  app.delete('/api/system-access/:id', isAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid system access ID' });
+      }
+      
+      // Get the existing access entry before deletion for activity logging
+      const existingAccess = await storage.getSystemAccessById(id);
+      if (!existingAccess) {
+        return res.status(404).json({ message: 'System access not found' });
+      }
+      
+      // Delete the system access entry
+      const result = await storage.deleteSystemAccess(id);
+      
+      // Create activity log
+      const employeeData = await storage.getEmployeeById(existingAccess.employeeId);
+      const systemData = await storage.getSystemById(existingAccess.systemId);
+      
+      if (employeeData) {
+        await storage.createActivity({
+          employeeId: employeeData.id,
+          description: `System access removed for ${systemData?.name || 'Unknown System'}`,
+          activityType: 'system_access_delete',
+          metadata: {
+            systemId: existingAccess.systemId
+          }
+        });
+      }
+      
+      return res.json({ success: true });
+    } catch (error) {
+      console.error(`Error deleting system access ${req.params.id}:`, error);
+      return res.status(500).json({ message: 'Error deleting system access' });
+    }
+  });
 
   // Permission routes
   app.get('/api/permissions', async (req: Request, res: Response) => {

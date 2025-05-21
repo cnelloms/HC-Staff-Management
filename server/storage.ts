@@ -392,14 +392,26 @@ export class DatabaseStorage implements IStorage {
     }).returning();
     return newAccess;
   }
-
-  async updateSystemAccess(id: number, access: Partial<InsertSystemAccess>): Promise<SystemAccess | undefined> {
+  
+  async updateSystemAccess(id: number, data: Partial<InsertSystemAccess>): Promise<SystemAccess | undefined> {
     const [updatedAccess] = await db
       .update(systemAccess)
-      .set(access)
+      .set({
+        ...data,
+        // Add updated timestamp logic if needed
+      })
       .where(eq(systemAccess.id, id))
       .returning();
-    return updatedAccess || undefined;
+    
+    return updatedAccess;
+  }
+  
+  async deleteSystemAccess(id: number): Promise<boolean> {
+    const result = await db
+      .delete(systemAccess)
+      .where(eq(systemAccess.id, id));
+    
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 
   // Ticket operations
