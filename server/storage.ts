@@ -232,11 +232,13 @@ export class DatabaseStorage implements IStorage {
       )
     )];
     
-    // Return employee with tickets
-    return {
+    // Create employee with tickets as a separate object to avoid type issues
+    const employeeWithTickets = {
       ...employee,
       tickets: employeeTickets
     };
+    
+    return employeeWithTickets;
   }
 
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
