@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useCurrentUser } from "@/context/user-context";
 import { CalendarIcon } from "lucide-react";
 
@@ -754,7 +754,7 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                 <input type="hidden" {...form.register("description")} />
                 <input type="hidden" {...form.register("status")} value="open" />
               </div>
-          </form>
+            </form>
         </Form>
       </CardContent>
       <CardFooter className="flex justify-between">
