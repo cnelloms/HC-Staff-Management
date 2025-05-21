@@ -854,6 +854,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'Failed to update employee' });
     }
   });
+  
+  // Delete employee (admin only)
+  app.delete('/api/employees/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid employee ID' });
+      }
+      
+      // Only global admins can delete employees
+      const isAdmin = req.session?.directUser?.isAdmin === true || (req.user as any)?.isAdmin === true;
+      if (!isAdmin) {
+        return res.status(403).json({ message: 'You do not have permission to delete employees' });
+      }
+      
+      // Prevent deletion of the primary admin (Chris Nelloms)
+      if (id === 118) {
+        return res.status(403).json({ message: 'Cannot delete the primary administrator account' });
+      }
+      
+      const result = await storage.deleteEmployee(id);
+      
+      if (!result) {
+        return res.status(404).json({ message: 'Employee not found or could not be deleted' });
+      }
+      
+      // Add activity for this deletion
+      await storage.createActivity({
+        employeeId: 0, // System activity
+        activityType: 'employee_deletion',
+        description: `Employee with ID ${id} was deleted from the system`,
+        timestamp: new Date()
+      });
+      
+      return res.status(200).json({ success: true, message: 'Employee successfully deleted' });
+    } catch (error) {
+      console.error('Error deleting employee:', error);
+      return res.status(500).json({ 
+        message: error instanceof Error ? error.message : 'Failed to delete employee'
+      });
+    }
+  });
 
   // Department routes
   app.get('/api/departments', async (req: Request, res: Response) => {
