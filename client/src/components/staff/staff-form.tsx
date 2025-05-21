@@ -79,16 +79,16 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
 
   const form = useForm<z.infer<typeof employeeFormSchema>>({
     resolver: zodResolver(employeeFormSchema),
-    defaultValues: defaultValues || {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      position: "",
-      departmentId: undefined,
-      managerId: undefined,
-      status: "active",
-      avatar: "",
+    defaultValues: {
+      firstName: defaultValues?.firstName || "",
+      lastName: defaultValues?.lastName || "",
+      email: defaultValues?.email || "",
+      phone: defaultValues?.phone || "",
+      position: defaultValues?.position || "",
+      departmentId: defaultValues?.departmentId,
+      managerId: defaultValues?.managerId,
+      status: defaultValues?.status || "active",
+      avatar: defaultValues?.avatar || "",
     },
   });
 
@@ -207,7 +207,7 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
                   <FormItem>
                     <FormLabel>Phone</FormLabel>
                     <FormControl>
-                      <Input placeholder="555-123-4567" {...field} />
+                      <Input placeholder="555-123-4567" value={field.value || ""} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -338,7 +338,7 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
                 <FormItem>
                   <FormLabel>Avatar URL</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://example.com/avatar.jpg" {...field} />
+                    <Input placeholder="https://example.com/avatar.jpg" value={field.value || ""} onChange={field.onChange} />
                   </FormControl>
                   <FormDescription>
                     Link to the employee's profile picture.
