@@ -884,8 +884,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createActivity({
         employeeId: 0, // System activity
         activityType: 'employee_deletion',
-        description: `Employee with ID ${id} was deleted from the system`,
-        timestamp: new Date()
+        description: `Employee with ID ${id} was deleted from the system`
       });
       
       return res.status(200).json({ success: true, message: 'Employee successfully deleted' });
