@@ -302,6 +302,23 @@ export function setupDirectAuth(app: Express) {
     }
   });
   
+  // Logout endpoint
+  app.get('/api/logout', (req, res) => {
+    // Destroy the session
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Error during logout:', err);
+        return res.status(500).json({ message: 'Error during logout' });
+      }
+      
+      // Clear the session cookie
+      res.clearCookie('staff_mgmt_sid');
+      
+      // Redirect to login page
+      return res.redirect('/login');
+    });
+  });
+  
   // Get auth settings
   app.get('/api/auth/settings', isAdmin, async (req, res) => {
     try {
