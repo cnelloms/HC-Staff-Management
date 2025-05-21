@@ -283,21 +283,64 @@ export class DatabaseStorage implements IStorage {
     }
     
     try {
-      // Delete employee-role associations first to avoid foreign key constraints
-      await db.delete(employeeRoles).where(eq(employeeRoles.employeeId, id));
-      
-      // Delete any activities associated with this employee
-      await db.delete(activities).where(eq(activities.employeeId, id));
-      
-      // Update any tickets where this employee is assigned
-      await db.update(tickets)
-        .set({ assigneeId: null })
-        .where(eq(tickets.assigneeId, id));
-      
-      // Delete the employee
-      await db.delete(employees).where(eq(employees.id, id));
-      
-      return true;
+      // Begin a transaction to ensure data integrity
+      return await db.transaction(async (tx) => {
+        // First, check if this employee has any associated user accounts
+        const [associatedUser] = await tx
+          .select()
+          .from(users)
+          .where(eq(users.employeeId, id));
+          
+        // If there's an associated user, delete it completely
+        if (associatedUser) {
+          console.log(`Found associated user account ${associatedUser.id} for employee ${id}. Deleting...`);
+          
+          // Delete from credentials first (if exists)
+          await tx.delete(credentials)
+            .where(eq(credentials.userId, associatedUser.id));
+            
+          // Delete from key_value_store if it exists
+          try {
+            await tx.delete(keyValueStore)
+              .where(eq(keyValueStore.userId, associatedUser.id));
+          } catch (e) {
+            console.warn('Error deleting key-value records:', e);
+            // Continue with deletion even if this fails
+          }
+          
+          // Delete the user record
+          await tx.delete(users)
+            .where(eq(users.id, associatedUser.id));
+            
+          console.log(`Successfully deleted associated user account for employee ${id}`);
+        }
+        
+        // Delete employee-role associations
+        await tx.delete(employeeRoles)
+          .where(eq(employeeRoles.employeeId, id));
+        
+        // Delete any activities associated with this employee
+        await tx.delete(activities)
+          .where(eq(activities.employeeId, id));
+        
+        // Update any tickets where this employee is assigned
+        await tx.update(tickets)
+          .set({ assigneeId: null })
+          .where(eq(tickets.assigneeId, id));
+        
+        // Delete the employee
+        await tx.delete(employees)
+          .where(eq(employees.id, id));
+        
+        // Add activity log for this deletion
+        await tx.insert(activities).values({
+          employeeId: 0, // System activity
+          activityType: 'employee_deletion',
+          description: `Employee ${employee.firstName} ${employee.lastName} (ID: ${id}) was deleted from the system`
+        });
+        
+        return true;
+      });
     } catch (error) {
       console.error("Error deleting employee:", error);
       return false;
