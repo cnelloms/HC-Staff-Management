@@ -797,11 +797,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update employee (admin only)
-  app.patch('/api/employees/:id', isDirectAdmin, async (req: Request, res: Response) => {
+  app.patch('/api/employees/:id', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: 'Invalid employee ID' });
+      }
+      
+      // Check if user has permission to update this employee
+      // The logged-in user can update their own profile, or an admin can update any profile
+      const isAdmin = req.session?.directUser?.isAdmin === true || (req.user as any)?.isAdmin === true;
+      const isSelfUpdate = req.session?.directUser?.id && await storage.isEmployeeLinkedToUser(id, req.session.directUser.id);
+      
+      if (!isAdmin && !isSelfUpdate) {
+        return res.status(403).json({ message: 'You do not have permission to update this employee' });
       }
       
       const employeeData = req.body;
@@ -810,6 +819,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!updatedEmployee) {
         return res.status(404).json({ message: 'Employee not found' });
       }
+      
+      // Sync the employee data back to any associated user accounts
+      await storage.syncEmployeeToUser(id);
       
       return res.json(updatedEmployee);
     } catch (error) {

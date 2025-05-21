@@ -101,6 +101,9 @@ export interface IStorage {
   clearUserImpersonation(userId: string): Promise<boolean>;
   getUserDetails(userId: string): Promise<{ user: User, employee?: Employee, impersonatingEmployee?: Employee } | undefined>;
   makeUserAdmin(userId: string): Promise<boolean>;
+  syncUserFromEmployee(userId: string, employeeId: number): Promise<User | undefined>;
+  syncEmployeeToUser(employeeId: number): Promise<boolean>;
+  isEmployeeLinkedToUser(employeeId: number, userId: string): Promise<boolean>;
 }
 
 export interface DashboardStats {
@@ -753,6 +756,63 @@ export class DatabaseStorage implements IStorage {
       .returning();
       
     return updatedUser;
+  }
+  
+  // Sync employee data to all associated user records
+  async syncEmployeeToUser(employeeId: number): Promise<boolean> {
+    try {
+      // Get the employee
+      const employee = await this.getEmployeeById(employeeId);
+      if (!employee) {
+        return false;
+      }
+      
+      // Find all users with this employee ID
+      const usersWithEmployee = await db
+        .select()
+        .from(users)
+        .where(eq(users.employeeId, employeeId));
+      
+      // Update each user record with employee data
+      if (usersWithEmployee.length > 0) {
+        for (const user of usersWithEmployee) {
+          await db
+            .update(users)
+            .set({
+              firstName: employee.firstName,
+              lastName: employee.lastName,
+              email: employee.email,
+              updatedAt: new Date(),
+            })
+            .where(eq(users.id, user.id));
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error syncing employee to user:', error);
+      return false;
+    }
+  }
+  
+  // Check if an employee is linked to a specific user 
+  async isEmployeeLinkedToUser(employeeId: number, userId: string): Promise<boolean> {
+    try {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.id, userId),
+            eq(users.employeeId, employeeId)
+          )
+        );
+      
+      return !!user;
+    } catch (error) {
+      console.error('Error checking employee-user link:', error);
+      return false;
+    }
   }
 
   async setUserImpersonation(userId: string, employeeId: number): Promise<boolean> {
