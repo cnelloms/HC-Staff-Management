@@ -12,6 +12,7 @@ export function useAuth() {
     isAdmin: boolean;
     employeeId?: number;
     authProvider?: string;
+    businessUnit?: string;
   }
   
   interface Employee {
@@ -22,7 +23,7 @@ export function useAuth() {
     phone?: string;
     avatar?: string;
     departmentId?: number;
-    department?: { id: number; name: string };
+    department?: { id: number; name: string; businessUnit?: string };
     positionId?: number;
     position?: { id: number; title: string };
     hireDate?: string;
@@ -31,76 +32,126 @@ export function useAuth() {
 
   // Local state for user info from localStorage
   const [localUser, setLocalUser] = useState<User | null>(null);
+  const [localEmployee, setLocalEmployee] = useState<Employee | null>(null);
   
-  // Try to get user from server first
+  // Track login status and errors
+  const [loginAttempted, setLoginAttempted] = useState(false);
+  const [authError, setAuthError] = useState<Error | null>(null);
+  
+  // Try to get user from server with more fault tolerance
   const { data: userData, isLoading: isServerLoading, error } = useQuery<User>({
     queryKey: ["/api/auth/user"],
-    retry: 3, // Retry a few times to handle potential session loading delay
-    retryDelay: 1000, // Wait 1 second between retries
-    refetchOnWindowFocus: true, // Refresh when window regains focus
-    staleTime: 2 * 60 * 1000, // 2 minutes
-  });
-  
-  // Get the employee details if we have a user
-  const { data: employeeData } = useQuery<Employee>({
-    queryKey: ["/api/employees", userData?.employeeId],
-    enabled: !!userData?.employeeId,
-    refetchOnWindowFocus: false,
+    retry: 2, 
+    retryDelay: 1000,
+    refetchOnWindowFocus: false, // Don't refetch too aggressively
     staleTime: 5 * 60 * 1000, // 5 minutes
+    // Capture server errors but don't let them disrupt the app
+    onError: (err) => {
+      console.error("Auth API error:", err);
+      setAuthError(err as Error);
+      setLoginAttempted(true);
+    },
+    // Don't fail completely on server 500 errors
+    onSuccess: (data) => {
+      setLoginAttempted(true);
+      setAuthError(null);
+    }
   });
   
-  // On mount, check localStorage for saved user data
+  // Get employee data if we have a user with employeeId
+  const { data: employeeData } = useQuery<Employee>({
+    queryKey: ["/api/employees", userData?.employeeId || localUser?.employeeId],
+    enabled: !!(userData?.employeeId || localUser?.employeeId),
+    refetchOnWindowFocus: false,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    onSuccess: (data) => {
+      if (data) {
+        // Cache employee data
+        setLocalEmployee(data);
+        localStorage.setItem("auth_employee", JSON.stringify(data));
+      }
+    }
+  });
+  
+  // On mount, load cached user data
   useEffect(() => {
     try {
+      // Load cached auth user
       const savedUser = localStorage.getItem("auth_user");
       if (savedUser) {
-        setLocalUser(JSON.parse(savedUser));
+        const parsedUser = JSON.parse(savedUser);
+        
+        // Make sure we have the Health Carousel business unit
+        if (!parsedUser.businessUnit) {
+          parsedUser.businessUnit = "Health Carousel";
+        }
+        
+        setLocalUser(parsedUser);
+      }
+      
+      // Load cached employee data
+      const savedEmployee = localStorage.getItem("auth_employee");
+      if (savedEmployee) {
+        setLocalEmployee(JSON.parse(savedEmployee));
       }
     } catch (err) {
       console.error("Error reading auth from localStorage:", err);
+      // Only clear if there's an error reading
       localStorage.removeItem("auth_user");
+      localStorage.removeItem("auth_employee");
     }
   }, []);
   
-  // When user data comes from the server, save it to localStorage
+  // Update local storage when server data changes
   useEffect(() => {
     if (userData) {
       try {
-        // Save the user data to localStorage for persistent login state
-        localStorage.setItem("auth_user", JSON.stringify(userData));
+        // Ensure we have the default business unit
+        const userWithDefaults = {
+          ...userData,
+          businessUnit: userData.businessUnit || "Health Carousel"
+        };
+        
+        localStorage.setItem("auth_user", JSON.stringify(userWithDefaults));
+        setLocalUser(userWithDefaults);
       } catch (err) {
         console.error("Error saving auth to localStorage:", err);
       }
-    } else if (userData === null && error) {
-      // If there was an error and no user data, clear localStorage
-      localStorage.removeItem("auth_user");
-      setLocalUser(null);
     }
-  }, [userData, error]);
+  }, [userData]);
   
-  // Use server user if available, fall back to localStorage user
+  // Use either server data or local cache
   const user = userData || localUser;
+  const employee = employeeData || localEmployee;
   
-  // Make sure we don't stay in loading state forever
-  // Only consider the app loading if we're actively fetching server data and don't have a local user
-  const isLoading = isServerLoading && !localUser;
+  // Consider the auth to be loading only if we haven't tried yet
+  const isLoading = isServerLoading && !loginAttempted && !localUser;
   
-  // Debug: Log authentication state to help troubleshoot issues
-  console.log("Auth state:", { 
-    user: user ? { ...user, id: user.id } : null, 
-    isAuthenticated: !!user,
-    isAdmin: user?.isAdmin === true,
-    isLoading
-  });
-  
-  // Simplified admin status check (removed impersonation)
+  // Determine authentication status with fault tolerance
+  const isAuthenticated = !!user;
   const isAdmin = user?.isAdmin === true;
   
+  // Add business unit to user if missing
+  if (user && !user.businessUnit) {
+    user.businessUnit = "Health Carousel";
+  }
+  
+  // Debug: Log authentication state for troubleshooting
+  console.log("Auth state:", { 
+    user: user ? { ...user } : null, 
+    isAuthenticated,
+    isAdmin,
+    isLoading,
+    serverError: authError?.message
+  });
+  
+  // Return authentication details
   return {
     user,
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated,
     isAdmin,
-    employee: employeeData || null
+    employee,
+    error: authError
   };
 }
