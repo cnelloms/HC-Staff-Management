@@ -1396,41 +1396,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Create a user account for the new employee
           try {
-            // Generate a unique username (first initial + last name in lowercase)
-            const firstInitial = newEmployee.firstName.charAt(0).toLowerCase();
-            const baseUsername = `${firstInitial}${newEmployee.lastName.toLowerCase()}`.replace(/[^a-z0-9]/g, '');
-            
-            // Check if username exists already and append number if needed
-            let username = baseUsername;
-            let counter = 1;
-            let usernameExists = true;
-            
-            while (usernameExists) {
+            // Check if a specific username was requested in the ticket metadata
+            let username;
+            if (metadata.requestedUsername) {
+              username = metadata.requestedUsername;
+              
+              // Verify the requested username is available
               const existingUser = await db
                 .select()
                 .from(credentials)
                 .where(eq(credentials.username, username))
                 .limit(1);
               
-              if (existingUser.length === 0) {
-                usernameExists = false;
-              } else {
-                username = `${baseUsername}${counter}`;
-                counter++;
+              // If username is taken, fall back to auto-generation
+              if (existingUser.length > 0) {
+                console.log(`Requested username ${username} is already taken, generating alternative...`);
+                username = null;
               }
             }
             
-            // Generate a secure password
-            const generatePassword = () => {
-              const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-              let password = '';
-              for (let i = 0; i < 12; i++) {
-                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            // If no username specified or requested username is taken, generate one
+            if (!username) {
+              // Generate a unique username (first initial + last name in lowercase)
+              const firstInitial = newEmployee.firstName.charAt(0).toLowerCase();
+              const baseUsername = `${firstInitial}${newEmployee.lastName.toLowerCase()}`.replace(/[^a-z0-9]/g, '');
+              
+              // Check if username exists already and append number if needed
+              username = baseUsername;
+              let counter = 1;
+              let usernameExists = true;
+              
+              while (usernameExists) {
+                const existingUser = await db
+                  .select()
+                  .from(credentials)
+                  .where(eq(credentials.username, username))
+                  .limit(1);
+                
+                if (existingUser.length === 0) {
+                  usernameExists = false;
+                } else {
+                  username = `${baseUsername}${counter}`;
+                  counter++;
+                }
               }
-              return password;
-            };
+            }
             
-            const password = generatePassword();
+            // Check if a specific password was requested
+            let password;
+            if (metadata.requestedPassword) {
+              password = metadata.requestedPassword;
+            } else {
+              // Generate a secure password
+              const generatePassword = () => {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+                let password = '';
+                for (let i = 0; i < 12; i++) {
+                  password += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return password;
+              };
+              
+              password = generatePassword();
+            }
             
             // Create user ID
             const userId = `direct_${username}_${Date.now()}`;
@@ -1442,7 +1470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               lastName: newEmployee.lastName,
               email: newEmployee.email,
               employeeId: newEmployee.id, // Link to the employee record
-              isAdmin: false,
+              isAdmin: metadata.isAdmin === true,
               authProvider: 'direct'
             });
             
