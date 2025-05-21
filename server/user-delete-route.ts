@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { db } from './db';
 import { eq } from 'drizzle-orm';
-import { users, credentials, keyValueStore } from '@shared/schema';
+import { users, credentials, keyValueStore, employees } from '@shared/schema';
 import { storage } from './storage';
 
 // Delete a user completely from the system (Global Admin only)
@@ -37,13 +37,25 @@ export async function deleteUser(req: Request, res: Response) {
     
     // Begin transaction for data integrity during deletion
     await db.transaction(async (tx) => {
-      // If the user has an associated employee, we need to handle that relationship
+      // If the user has an associated employee, mark that employee as inactive
       if (user.employeeId) {
-        // Just remove the reference in the user record
-        // This approach leaves the employee record intact but disconnects it from the user account
-        await tx.update(users)
-          .set({ employeeId: null })
-          .where(eq(users.id, userId));
+        try {
+          // Update the employee record directly through storage interface
+          await storage.updateEmployee(user.employeeId, {
+            status: 'inactive'
+          });
+          
+          // Log this change for audit purposes
+          console.log(`Employee ID ${user.employeeId} marked as inactive due to user account deletion`);
+          
+          // Disconnect user from employee (for data integrity)
+          await tx.update(users)
+            .set({ employeeId: null })
+            .where(eq(users.id, userId));
+        } catch (employeeError) {
+          console.error('Error updating employee status:', employeeError);
+          // Continue with deletion even if employee update fails
+        }
       }
       
       // Delete from credentials first (if exists)
