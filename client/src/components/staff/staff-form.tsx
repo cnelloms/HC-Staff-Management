@@ -269,8 +269,14 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
                   <FormItem>
                     <FormLabel>Manager</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value?.toString()}
+                      onValueChange={(value) => {
+                        if (value === "none") {
+                          field.onChange(undefined);
+                        } else {
+                          field.onChange(parseInt(value));
+                        }
+                      }}
+                      value={field.value?.toString() || "none"}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -278,7 +284,7 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">No Manager</SelectItem>
+                        <SelectItem value="none">No Manager</SelectItem>
                         {employees?.filter(e => e.id !== employeeId).map((employee) => (
                           <SelectItem 
                             key={employee.id} 
