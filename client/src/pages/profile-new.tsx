@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/layout";
-import { Employee, SystemAccess, Ticket, Activity } from "@/types";
-import { apiRequest } from "@/lib/queryClient";
+import { Employee } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useProfileData } from "@/hooks/useProfileData";
 
@@ -27,38 +26,35 @@ import {
   User,
   Calendar,
   Briefcase,
-  Key,
-  PlusCircle,
   Clock,
   ChevronRight,
   Ticket as TicketIcon,
   Settings,
-  UserCog,
-  Shield,
-  Edit
 } from "lucide-react";
 import { Link } from "wouter";
+import { ProfileCard } from "@/components/profile/profile-card";
 
+/**
+ * Profile page using the shared profile data hook for consistent display
+ */
 export default function UserProfile() {
-  const { profileData, isLoading, employeeData } = useProfileData();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
-
-  // Get the employee ID from the profile data
+  
+  // Get profile data from our shared hook
+  const { profileData, isLoading, employeeData } = useProfileData();
+  
+  // Get employee ID to fetch more detailed information if needed
   const employeeId = profileData?.employeeId;
-
-  // If we still need more employee details, fetch them
-  const { data: userDetails, isLoading: isDetailsLoading } = useQuery<Employee>({
+  
+  // Fetch detailed employee information if we have an employee ID
+  const { data: employeeDetails } = useQuery<Employee>({
     queryKey: [`/api/employees/${employeeId}`],
     enabled: !!employeeId && !employeeData,
   });
-
-  // Use the most complete data source available
-  const user = employeeData || userDetails || profileData;
-  const isPageLoading = isLoading || isDetailsLoading;
-
-  if (isPageLoading) {
+  
+  // If still loading, show spinner
+  if (isLoading) {
     return (
       <Layout title="My Profile">
         <div className="p-8 flex justify-center">
@@ -67,12 +63,13 @@ export default function UserProfile() {
       </Layout>
     );
   }
-
-  if (!user) {
+  
+  // If no profile data, show error
+  if (!profileData) {
     return (
       <Layout title="My Profile">
         <div className="text-center p-8">
-          <h2 className="text-2xl font-bold">User Not Found</h2>
+          <h2 className="text-2xl font-bold">Profile Not Found</h2>
           <p className="text-muted-foreground mt-2">
             We couldn't load your profile information. Please try again later.
           </p>
@@ -83,15 +80,43 @@ export default function UserProfile() {
       </Layout>
     );
   }
-
-  const formatTimestamp = (timestamp: string) => {
-    return format(new Date(timestamp), 'MMM d, yyyy h:mm a');
+  
+  // Format dates consistently
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "Not available";
+    try {
+      return format(new Date(dateString), 'MMM d, yyyy');
+    } catch (e) {
+      return "Invalid date";
+    }
   };
-
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'MMM d, yyyy');
+  
+  // Use the most detailed employee data we have
+  const employee = employeeData || employeeDetails;
+  
+  // Get manager name if available
+  const managerName = employee?.manager?.name || "No manager";
+  
+  // Get department name
+  let departmentName = "";
+  if (profileData.department) {
+    if (typeof profileData.department === 'object' && 'name' in profileData.department) {
+      departmentName = profileData.department.name as string;
+    } else if (typeof profileData.department === 'string') {
+      departmentName = profileData.department;
+    }
   }
-
+  
+  // Get position title
+  let positionTitle = "";
+  if (profileData.position) {
+    if (typeof profileData.position === 'object' && 'title' in profileData.position) {
+      positionTitle = profileData.position.title as string;
+    } else if (typeof profileData.position === 'string') {
+      positionTitle = profileData.position;
+    }
+  }
+  
   return (
     <Layout title="My Profile">
       <div className="space-y-6">
@@ -102,14 +127,16 @@ export default function UserProfile() {
             <div className="md:col-span-2">
               <div className="flex items-center space-x-4">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
-                  <AvatarFallback className="text-xl">{user.firstName[0]}{user.lastName[0]}</AvatarFallback>
+                  <AvatarImage src={profileData.avatar} alt={`${profileData.firstName} ${profileData.lastName}`} />
+                  <AvatarFallback className="text-xl">
+                    {profileData.firstName?.[0] || ""}{profileData.lastName?.[0] || ""}
+                  </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h2 className="text-2xl font-bold">{user.firstName} {user.lastName}</h2>
-                  <p className="text-muted-foreground">{user.position}</p>
+                  <h2 className="text-2xl font-bold">{profileData.firstName} {profileData.lastName}</h2>
+                  <p className="text-muted-foreground">{positionTitle}</p>
                   <div className="flex items-center mt-2">
-                    <StatusBadge status={user.status as any} className="capitalize" />
+                    <StatusBadge status={profileData.status as any} className="capitalize" />
                   </div>
                 </div>
               </div>
@@ -117,28 +144,32 @@ export default function UserProfile() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                 <div className="flex items-center text-sm">
                   <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span>{user.email}</span>
+                  <span>{profileData.email || "Not provided"}</span>
                 </div>
                 <div className="flex items-center text-sm">
                   <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span>{user.phone || 'Not provided'}</span>
+                  <span>{profileData.phone || "Not provided"}</span>
                 </div>
                 <div className="flex items-center text-sm">
                   <Building className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span>{user.department?.name || 'Unassigned'}</span>
+                  <span>{departmentName || "Unassigned"}</span>
                 </div>
                 <div className="flex items-center text-sm">
                   <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span>Reports to: {user.manager?.name || 'No manager'}</span>
+                  <span>Reports to: {managerName}</span>
                 </div>
-                <div className="flex items-center text-sm">
-                  <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span>Hired: {formatDate(user.hireDate)}</span>
-                </div>
-                <div className="flex items-center text-sm">
-                  <Briefcase className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span>Employee ID: {user.id}</span>
-                </div>
+                {profileData.hireDate && (
+                  <div className="flex items-center text-sm">
+                    <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <span>Hired: {formatDate(profileData.hireDate)}</span>
+                  </div>
+                )}
+                {employeeId && (
+                  <div className="flex items-center text-sm">
+                    <Briefcase className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <span>Employee ID: {employeeId}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -157,8 +188,6 @@ export default function UserProfile() {
                   New Staff Request
                 </Link>
               </Button>
-
-
             </div>
           </div>
         </div>
@@ -172,6 +201,9 @@ export default function UserProfile() {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
+            {/* Profile card from shared component */}
+            <ProfileCard />
+            
             {/* Recent Activity */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
@@ -181,33 +213,12 @@ export default function UserProfile() {
                 </div>
               </CardHeader>
               <CardContent>
-                {user.activities && user.activities.length > 0 ? (
-                  <div className="space-y-4">
-                    {user.activities.map((activity: Activity) => (
-                      <div key={activity.id} className="flex items-start space-x-4">
-                        <div className="rounded-full bg-primary/10 p-2">
-                          <Clock className="h-4 w-4 text-primary" />
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-sm">
-                            <span className="font-medium">{activity.activityType.replace('_', ' ').toUpperCase()}</span>: {activity.description}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatTimestamp(activity.timestamp)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-4">No recent activity</p>
-                )}
+                <div className="flex items-center justify-center p-6">
+                  <p className="text-muted-foreground text-center">
+                    Recent activity information will be available soon
+                  </p>
+                </div>
               </CardContent>
-              <CardFooter className="flex justify-center border-t pt-4">
-                <Button variant="ghost" size="sm" className="gap-1">
-                  View All Activity <ChevronRight className="h-4 w-4" />
-                </Button>
-              </CardFooter>
             </Card>
 
             {/* Quick Actions */}
@@ -220,14 +231,14 @@ export default function UserProfile() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center" asChild>
                     <Link href="/tickets/new">
-                      <UserCog className="h-6 w-6 mb-2" />
+                      <TicketIcon className="h-6 w-6 mb-2" />
                       <span>New Staff Request</span>
                     </Link>
                   </Button>
                   
                   <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center" asChild>
                     <Link href="/settings">
-                      <Edit className="h-6 w-6 mb-2" />
+                      <Settings className="h-6 w-6 mb-2" />
                       <span>Update Profile</span>
                     </Link>
                   </Button>
@@ -235,8 +246,6 @@ export default function UserProfile() {
               </CardContent>
             </Card>
           </TabsContent>
-
-
 
           {/* Tickets Tab */}
           <TabsContent value="tickets">
@@ -248,53 +257,20 @@ export default function UserProfile() {
                 </div>
                 <Button variant="outline" size="sm" asChild>
                   <Link href="/tickets/new">
-                    <PlusCircle className="mr-2 h-4 w-4" />
+                    <TicketIcon className="mr-2 h-4 w-4" />
                     New Ticket
                   </Link>
                 </Button>
               </CardHeader>
               <CardContent>
-                {user.tickets && user.tickets.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Priority</TableHead>
-                        <TableHead>Created</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {user.tickets.map((ticket: Ticket) => (
-                        <TableRow key={ticket.id}>
-                          <TableCell className="font-medium">
-                            <Link href={`/tickets/${ticket.id}`} className="hover:underline">
-                              {ticket.title}
-                            </Link>
-                          </TableCell>
-                          <TableCell className="capitalize">{ticket.type.replace('_', ' ')}</TableCell>
-                          <TableCell>
-                            <StatusBadge status={ticket.status as any} />
-                          </TableCell>
-                          <TableCell>
-                            <StatusBadge status={ticket.priority as any} />
-                          </TableCell>
-                          <TableCell>{formatDate(ticket.createdAt)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="text-center py-6">
-                    <p className="text-muted-foreground">You haven't created any tickets yet</p>
-                    <Button variant="outline" className="mt-4" asChild>
-                      <Link href="/tickets/new">
-                        Create New Ticket
-                      </Link>
-                    </Button>
-                  </div>
-                )}
+                <div className="text-center py-6">
+                  <p className="text-muted-foreground">Ticket data will be synchronized soon</p>
+                  <Button variant="outline" className="mt-4" asChild>
+                    <Link href="/tickets/new">
+                      Create New Ticket
+                    </Link>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
