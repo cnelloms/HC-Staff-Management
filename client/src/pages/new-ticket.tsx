@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 import Layout from "@/components/layout";
-import { TicketForm } from "@/components/tickets/ticket-form";
+import { TicketForm } from "@/components/tickets/ticket-form-fixed";
 
 export default function NewTicket() {
   const [location] = useLocation();

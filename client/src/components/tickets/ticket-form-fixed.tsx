@@ -5,9 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useCurrentUser } from "@/context/user-context";
-import { CalendarIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -35,7 +34,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -47,6 +45,7 @@ interface TicketFormProps {
   employeeId?: number;
 }
 
+// Define ticket schema - simplified
 const ticketFormSchema = z.object({
   title: z.string().min(5, {
     message: "Title must be at least 5 characters.",
@@ -64,7 +63,7 @@ const ticketFormSchema = z.object({
   priority: z.enum(["low", "medium", "high"]).default("low"),
   type: z.enum(["new_staff_request", "it_support"]),
   systemId: z.coerce.number().optional(),
-  metadata: z.any().optional(), // Will contain different structures based on ticket type
+  metadata: z.any().optional(),
 });
 
 export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormProps) {
@@ -74,23 +73,23 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
   const isEditing = !!ticketId;
   const { currentUser } = useCurrentUser();
 
-  const [selectedTicketType, setSelectedTicketType] = useState<"new_staff_request" | "it_support">(
-    defaultValues?.type === "it_support" ? "it_support" : "new_staff_request"
-  );
+  // Simple ticket type state
+  const [selectedTicketType, setSelectedTicketType] = useState<"new_staff_request" | "it_support">("new_staff_request");
 
-  const { data: employees } = useQuery({
+  // Load supporting data
+  const { data: employees = [] } = useQuery({
     queryKey: ['/api/employees'],
   });
 
-  const { data: systems } = useQuery({
+  const { data: systems = [] } = useQuery({
     queryKey: ['/api/systems'],
   });
   
-  const { data: departments } = useQuery({
+  const { data: departments = [] } = useQuery({
     queryKey: ['/api/departments'],
   });
   
-  const { data: positions } = useQuery({
+  const { data: positions = [] } = useQuery({
     queryKey: ['/api/positions'],
   });
 
@@ -99,38 +98,29 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
   
   if (employeeId) {
     initialRequestorId = employeeId;
-  } else if (currentUser && currentUser.id) {
+  } else if (currentUser?.id) {
     initialRequestorId = currentUser.id;
   }
   
-  // Get available ticket templates
-  const { data: ticketTemplates } = useQuery({
-    queryKey: ['/api/ticket-templates'],
-  });
-  
+  // Set default form values
   const initialFormValues = {
-    ...defaultValues,
     requestorId: defaultValues?.requestorId || initialRequestorId || undefined,
     title: defaultValues?.title || "",
     description: defaultValues?.description || "",
     status: defaultValues?.status || "open",
     priority: defaultValues?.priority || "low",
-    type: defaultValues?.type || "new_staff_request",
+    type: "new_staff_request" as const,
+    systemId: defaultValues?.systemId,
     metadata: defaultValues?.metadata || {}
   };
 
+  // Initialize form
   const form = useForm<z.infer<typeof ticketFormSchema>>({
     resolver: zodResolver(ticketFormSchema),
     defaultValues: initialFormValues,
   });
 
-  // Initialize metadata object if not already set
-  React.useEffect(() => {
-    if (!form.getValues().metadata) {
-      form.setValue('metadata', {});
-    }
-  }, [form]);
-
+  // Create ticket mutation
   const createMutation = useMutation({
     mutationFn: async (values: z.infer<typeof ticketFormSchema>) => {
       return apiRequest("POST", "/api/tickets", values);
@@ -141,11 +131,10 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
         title: "Ticket created",
         description: "The ticket has been successfully created.",
       });
-      // The API response contains the new ticket directly
+      // Navigate to the new ticket
       if (data && data.id) {
         navigate(`/tickets/${data.id}`);
       } else {
-        // Fallback to tickets page if we can't get the ID for some reason
         navigate('/tickets');
       }
     },
@@ -158,6 +147,7 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
     },
   });
 
+  // Update ticket mutation
   const updateMutation = useMutation({
     mutationFn: async (values: z.infer<typeof ticketFormSchema>) => {
       return apiRequest("PATCH", `/api/tickets/${ticketId}`, values);
@@ -180,30 +170,44 @@ export function TicketForm({ ticketId, defaultValues, employeeId }: TicketFormPr
     },
   });
 
-  // Function to auto-generate title when staff details change
-  const updateTitle = (firstName: string, lastName: string) => {
-    if (firstName && lastName) {
-      form.setValue('title', `New Staff Request for ${firstName} ${lastName}`);
-    }
-  };
-
-  // Function to auto-generate description based on staff details
-  const updateDescription = (metadata: any) => {
+  // Generate staff request title and description
+  const updateStaffRequestDetails = (metadata: any) => {
     if (!metadata) return;
     
     const firstName = metadata.firstName || '';
     const lastName = metadata.lastName || '';
-    const position = positions?.find((p: any) => p.id === metadata.positionId)?.title || '';
-    const department = departments?.find((d: any) => d.id === metadata.departmentId)?.name || '';
-    const manager = employees?.find((e: any) => e.id === metadata.reportingManagerId);
-    const managerName = manager ? `${manager.firstName} ${manager.lastName}` : '';
+    
+    // Find position title
+    let positionTitle = '';
+    if (metadata.positionId && positions && Array.isArray(positions)) {
+      const position = positions.find((p: any) => p.id === metadata.positionId);
+      if (position) positionTitle = position.title;
+    }
+    
+    // Find department name
+    let departmentName = '';
+    if (metadata.departmentId && departments && Array.isArray(departments)) {
+      const department = departments.find((d: any) => d.id === metadata.departmentId);
+      if (department) departmentName = department.name;
+    }
+    
+    // Find manager name
+    let managerName = '';
+    if (metadata.reportingManagerId && employees && Array.isArray(employees)) {
+      const manager = employees.find((e: any) => e.id === metadata.reportingManagerId);
+      if (manager) managerName = `${manager.firstName} ${manager.lastName}`;
+    }
+    
     const startDate = metadata.startDate ? format(new Date(metadata.startDate), 'PPP') : '';
     
-    const description = `
+    if (firstName && lastName) {
+      form.setValue('title', `New Staff Request: ${firstName} ${lastName} (${positionTitle})`);
+    
+      const description = `
 New Staff Request Details:
 - Name: ${firstName} ${lastName}
-- Position: ${position}
-- Department: ${department}
+- Position: ${positionTitle}
+- Department: ${departmentName}
 - Reporting Manager: ${managerName}
 - Start Date: ${startDate}
 ${metadata.email ? `- Email: ${metadata.email}` : ''}
@@ -216,10 +220,12 @@ Onboarding Tasks (IT Department):
 
 Note: All tasks must be manually marked as complete by the assignee. When all tasks are completed, the ticket will automatically close.
 `;
-    
-    form.setValue('description', description.trim());
+      
+      form.setValue('description', description.trim());
+    }
   };
 
+  // Form submission handler
   function onSubmit(values: z.infer<typeof ticketFormSchema>) {
     // Prepare form values for submission
     const formData = { ...values };
@@ -245,8 +251,11 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
         const lastName = values.metadata.lastName;
         
         // Get position title from positionId
-        const positionObj = positions?.find((p: any) => p.id === values.metadata.positionId);
-        const positionTitle = positionObj ? positionObj.title : "New Position";
+        let positionTitle = "New Position";
+        if (positions && Array.isArray(positions)) {
+          const positionObj = positions.find((p: any) => p.id === values.metadata.positionId);
+          if (positionObj) positionTitle = positionObj.title;
+        }
         
         formData.title = `New Staff Request: ${firstName} ${lastName} (${positionTitle})`;
       }
@@ -333,9 +342,9 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                 <FormItem>
                   <FormLabel>Ticket Type</FormLabel>
                   <Select
-                    onValueChange={(value) => {
+                    onValueChange={(value: "new_staff_request" | "it_support") => {
                       field.onChange(value);
-                      setSelectedTicketType(value as "new_staff_request" | "it_support");
+                      setSelectedTicketType(value);
                       
                       // Reset metadata when changing ticket type
                       form.setValue('metadata', {});
@@ -385,11 +394,7 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                             {...field} 
                             onChange={(e) => {
                               field.onChange(e);
-                              // Auto-update title when first name changes
-                              const lastName = form.getValues().metadata?.lastName || '';
-                              updateTitle(e.target.value, lastName);
-                              // Update description
-                              updateDescription({
+                              updateStaffRequestDetails({
                                 ...form.getValues().metadata,
                                 firstName: e.target.value
                               });
@@ -413,11 +418,7 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                             {...field} 
                             onChange={(e) => {
                               field.onChange(e);
-                              // Auto-update title when last name changes
-                              const firstName = form.getValues().metadata?.firstName || '';
-                              updateTitle(firstName, e.target.value);
-                              // Update description
-                              updateDescription({
+                              updateStaffRequestDetails({
                                 ...form.getValues().metadata,
                                 lastName: e.target.value
                               });
@@ -428,44 +429,51 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                       </FormItem>
                     )}
                   />
-                </div>
-                
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  
                   <FormField
                     control={form.control}
-                    name="metadata.departmentId"
+                    name="metadata.email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Department*</FormLabel>
-                        <Select
-                          onValueChange={(value) => {
-                            field.onChange(parseInt(value));
-                            // Update description
-                            updateDescription({
-                              ...form.getValues().metadata,
-                              departmentId: parseInt(value)
-                            });
-                          }}
-                          defaultValue={field.value?.toString()}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select department" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {Array.isArray(departments) ? departments.map((department: any) => (
-                              <SelectItem 
-                                key={department.id} 
-                                value={department.id.toString()}
-                              >
-                                {department.name}
-                              </SelectItem>
-                            )) : (
-                              <SelectItem value="loading">Loading departments...</SelectItem>
-                            )}
-                          </SelectContent>
-                        </Select>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            placeholder="Enter email address"
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              updateStaffRequestDetails({
+                                ...form.getValues().metadata,
+                                email: e.target.value
+                              });
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="metadata.phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Enter phone number"
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              updateStaffRequestDetails({
+                                ...form.getValues().metadata,
+                                phone: e.target.value
+                              });
+                            }}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -476,12 +484,11 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                     name="metadata.positionId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Position/Job Title*</FormLabel>
+                        <FormLabel>Position*</FormLabel>
                         <Select
                           onValueChange={(value) => {
                             field.onChange(parseInt(value));
-                            // Update description
-                            updateDescription({
+                            updateStaffRequestDetails({
                               ...form.getValues().metadata,
                               positionId: parseInt(value)
                             });
@@ -494,25 +501,52 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Array.isArray(positions) ? positions.map((position: any) => (
-                              <SelectItem 
-                                key={position.id} 
-                                value={position.id.toString()}
-                              >
+                            {Array.isArray(positions) && positions.map((position: any) => (
+                              <SelectItem key={position.id} value={position.id.toString()}>
                                 {position.title}
                               </SelectItem>
-                            )) : (
-                              <SelectItem value="loading">Loading positions...</SelectItem>
-                            )}
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                </div>
-                
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  
+                  <FormField
+                    control={form.control}
+                    name="metadata.departmentId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Department*</FormLabel>
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(parseInt(value));
+                            updateStaffRequestDetails({
+                              ...form.getValues().metadata,
+                              departmentId: parseInt(value)
+                            });
+                          }}
+                          defaultValue={field.value?.toString()}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select department" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Array.isArray(departments) && departments.map((department: any) => (
+                              <SelectItem key={department.id} value={department.id.toString()}>
+                                {department.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
                   <FormField
                     control={form.control}
                     name="metadata.reportingManagerId"
@@ -522,8 +556,7 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                         <Select
                           onValueChange={(value) => {
                             field.onChange(parseInt(value));
-                            // Update description
-                            updateDescription({
+                            updateStaffRequestDetails({
                               ...form.getValues().metadata,
                               reportingManagerId: parseInt(value)
                             });
@@ -536,16 +569,11 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Array.isArray(employees) ? employees.map((employee: any) => (
-                              <SelectItem 
-                                key={employee.id} 
-                                value={employee.id.toString()}
-                              >
-                                {employee.firstName} {employee.lastName}
+                            {Array.isArray(employees) && employees.map((employee: any) => (
+                              <SelectItem key={employee.id} value={employee.id.toString()}>
+                                {employee.firstName} {employee.lastName} {employee.position ? `(${employee.position})` : ''}
                               </SelectItem>
-                            )) : (
-                              <SelectItem value="loading">Loading employees...</SelectItem>
-                            )}
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -564,7 +592,7 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                             <FormControl>
                               <Button
                                 variant={"outline"}
-                                className={`w-full pl-3 text-left font-normal ${
+                                className={`pl-3 text-left font-normal ${
                                   !field.value ? "text-muted-foreground" : ""
                                 }`}
                               >
@@ -573,7 +601,6 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                                 ) : (
                                   <span>Pick a date</span>
                                 )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                               </Button>
                             </FormControl>
                           </PopoverTrigger>
@@ -582,15 +609,14 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                               mode="single"
                               selected={field.value ? new Date(field.value) : undefined}
                               onSelect={(date) => {
-                                const dateStr = date ? date.toISOString() : '';
-                                field.onChange(dateStr);
-                                // Update description
-                                updateDescription({
-                                  ...form.getValues().metadata,
-                                  startDate: dateStr
-                                });
+                                field.onChange(date);
+                                if (date) {
+                                  updateStaffRequestDetails({
+                                    ...form.getValues().metadata,
+                                    startDate: date.toISOString()
+                                  });
+                                }
                               }}
-                              disabled={(date) => date < new Date()}
                               initialFocus
                             />
                           </PopoverContent>
@@ -601,80 +627,19 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                   />
                 </div>
                 
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="metadata.email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email Address</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Enter email address" 
-                            {...field} 
-                            onChange={(e) => {
-                              field.onChange(e);
-                              // Update description
-                              updateDescription({
-                                ...form.getValues().metadata,
-                                email: e.target.value
-                              });
-                            }}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Optional - Personal email can be provided
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="metadata.phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Enter phone number" 
-                            {...field} 
-                            onChange={(e) => {
-                              field.onChange(e);
-                              // Update description
-                              updateDescription({
-                                ...form.getValues().metadata,
-                                phone: e.target.value
-                              });
-                            }}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Optional - Contact number for the new staff
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
                 <FormField
                   control={form.control}
-                  name="metadata.notes"
+                  name="metadata.additionalNotes"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Additional Notes</FormLabel>
                       <FormControl>
-                        <Textarea 
-                          placeholder="Enter any additional information or special requirements"
-                          className="min-h-[100px]"
+                        <Textarea
+                          placeholder="Enter any additional details or requirements..."
+                          className="min-h-24"
                           {...field}
                         />
                       </FormControl>
-                      <FormDescription>
-                        Optional - Include any special requirements or additional information
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -682,14 +647,14 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
               </div>
             )}
             
-            {/* IT Support Form Fields */}
+            {/* IT Support Request Form Fields */}
             {selectedTicketType === "it_support" && (
               <div className="space-y-6 border border-border rounded-md p-4">
                 <h3 className="font-medium text-lg">IT Support Details</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Please provide the details about your technical issue.
+                  Please provide details about the IT issue you're experiencing.
                 </p>
-
+                
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <FormField
                     control={form.control}
@@ -698,13 +663,7 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                       <FormItem>
                         <FormLabel>Issue Category*</FormLabel>
                         <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            const deviceType = form.getValues().metadata?.deviceType || '';
-                            if (value && deviceType) {
-                              form.setValue('title', `IT Support: ${value} issue with ${deviceType}`);
-                            }
-                          }}
+                          onValueChange={field.onChange}
                           defaultValue={field.value}
                         >
                           <FormControl>
@@ -716,7 +675,8 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                             <SelectItem value="Hardware">Hardware</SelectItem>
                             <SelectItem value="Software">Software</SelectItem>
                             <SelectItem value="Network">Network</SelectItem>
-                            <SelectItem value="Account Access">Account Access</SelectItem>
+                            <SelectItem value="Email">Email</SelectItem>
+                            <SelectItem value="Account">Account/Access</SelectItem>
                             <SelectItem value="Other">Other</SelectItem>
                           </SelectContent>
                         </Select>
@@ -724,7 +684,7 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                       </FormItem>
                     )}
                   />
-
+                  
                   <FormField
                     control={form.control}
                     name="metadata.deviceType"
@@ -732,26 +692,20 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                       <FormItem>
                         <FormLabel>Device Type*</FormLabel>
                         <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            const category = form.getValues().metadata?.issueCategory || '';
-                            if (category && value) {
-                              form.setValue('title', `IT Support: ${category} issue with ${value}`);
-                            }
-                          }}
+                          onValueChange={field.onChange}
                           defaultValue={field.value}
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select device type" />
+                              <SelectValue placeholder="Select device" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Desktop">Desktop</SelectItem>
+                            <SelectItem value="Desktop">Desktop PC</SelectItem>
                             <SelectItem value="Laptop">Laptop</SelectItem>
-                            <SelectItem value="Mobile">Mobile</SelectItem>
+                            <SelectItem value="Mobile">Mobile Phone</SelectItem>
+                            <SelectItem value="Tablet">Tablet</SelectItem>
                             <SelectItem value="Printer">Printer</SelectItem>
-                            <SelectItem value="Server">Server</SelectItem>
                             <SelectItem value="Other">Other</SelectItem>
                           </SelectContent>
                         </Select>
@@ -759,45 +713,48 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                       </FormItem>
                     )}
                   />
+                  
+                  <FormField
+                    control={form.control}
+                    name="metadata.urgency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Urgency*</FormLabel>
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            // Auto-set the priority based on urgency
+                            if (value === 'Critical') {
+                              form.setValue('priority', 'high');
+                            } else if (value === 'High') {
+                              form.setValue('priority', 'medium');
+                            } else {
+                              form.setValue('priority', 'low');
+                            }
+                          }}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select urgency" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Low">Low - No rush</SelectItem>
+                            <SelectItem value="Medium">Medium - Within 24-48 hours</SelectItem>
+                            <SelectItem value="High">High - Within 24 hours</SelectItem>
+                            <SelectItem value="Critical">Critical - ASAP (business critical)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          This will automatically set the priority level.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-
-                <FormField
-                  control={form.control}
-                  name="metadata.urgency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Urgency*</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          // Automatically set ticket priority based on urgency
-                          if (value === 'Critical') {
-                            form.setValue('priority', 'high');
-                          } else if (value === 'High') {
-                            form.setValue('priority', 'medium');
-                          } else {
-                            form.setValue('priority', 'low');
-                          }
-                        }}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select urgency level" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Low">Low - No immediate impact</SelectItem>
-                          <SelectItem value="Medium">Medium - Impacting productivity</SelectItem>
-                          <SelectItem value="High">High - Preventing work</SelectItem>
-                          <SelectItem value="Critical">Critical - Business outage</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
+                
                 <FormField
                   control={form.control}
                   name="metadata.issueDetails"
@@ -806,60 +763,57 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                       <FormLabel>Issue Details*</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Please describe the issue in detail"
-                          className="h-24"
+                          placeholder="Please describe the issue in detail. Include what you were doing when the issue occurred, any error messages, and steps you've already tried."
+                          className="min-h-24"
                           {...field}
-                          onChange={(e) => {
-                            field.onChange(e);
-                            // Auto-update description with issue details
-                            const category = form.getValues().metadata?.issueCategory || '';
-                            const deviceType = form.getValues().metadata?.deviceType || '';
-                            const urgency = form.getValues().metadata?.urgency || '';
-                            
-                            const description = `
-IT Support Request Details:
-- Issue Category: ${category}
-- Device Type: ${deviceType}
-- Urgency: ${urgency}
-
-Issue Details:
-${e.target.value}
-
-Steps to Reproduce:
-${form.getValues().metadata?.stepsToReproduce || '(Not provided)'}
-
-Support Tasks:
-1. Run initial diagnostics
-2. Implement solution
-3. Verify issue is resolved
-
-Note: All tasks must be manually marked as complete by the assignee. When all tasks are completed, the ticket will automatically close.
-`;
-                            form.setValue('description', description.trim());
-                          }}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
+                
                 <FormField
                   control={form.control}
-                  name="metadata.stepsToReproduce"
+                  name="metadata.reproducibility"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Steps to Reproduce</FormLabel>
+                      <FormLabel>Can you reproduce the issue?</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select option" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Always">Always</SelectItem>
+                          <SelectItem value="Sometimes">Sometimes</SelectItem>
+                          <SelectItem value="Rarely">Rarely</SelectItem>
+                          <SelectItem value="Once">Happened once</SelectItem>
+                          <SelectItem value="Unknown">Not sure</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="metadata.stepsTaken"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Steps Already Taken</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="If applicable, provide steps to reproduce the issue"
-                          className="h-24"
+                          placeholder="What steps have you already taken to try to resolve the issue? (e.g., restarted device, reinstalled application)"
+                          className="min-h-16"
                           {...field}
                         />
                       </FormControl>
-                      <FormDescription>
-                        Optional - Include detailed steps that will help IT staff reproduce the issue
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -867,11 +821,37 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
               </div>
             )}
 
-            {/* Hidden fields (requestor, priority, status) */}
-            <div className="mt-8 p-4 bg-muted/50 rounded-md">
-              <h3 className="font-medium text-sm mb-3">Ticket Information</h3>
+            {/* Common fields for all ticket types */}
+            <div className="space-y-6">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ticket Title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter ticket title" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ticket Description</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Enter detailed description" className="min-h-32" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="requestorId"
@@ -879,10 +859,8 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                     <FormItem>
                       <FormLabel>Requestor</FormLabel>
                       <Select
-                        onValueChange={field.onChange}
+                        onValueChange={(value) => field.onChange(parseInt(value))}
                         defaultValue={field.value?.toString()}
-                        disabled={!!employeeId} // Disable if employeeId is provided
-                        value={field.value?.toString()}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -890,16 +868,11 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {Array.isArray(employees) ? employees.map((employee: any) => (
-                            <SelectItem 
-                              key={employee.id} 
-                              value={employee.id.toString()}
-                            >
+                          {Array.isArray(employees) && employees.map((employee: any) => (
+                            <SelectItem key={employee.id} value={employee.id.toString()}>
                               {employee.firstName} {employee.lastName}
                             </SelectItem>
-                          )) : (
-                            <SelectItem value="loading">Loading employees...</SelectItem>
-                          )}
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -907,68 +880,36 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                   )}
                 />
                 
-                <FormField
-                  control={form.control}
-                  name="assigneeId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Assignee</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
-                        defaultValue={field.value?.toString()}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select assignee (optional)" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="">Unassigned</SelectItem>
-                          {Array.isArray(employees) ? employees.map((employee: any) => (
-                            <SelectItem 
-                              key={employee.id} 
-                              value={employee.id.toString()}
-                            >
-                              {employee.firstName} {employee.lastName}
-                            </SelectItem>
-                          )) : (
-                            <SelectItem value="loading">Loading employees...</SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        Optional - Leave unassigned to be picked up by any team member
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="priority"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Priority</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select priority" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {isEditing && (
+                  <FormField
+                    control={form.control}
+                    name="assigneeId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Assignee</FormLabel>
+                        <Select
+                          onValueChange={(value) => field.onChange(parseInt(value))}
+                          defaultValue={field.value?.toString()}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select assignee" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">Not assigned</SelectItem>
+                            {Array.isArray(employees) && employees.map((employee: any) => (
+                              <SelectItem key={employee.id} value={employee.id.toString()}>
+                                {employee.firstName} {employee.lastName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
                 
                 {isEditing && (
                   <FormField
@@ -997,30 +938,47 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                     )}
                   />
                 )}
+                
+                <FormField
+                  control={form.control}
+                  name="priority"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Priority</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select priority" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-              
-              {/* Hidden form fields for title and description */}
-              <input type="hidden" {...form.register("title")} />
-              <input type="hidden" {...form.register("description")} />
-              <input type="hidden" {...form.register("status")} value="open" />
             </div>
+            
+            <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+              {createMutation.isPending || updateMutation.isPending ? (
+                <span>Processing...</span>
+              ) : isEditing ? (
+                <span>Update Ticket</span>
+              ) : (
+                <span>Create Ticket</span>
+              )}
+            </Button>
           </form>
         </Form>
       </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={() => navigate("/tickets")}>
-          Cancel
-        </Button>
-        <Button
-          onClick={form.handleSubmit(onSubmit)}
-          disabled={createMutation.isPending || updateMutation.isPending}
-        >
-          {(createMutation.isPending || updateMutation.isPending) && (
-            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-          )}
-          {isEditing ? "Update Ticket" : "Create Ticket"}
-        </Button>
-      </CardFooter>
     </Card>
   );
 }
