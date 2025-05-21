@@ -143,7 +143,7 @@ export function Sidebar({ user: defaultUser }: SidebarProps) {
                   {isAdmin && <span className="ml-1 text-primary">(Admin)</span>}
                 </p>
               </div>
-            </Link>
+            </div>
             
             {/* Impersonation badge - only shows when actively impersonating */}
             {isImpersonating && impersonatingEmployee && (
