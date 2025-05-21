@@ -4,7 +4,7 @@ import Layout from "@/components/layout";
 import { Employee, SystemAccess, Ticket, Activity } from "@/types";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useCurrentUser } from "@/context/user-context";
+import { useProfileData } from "@/hooks/useProfileData";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
