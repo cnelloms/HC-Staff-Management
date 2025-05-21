@@ -36,10 +36,11 @@ export default function UserSettings() {
         </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsList className="grid w-full max-w-md grid-cols-4">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="preferences">Preferences</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
+            <TabsTrigger value="admin">Admin</TabsTrigger>
           </TabsList>
           
           <TabsContent value="profile" className="space-y-6">
@@ -142,6 +143,50 @@ export default function UserSettings() {
                       <p className="text-sm text-muted-foreground">Change your password</p>
                     </div>
                     <Button variant="outline" size="sm">Update</Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="admin" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Administrative Settings</CardTitle>
+                <CardDescription>
+                  Manage organization-wide settings and configurations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-medium">Organization Structure</h3>
+                      <p className="text-sm text-muted-foreground">Manage departments, positions, and business units</p>
+                    </div>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href="/org-structure">Manage</Link>
+                    </Button>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-medium">Ticket Templates</h3>
+                      <p className="text-sm text-muted-foreground">Configure templates for different ticket types</p>
+                    </div>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href="/ticket-templates">Manage</Link>
+                    </Button>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-medium">User Management</h3>
+                      <p className="text-sm text-muted-foreground">Manage user accounts and permissions</p>
+                    </div>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href="/user-management">Manage</Link>
+                    </Button>
                   </div>
                 </div>
               </CardContent>
