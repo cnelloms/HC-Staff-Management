@@ -1559,20 +1559,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint to get system access statistics
   app.get('/api/dashboard/access-stats', async (req: Request, res: Response) => {
     try {
-      const accessStats = await storage.getSystemAccessStats();
-      return res.json(accessStats);
+      const stats = await storage.getSystemAccessStats();
+      return res.json(stats);
     } catch (error) {
       console.error('Error fetching system access stats:', error);
-      return res.status(500).json({ message: 'Failed to fetch system access stats' });
+      return res.status(500).json({ message: 'Failed to fetch system access statistics' });
+    }
+  });
+  
+  // Endpoint to get all system access entries (used by admin dashboard)
+  app.get('/api/system-access', isAdmin, async (req: Request, res: Response) => {
+    try {
+      const entries = await storage.getSystemAccessEntries();
+      
+      // Enhance access entries with employee and system data
+      const enhancedEntries = await Promise.all(entries.map(async (entry) => {
+        const employee = await storage.getEmployeeById(entry.employeeId);
+        const system = await storage.getSystemById(entry.systemId);
+        
+        return {
+          ...entry,
+          employee: employee ? {
+            firstName: employee.firstName,
+            lastName: employee.lastName,
+            position: employee.positionId ? await storage.getPositionById(employee.positionId) : null,
+            department: employee.departmentId ? await storage.getDepartmentById(employee.departmentId) : null,
+          } : null,
+          system: system || null
+        };
+      }));
+      
+      return res.json(enhancedEntries);
+    } catch (error) {
+      console.error('Error fetching system access entries:', error);
+      return res.status(500).json({ message: 'Failed to fetch system access entries' });
     }
   });
   
   app.get('/api/dashboard/recent-activities', async (req: Request, res: Response) => {
     try {
-      const activities = await storage.getRecentActivities(10); // Limit to 10 recent activities
-      return res.json(activities);
+      // Get the limit from query params or default to 10
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      
+      // Fetch recent activities
+      const activities = await storage.getRecentActivities(limit);
+      
+      // Enhance activities with employee and system names
+      const enhancedActivities = await Promise.all(activities.map(async (activity) => {
+        const employee = await storage.getEmployeeById(activity.employeeId);
+        
+        // Extract system info from metadata if available
+        let systemName = null;
+        let systemId = null;
+        
+        if (activity.metadata && typeof activity.metadata === 'object') {
+          const metadata = activity.metadata as Record<string, any>;
+          if (metadata.systemId) {
+            systemId = metadata.systemId;
+            const system = await storage.getSystemById(systemId);
+            if (system) {
+              systemName = system.name;
+            }
+          }
+        }
+        
+        return {
+          ...activity,
+          employeeName: employee ? `${employee.firstName} ${employee.lastName}` : 'Unknown User',
+          systemId,
+          systemName,
+          type: activity.activityType // Include the activity type for filtering
+        };
+      }));
+      
+      return res.json(enhancedActivities);
     } catch (error) {
       console.error('Error fetching recent activities:', error);
       return res.status(500).json({ message: 'Failed to fetch recent activities' });
