@@ -104,11 +104,11 @@ export default function UserSettings() {
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (data: UserSettingsFormValues) => {
-      if (!user?.id) throw new Error("User ID not found");
-      return apiRequest("PATCH", `/api/employees/${user.id}`, data);
+      if (!employeeData?.id) throw new Error("Employee ID not found");
+      return apiRequest("PATCH", `/api/employees/${employeeData.id}`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/employees/${user?.id}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/employees/${employeeData?.id}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
       toast({
         title: "Profile updated",
@@ -139,11 +139,11 @@ export default function UserSettings() {
     );
   }
 
-  if (!user) {
+  if (!employeeData) {
     return (
       <Layout title="Account Settings">
         <div className="text-center p-8">
-          <h2 className="text-2xl font-bold">User Not Found</h2>
+          <h2 className="text-2xl font-bold">Profile Not Found</h2>
           <p className="text-muted-foreground mt-2">
             We couldn't load your profile information. Please try again later.
           </p>
@@ -161,8 +161,8 @@ export default function UserSettings() {
         {/* Back to profile link */}
         <div>
           <Button variant="ghost" className="p-0" onClick={() => {
-            if (user && user.id) {
-              window.location.href = `/employee/${user.id}`;
+            if (employeeData && employeeData.id) {
+              window.location.href = `/employee/${employeeData.id}`;
             } else {
               // Default to employee listing if no specific profile
               window.location.href = "/directory";
@@ -198,10 +198,10 @@ export default function UserSettings() {
                     <div className="flex flex-col items-center mb-6">
                       <Avatar className="h-24 w-24 mb-4">
                         <AvatarImage 
-                          src={avatarPreview || user.avatar} 
-                          alt={`${user.firstName} ${user.lastName}`} 
+                          src={avatarPreview || employeeData.avatar} 
+                          alt={`${employeeData.firstName} ${employeeData.lastName}`} 
                         />
-                        <AvatarFallback className="text-2xl">{user.firstName[0]}{user.lastName[0]}</AvatarFallback>
+                        <AvatarFallback className="text-2xl">{employeeData.firstName[0]}{employeeData.lastName[0]}</AvatarFallback>
                       </Avatar>
                       
                       <div className="flex items-center">
@@ -287,19 +287,19 @@ export default function UserSettings() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
                       <div>
                         <label className="text-sm font-medium">Department</label>
-                        <p className="text-muted-foreground">{user.department?.name || 'Not assigned'}</p>
+                        <p className="text-muted-foreground">{employeeData.department?.name || 'Not assigned'}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium">Position</label>
-                        <p className="text-muted-foreground">{user.position}</p>
+                        <p className="text-muted-foreground">{employeeData.position}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium">Hire Date</label>
-                        <p className="text-muted-foreground">{format(new Date(user.hireDate), 'MMM d, yyyy')}</p>
+                        <p className="text-muted-foreground">{format(new Date(employeeData.hireDate), 'MMM d, yyyy')}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium">Status</label>
-                        <p className="text-muted-foreground capitalize">{user.status}</p>
+                        <p className="text-muted-foreground capitalize">{employeeData.status}</p>
                       </div>
                     </div>
 
