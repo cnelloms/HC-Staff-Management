@@ -131,12 +131,21 @@ export function AdminDatabaseSettings() {
     queryKey: ['/api/systems'],
   });
   
+  // Get employees for manager selection
+  const {
+    data: employees,
+    isLoading: isEmployeesLoading
+  } = useQuery({
+    queryKey: ['/api/employees'],
+  });
+  
   // Setup form hooks for department, position, and system
   const departmentForm = useForm<DepartmentFormValues>({
     resolver: zodResolver(departmentSchema),
     defaultValues: {
       name: "",
       description: "",
+      managerId: undefined,
     },
   });
   
@@ -368,30 +377,43 @@ export function AdminDatabaseSettings() {
                         <TableHead>ID</TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>Description</TableHead>
+                        <TableHead>Manager</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {Array.isArray(departments) && departments.length > 0 ? (
-                        departments.map((department: any) => (
-                          <TableRow key={department.id}>
-                            <TableCell className="font-medium">{department.id}</TableCell>
-                            <TableCell>{department.name}</TableCell>
-                            <TableCell>{department.description || "—"}</TableCell>
-                            <TableCell className="text-right">
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => openEditDepartmentDialog(department)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
+                        departments.map((department: any) => {
+                          // Find manager for this department
+                          const manager = Array.isArray(employees) 
+                            ? employees.find(emp => emp.id === department.managerId)
+                            : null;
+                          
+                          return (
+                            <TableRow key={department.id}>
+                              <TableCell className="font-medium">{department.id}</TableCell>
+                              <TableCell>{department.name}</TableCell>
+                              <TableCell>{department.description || "—"}</TableCell>
+                              <TableCell>
+                                {manager 
+                                  ? `${manager.firstName} ${manager.lastName}`
+                                  : "—"}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={() => openEditDepartmentDialog(department)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center">
+                          <TableCell colSpan={5} className="text-center">
                             No departments found. Add one to get started.
                           </TableCell>
                         </TableRow>
@@ -448,6 +470,46 @@ export function AdminDatabaseSettings() {
                         </FormControl>
                         <FormDescription>
                           Optional: Provide a brief description of this department
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={departmentForm.control}
+                    name="managerId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Department Manager</FormLabel>
+                        <Select
+                          onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
+                          value={field.value?.toString()}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a department manager" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            {Array.isArray(employees) && employees.length > 0
+                              ? employees
+                                .filter(employee => employee.status === 'active')
+                                .map((employee) => (
+                                  <SelectItem 
+                                    key={employee.id} 
+                                    value={employee.id.toString()}
+                                  >
+                                    {employee.firstName} {employee.lastName} - {employee.position}
+                                  </SelectItem>
+                                ))
+                              : <SelectItem value="" disabled>No active employees found</SelectItem>
+                            }
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Optional: Select an employee to manage this department
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

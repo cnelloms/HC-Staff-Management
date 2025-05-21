@@ -28,6 +28,7 @@ export interface IStorage {
   getDepartments(): Promise<Department[]>;
   getDepartmentById(id: number): Promise<Department | undefined>;
   createDepartment(department: InsertDepartment): Promise<Department>;
+  updateDepartment(id: number, department: Partial<InsertDepartment>): Promise<Department | undefined>;
   
   // Employee operations
   getEmployees(): Promise<Employee[]>;
