@@ -378,7 +378,13 @@ function CreateUserForm({ onSuccess }: { onSuccess: () => void }) {
     email: '',
     username: '',
     password: '',
-    isAdmin: false
+    isAdmin: false,
+    departmentId: ''
+  });
+  
+  // Fetch departments for dropdown
+  const { data: departments = [] } = useQuery<any[]>({
+    queryKey: ['/api/departments'],
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
