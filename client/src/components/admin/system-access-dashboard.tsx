@@ -197,6 +197,61 @@ export const SystemAccessDashboard = () => {
       </div>
     );
   }
+  
+  // Check if there's no system access data
+  if (!accessData || accessData.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center pb-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filters:</span>
+            </div>
+            
+            <Select value={selectedSystem} onValueChange={setSelectedSystem}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="All Systems" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Systems</SelectLabel>
+                  <SelectItem value="all">All Systems</SelectItem>
+                  {systems?.map((system: any) => (
+                    <SelectItem key={system.id} value={system.id.toString()}>
+                      {system.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        <Card className="bg-white dark:bg-slate-900">
+          <CardContent className="p-8">
+            <div className="text-center">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+                <Server className="h-10 w-10 text-slate-500 dark:text-slate-400" />
+              </div>
+              <h3 className="mt-4 text-lg font-medium">No System Access Data</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                There are currently no system access records in the database. As an administrator, 
+                you can grant system access to employees through their profile pages.
+              </p>
+              <div className="mt-6">
+                <Button asChild>
+                  <a href="/directory">
+                    Browse Employee Directory
+                  </a>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
