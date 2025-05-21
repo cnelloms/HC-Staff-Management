@@ -31,6 +31,7 @@ import EmergencyLoginPage from "@/pages/emergency-login";
 import DirectLoginPage from "@/pages/direct-login";
 import UserManagementPage from "@/pages/user-management";
 import TestLoginPage from "@/pages/test-login";
+import TicketTemplatesPage from "@/pages/ticket-templates";
 
 function Router() {
   const [isLoading, setIsLoading] = useState(true);

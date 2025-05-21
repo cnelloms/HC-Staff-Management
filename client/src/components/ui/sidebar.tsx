@@ -66,6 +66,7 @@ export function Sidebar({ user: defaultUser }: SidebarProps) {
     { href: "/staff-import", label: "Import Staff", icon: <FileUp className="sidebar-icon" /> },
     { href: "/permissions", label: "Permissions", icon: <Shield className="sidebar-icon" /> },
     { href: "/user-management", label: "User Management", icon: <Users className="sidebar-icon" /> },
+    { href: "/ticket-templates", label: "Ticket Templates", icon: <Ticket className="sidebar-icon" /> },
   ];
   
   // Combine based on user role
