@@ -494,6 +494,23 @@ function CreateUserForm({ onSuccess }: { onSuccess: () => void }) {
           />
         </div>
         
+        <div className="space-y-2">
+          <Label htmlFor="departmentId">Department</Label>
+          <select 
+            id="departmentId"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            value={formData.departmentId}
+            onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
+          >
+            <option value="">Select a department</option>
+            {departments.map((department: any) => (
+              <option key={department.id} value={department.id}>
+                {department.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        
         <div className="flex items-center space-x-2">
           <Switch
             id="isAdmin"
