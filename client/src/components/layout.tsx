@@ -2,8 +2,9 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Sidebar } from "./ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Bell, PlusCircle, User } from "lucide-react";
+import { PlusCircle, User } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationCenter } from "./notifications/notification-center";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,9 +51,7 @@ export default function Layout({ children, title }: LayoutProps) {
                 </Link>
               </Button>
               
-              <Button variant="ghost" size="icon" className="text-muted-foreground">
-                <Bell className="h-5 w-5" />
-              </Button>
+              <NotificationCenter />
               
               <ThemeToggle />
               
