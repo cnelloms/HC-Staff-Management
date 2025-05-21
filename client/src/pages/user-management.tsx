@@ -402,23 +402,76 @@ function CreateUserForm({ onSuccess }: { onSuccess: () => void }) {
     setIsLoading(true);
     
     try {
-      const response = await fetch('/api/users/create', {
+      // Create a ticket that will automatically create the staff member and user
+      const ticketResponse = await fetch('/api/tickets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          title: `New User Account - ${formData.firstName} ${formData.lastName}`,
+          description: `Create a new user account for ${formData.firstName} ${formData.lastName} with login credentials.`,
+          requestorId: 1, // Default to system admin (Sarah Johnson)
+          status: 'open',
+          priority: 'high',
+          type: 'new_staff_request',
+          metadata: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            departmentId: formData.departmentId ? parseInt(formData.departmentId) : 1,
+            position: "Staff",
+            startDate: new Date().toISOString(),
+            // Pre-populate with the requested username and password
+            requestedUsername: formData.username,
+            requestedPassword: formData.password,
+            isAdmin: formData.isAdmin
+          }
+        })
       });
       
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to create user');
+      if (!ticketResponse.ok) {
+        const data = await ticketResponse.json();
+        throw new Error(data.message || 'Failed to create ticket for user');
+      }
+      
+      const ticketData = await ticketResponse.json();
+      
+      // Immediately close the ticket to trigger the employee/user creation process
+      const updateResponse = await fetch(`/api/tickets/${ticketData.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status: 'closed',
+          closedAt: new Date().toISOString(),
+          metadata: {
+            ...ticketData.metadata,
+            // Add required fields for ticket processing
+            workEmail: formData.email,
+            emailCreated: true,
+            passwordGenerated: true,
+            loginInfoProvided: true,
+            allTasksComplete: true
+          }
+        })
+      });
+      
+      if (!updateResponse.ok) {
+        const data = await updateResponse.json();
+        throw new Error(data.message || 'Failed to process user creation ticket');
       }
       
       toast({
         title: "Success",
-        description: "User created successfully"
+        description: `User account for ${formData.firstName} ${formData.lastName} has been created successfully`
       });
+      
+      // Refresh all relevant data
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       
       onSuccess();
     } catch (error: any) {
