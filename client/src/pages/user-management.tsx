@@ -55,7 +55,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { queryClient } from "../lib/queryClient";
-import { ImpersonationPanel } from "@/components/user-management/impersonation-panel";
+// Removed impersonation panel import
 
 export default function UserManagementPage() {
   // We can simplify this since AdminRoute handles the auth check
@@ -78,10 +78,6 @@ export default function UserManagementPage() {
             <UserCog className="h-4 w-4 mr-2" />
             Users
           </TabsTrigger>
-          <TabsTrigger value="proxy">
-            <Users className="h-4 w-4 mr-2" />
-            Employee View
-          </TabsTrigger>
           <TabsTrigger value="auth-settings">
             <Settings2 className="h-4 w-4 mr-2" />
             Authentication Settings
@@ -90,10 +86,6 @@ export default function UserManagementPage() {
         
         <TabsContent value="users" className="space-y-4">
           <UserManagement />
-        </TabsContent>
-        
-        <TabsContent value="proxy" className="space-y-4">
-          <ImpersonationPanel />
         </TabsContent>
         
         <TabsContent value="auth-settings" className="space-y-4">
