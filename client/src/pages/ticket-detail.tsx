@@ -278,6 +278,17 @@ export default function TicketDetail() {
                   </>
                 )}
                 
+                {/* Show the IT Support Component */}
+                {ticket.type === 'it_support' && ticket.metadata && (
+                  <>
+                    <Separator />
+                    <ITSupportDetails 
+                      ticketId={ticket.id} 
+                      metadata={ticket.metadata} 
+                    />
+                  </>
+                )}
+                
                 <Separator />
                 <div className="pt-4">
                   <div className="grid grid-cols-2 gap-4">
