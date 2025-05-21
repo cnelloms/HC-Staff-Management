@@ -4,7 +4,7 @@ import Layout from "@/components/layout";
 import { Employee } from "@/types";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useCurrentUser } from "@/context/user-context";
+import { useAuth } from "@/hooks/useAuth";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -40,20 +40,20 @@ const userSettingsSchema = z.object({
 type UserSettingsFormValues = z.infer<typeof userSettingsSchema>;
 
 export default function UserSettings() {
-  const { currentUser, isLoading: isUserLoading } = useCurrentUser();
+  const { user, employee, isLoading: isUserLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("profile");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
-  // Fetch detailed user information
+  // Fetch detailed user information - use employee data directly from useAuth
   const { data: userDetails, isLoading: isDetailsLoading } = useQuery<Employee>({
-    queryKey: [`/api/employees/${currentUser?.id}`],
-    enabled: !!currentUser?.id,
+    queryKey: [`/api/employees/${employee?.id}`],
+    enabled: !!employee?.id,
   });
 
-  // Use either the detailed user data or the context user
-  const user = userDetails || currentUser;
+  // Use either the detailed user data or the auth employee
+  const employeeData = userDetails || employee;
   const isLoading = isUserLoading || isDetailsLoading;
 
   // Setup form with default values
@@ -68,22 +68,22 @@ export default function UserSettings() {
     },
   });
 
-  // Update form values when user data is loaded
+  // Update form values when employee data is loaded
   useEffect(() => {
-    if (user) {
+    if (employeeData) {
       form.reset({
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        phone: user.phone || "",
-        avatar: user.avatar || "",
+        firstName: employeeData.firstName,
+        lastName: employeeData.lastName,
+        email: employeeData.email,
+        phone: employeeData.phone || "",
+        avatar: employeeData.avatar || "",
       });
       
-      if (user.avatar) {
-        setAvatarPreview(user.avatar);
+      if (employeeData.avatar) {
+        setAvatarPreview(employeeData.avatar);
       }
     }
-  }, [user, form]);
+  }, [employeeData, form]);
 
   // Handle avatar upload
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
