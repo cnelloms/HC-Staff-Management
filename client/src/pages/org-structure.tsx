@@ -441,7 +441,7 @@ export default function OrgStructurePage() {
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="">None</SelectItem>
-                                {employees?.map((employee: any) => (
+                                {employees.map((employee) => (
                                   <SelectItem key={employee.id} value={employee.id.toString()}>
                                     {employee.firstName} {employee.lastName}
                                   </SelectItem>
