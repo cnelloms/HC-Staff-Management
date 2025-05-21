@@ -1058,10 +1058,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Create a new system (admin only)
-  app.post('/api/systems', isAdmin, async (req: Request, res: Response) => {
+  app.post('/api/systems', async (req: Request, res: Response) => {
     try {
+      // Check if the user is a global admin
+      console.log('POST /api/systems - Session check:', {
+        hasSession: !!req.session,
+        directUser: req.session?.directUser,
+        isAdmin: req.session?.directUser?.isAdmin
+      });
+      
+      // Only allow access if the user is a direct login admin
+      if (!req.session?.directUser?.isAdmin) {
+        console.log('Unauthorized access attempt to create system');
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+
+      console.log('Admin access granted - creating new system');
       const validatedData = insertSystemSchema.parse(req.body);
       const newSystem = await storage.createSystem(validatedData);
+      
       return res.status(201).json(newSystem);
     } catch (error) {
       console.error('Error creating system:', error);
@@ -1073,8 +1088,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Update a system (admin only)
-  app.patch('/api/systems/:id', isAdmin, async (req: Request, res: Response) => {
+  app.patch('/api/systems/:id', async (req: Request, res: Response) => {
     try {
+      // Check if the user is a global admin
+      console.log('PATCH /api/systems/:id - Session check:', {
+        hasSession: !!req.session,
+        directUser: req.session?.directUser,
+        isAdmin: req.session?.directUser?.isAdmin
+      });
+      
+      // Only allow access if the user is a direct login admin
+      if (!req.session?.directUser?.isAdmin) {
+        console.log('Unauthorized access attempt to update system');
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: 'Invalid system ID' });
@@ -1086,6 +1114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'System not found' });
       }
       
+      console.log('Admin access granted - updating system');
       // Validate and update the system
       const updateData = req.body;
       const updatedSystem = await storage.updateSystem(id, updateData);
@@ -1098,8 +1127,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Delete a system (admin only)
-  app.delete('/api/systems/:id', isAdmin, async (req: Request, res: Response) => {
+  app.delete('/api/systems/:id', async (req: Request, res: Response) => {
     try {
+      // Check if the user is a global admin
+      console.log('DELETE /api/systems/:id - Session check:', {
+        hasSession: !!req.session,
+        directUser: req.session?.directUser,
+        isAdmin: req.session?.directUser?.isAdmin
+      });
+      
+      // Only allow access if the user is a direct login admin
+      if (!req.session?.directUser?.isAdmin) {
+        console.log('Unauthorized access attempt to delete system');
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: 'Invalid system ID' });
@@ -1119,6 +1161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      console.log('Admin access granted - deleting system:', id);
       // Delete the system
       const result = await storage.deleteSystem(id);
       

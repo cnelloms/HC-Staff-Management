@@ -63,9 +63,14 @@ export function SystemsManagement() {
   const { data: systems, isLoading } = useQuery({
     queryKey: ['/api/systems'],
     queryFn: async () => {
-      const response = await fetch('/api/systems');
+      const response = await fetch('/api/systems', {
+        credentials: 'include', // Include cookies for authentication
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
       if (!response.ok) {
-        throw new Error('Failed to fetch systems');
+        throw new Error('Failed to fetch systems. Error: ' + await response.text());
       }
       return await response.json();
     }
@@ -105,12 +110,40 @@ export function SystemsManagement() {
   // Add/Edit system mutation
   const addEditMutation = useMutation({
     mutationFn: async (values: SystemFormValues) => {
+      // Include credentials with API requests
+      const options = {
+        credentials: 'include' as RequestCredentials,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      };
+      
       if (selectedSystem) {
         // Edit existing system
-        return await apiRequest('PATCH', `/api/systems/${selectedSystem.id}`, values);
+        return await fetch(`/api/systems/${selectedSystem.id}`, {
+          method: 'PATCH',
+          ...options,
+          body: JSON.stringify(values)
+        }).then(async response => {
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to update system: ${errorText}`);
+          }
+          return await response.json();
+        });
       } else {
         // Add new system
-        return await apiRequest('POST', '/api/systems', values);
+        return await fetch('/api/systems', {
+          method: 'POST',
+          ...options,
+          body: JSON.stringify(values)
+        }).then(async response => {
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to create system: ${errorText}`);
+          }
+          return await response.json();
+        });
       }
     },
     onSuccess: () => {
@@ -141,7 +174,20 @@ export function SystemsManagement() {
   // Delete system mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest('DELETE', `/api/systems/${id}`);
+      const response = await fetch(`/api/systems/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to delete system: ${errorText}`);
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
       // Invalidate queries to refresh data
