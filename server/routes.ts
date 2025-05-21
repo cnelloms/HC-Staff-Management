@@ -353,7 +353,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.headers.cookie && req.headers.cookie.includes('staff_mgmt_sid=') && !req.session.directUser) {
         console.log('Cookie exists but session not loaded yet, waiting...');
         // Give the session store a moment to load
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // If still not loaded after waiting, try regenerating the session
+        if (!req.session.directUser) {
+          console.log('Session still not loaded, regenerating...');
+          req.session.regenerate((err) => {
+            if (err) {
+              console.error('Error regenerating session:', err);
+            }
+          });
+        }
       }
       
       // Check if user is authenticated through direct login

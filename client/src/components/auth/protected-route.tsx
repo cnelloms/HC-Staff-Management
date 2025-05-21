@@ -14,8 +14,15 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [, navigate] = useLocation();
   
   useEffect(() => {
-    // Redirect to login if not authenticated and not still loading
-    if (!isLoading && !isAuthenticated) {
+    // First check localStorage for a cached auth state
+    const cachedUser = localStorage.getItem("auth_user");
+    
+    // If we have a cached user, we'll consider them authenticated temporarily
+    const hasLocalAuth = !!cachedUser;
+    
+    // Only redirect if not authenticated, not loading, and no local auth
+    if (!isLoading && !isAuthenticated && !hasLocalAuth) {
+      console.log("Not authenticated, redirecting to login...");
       navigate("/direct-login");
     }
   }, [isAuthenticated, isLoading, navigate]);
@@ -33,8 +40,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // Show authentication error message
-  if (!isAuthenticated) {
+  // Check for cached auth before showing error
+  const cachedUser = localStorage.getItem("auth_user");
+  const hasLocalAuth = !!cachedUser;
+  
+  // Show authentication error message only if there's no cached auth
+  if (!isAuthenticated && !hasLocalAuth) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Card className="w-full max-w-md mx-auto">
@@ -55,6 +66,15 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         </Card>
       </div>
     );
+  }
+  
+  // If we have a cached user but server auth is failing,
+  // still show the page but try to redirect in the background
+  if (!isAuthenticated && hasLocalAuth) {
+    // Try to silently redirect in the background after a delay
+    setTimeout(() => {
+      navigate("/direct-login");
+    }, 3000);
   }
 
   // Only render children when authenticated
