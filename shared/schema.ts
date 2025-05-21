@@ -1,6 +1,7 @@
 import { pgTable, text, serial, integer, boolean, timestamp, json, uniqueIndex, varchar, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 // Position table
 export const positions = pgTable("positions", {
@@ -346,3 +347,35 @@ export const insertKeyValueSchema = createInsertSchema(keyValueStore).pick({
 
 export type KeyValueStore = typeof keyValueStore.$inferSelect;
 export type InsertKeyValueStore = z.infer<typeof insertKeyValueSchema>;
+
+// Notifications table
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  type: text("type").notNull(), // system, ticket, employee, role, etc.
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  link: text("link"), // Optional link to view more details
+  isRead: boolean("is_read").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  metadata: json("metadata").$type<Record<string, any>>(),
+});
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+}));
+
+export const insertNotificationSchema = createInsertSchema(notifications).pick({
+  userId: true,
+  type: true,
+  title: true,
+  message: true,
+  link: true,
+  metadata: true,
+});
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
