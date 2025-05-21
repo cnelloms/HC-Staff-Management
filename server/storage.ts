@@ -5,13 +5,14 @@ import {
   System, InsertSystem, 
   SystemAccess, InsertSystemAccess, 
   Ticket, InsertTicket, 
+  TicketTemplate, InsertTicketTemplate,
   Activity, InsertActivity,
   Permission, InsertPermission,
   Role, InsertRole,
   RolePermission, InsertRolePermission,
   EmployeeRole, InsertEmployeeRole,
   User, UpsertUser,
-  positions, employees, departments, systems, systemAccess, tickets, activities,
+  positions, employees, departments, systems, systemAccess, tickets, ticketTemplates, activities,
   permissions, roles, rolePermissions, employeeRoles, users
 } from "@shared/schema";
 import { db } from "./db";
@@ -28,6 +29,13 @@ export interface IStorage {
   getDepartments(): Promise<Department[]>;
   getDepartmentById(id: number): Promise<Department | undefined>;
   createDepartment(department: InsertDepartment): Promise<Department>;
+  
+  // Ticket Template operations
+  getTicketTemplates(): Promise<TicketTemplate[]>;
+  getTicketTemplateById(id: number): Promise<TicketTemplate | undefined>;
+  getTicketTemplateByType(type: string): Promise<TicketTemplate | undefined>;
+  createTicketTemplate(template: InsertTicketTemplate): Promise<TicketTemplate>;
+  updateTicketTemplate(id: number, template: Partial<InsertTicketTemplate>): Promise<TicketTemplate>;
   updateDepartment(id: number, department: Partial<InsertDepartment>): Promise<Department | undefined>;
   
   // Employee operations
@@ -740,6 +748,57 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return true;
+  }
+  
+  // Ticket Template operations
+  async getTicketTemplates(): Promise<TicketTemplate[]> {
+    const templates = await db
+      .select()
+      .from(ticketTemplates)
+      .orderBy(asc(ticketTemplates.name));
+    return templates;
+  }
+  
+  async getTicketTemplateById(id: number): Promise<TicketTemplate | undefined> {
+    const [template] = await db
+      .select()
+      .from(ticketTemplates)
+      .where(eq(ticketTemplates.id, id));
+    return template;
+  }
+  
+  async getTicketTemplateByType(type: string): Promise<TicketTemplate | undefined> {
+    const [template] = await db
+      .select()
+      .from(ticketTemplates)
+      .where(eq(ticketTemplates.type, type));
+    return template;
+  }
+  
+  async createTicketTemplate(template: InsertTicketTemplate): Promise<TicketTemplate> {
+    const now = new Date();
+    const [newTemplate] = await db
+      .insert(ticketTemplates)
+      .values({
+        ...template,
+        createdAt: now,
+        updatedAt: now
+      })
+      .returning();
+    return newTemplate;
+  }
+  
+  async updateTicketTemplate(id: number, template: Partial<InsertTicketTemplate>): Promise<TicketTemplate> {
+    const now = new Date();
+    const [updatedTemplate] = await db
+      .update(ticketTemplates)
+      .set({
+        ...template,
+        updatedAt: now
+      })
+      .where(eq(ticketTemplates.id, id))
+      .returning();
+    return updatedTemplate;
   }
 
   // Permission check operations
