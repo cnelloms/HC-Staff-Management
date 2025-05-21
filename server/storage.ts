@@ -35,6 +35,7 @@ export interface IStorage {
   getEmployeeById(id: number): Promise<Employee | undefined>;
   createEmployee(employee: InsertEmployee): Promise<Employee>;
   updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee | undefined>;
+  deleteEmployee(id: number): Promise<boolean>;
   
   // System operations
   getSystems(): Promise<System[]>;
