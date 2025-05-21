@@ -73,6 +73,10 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
     queryKey: ['/api/departments'],
   });
 
+  const { data: positions = [] } = useQuery<any[]>({
+    queryKey: ['/api/positions'],
+  });
+  
   const { data: employees = [] } = useQuery<any[]>({
     queryKey: ['/api/employees'],
   });
@@ -260,9 +264,27 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Position</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Software Engineer" {...field} />
-                    </FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a position" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Array.isArray(positions) && positions
+                          .map((position: any) => (
+                            <SelectItem 
+                              key={position.id} 
+                              value={position.title}
+                            >
+                              {position.title}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
