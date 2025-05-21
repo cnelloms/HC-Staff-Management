@@ -1,82 +1,49 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/layout";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-
-// Define types for the settings page
-interface Employee {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  avatar?: string;
-  departmentId?: number;
-  department?: { id: number; name: string } | string;
-  positionId?: number;
-  position?: { id: number; title: string } | string;
-  hireDate?: string;
-  status?: string;
-}
-
-// Interface for the user returned from auth endpoint
-interface User {
-  id: string;
-  username: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  isAdmin: boolean;
-  employeeId?: number;
-  authProvider?: string;
-  department?: string;
-  position?: string;
-}
-import { useForm } from "react-hook-form";
-import { AdminDatabaseSettings } from "@/components/settings/admin-database";
-
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format, parse } from "date-fns";
 import { Link } from "wouter";
-import { ArrowLeft, Save, Loader2, ShieldAlert } from "lucide-react";
 
-// Define the form schema for user settings
-const userSettingsSchema = z.object({
-  firstName: z.string().min(2, "First name must be at least 2 characters"),
-  lastName: z.string().min(2, "Last name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  phone: z.string().optional(),
-  avatar: z.string().optional(),
-});
-
-type UserSettingsFormValues = z.infer<typeof userSettingsSchema>;
+// UI components
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export default function UserSettings() {
-  // Explicitly type the auth return values
-  const { user, employee, isLoading: isAuthLoading } = useAuth() as { 
-    user: User | null;
-    employee: Employee | null;
-    isLoading: boolean;
-    isAuthenticated: boolean;
-    isAdmin: boolean;
-  };
+  const [activeTab, setActiveTab] = useState("profile");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Get current user data
+  const { data: userData, isLoading: userLoading } = useQuery({
+    queryKey: ["/api/auth/user"],
+    retry: false,
+  });
+  
+  // If user has employee ID, fetch employee data
+  const { data: employeeData, isLoading: employeeLoading } = useQuery({
+    queryKey: [`/api/employees/${userData?.employeeId}`],
+    enabled: !!userData?.employeeId,
+  });
+  
+  const isLoading = userLoading || employeeLoading;
+  const [activeTab, setActiveTab] = useState("profile");
+  const { toast } = useToast();
+  
+  // Get current user data
+  const { data: userData, isLoading: userLoading } = useQuery({
+    queryKey: ["/api/auth/user"],
+    retry: false
+  });
+  
+  // If user has employee ID, fetch employee data
+  const { data: employeeData, isLoading: employeeLoading } = useQuery({
+    queryKey: [`/api/employees/${userData?.employeeId}`],
+    enabled: !!userData?.employeeId
+  });
+  
+  const isLoading = userLoading || employeeLoading;
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("profile");
