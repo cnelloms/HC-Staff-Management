@@ -592,10 +592,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email,
           phone: null,
           position: "Staff",  // Default position
-          departmentId: departmentId || null,
+          departmentId: departmentId ? parseInt(departmentId) : 1, // Default to first department if none selected
           managerId: null,
           status: "active",
-          avatar: null
+          avatar: null,
+          hireDate: new Date() // Adding required hireDate field
         });
         
         console.log('Created employee record:', employee);
@@ -632,7 +633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log the account creation
       await storage.createActivity({
-        type: "user_account_creation",
+        activityType: "user_account_creation",
         description: `User account created for ${firstName} ${lastName} (${username})`,
         employeeId: employee.id,
         metadata: {
