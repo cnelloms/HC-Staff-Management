@@ -267,6 +267,40 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updatedEmployee || undefined;
   }
+  
+  async deleteEmployee(id: number): Promise<boolean> {
+    // First, check if this employee exists
+    const employee = await this.getEmployeeById(id);
+    if (!employee) {
+      return false;
+    }
+    
+    // Don't allow deletion of the primary admin (Chris Nelloms, ID 118)
+    if (id === 118) {
+      throw new Error("Cannot delete the primary admin account");
+    }
+    
+    try {
+      // Delete employee-role associations first to avoid foreign key constraints
+      await db.delete(employeeRoles).where(eq(employeeRoles.employeeId, id));
+      
+      // Delete any activities associated with this employee
+      await db.delete(activities).where(eq(activities.employeeId, id));
+      
+      // Update any tickets where this employee is assigned
+      await db.update(tickets)
+        .set({ assigneeId: null })
+        .where(eq(tickets.assigneeId, id));
+      
+      // Delete the employee
+      await db.delete(employees).where(eq(employees.id, id));
+      
+      return true;
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+      return false;
+    }
+  }
 
   // System operations
   async getSystems(): Promise<System[]> {
