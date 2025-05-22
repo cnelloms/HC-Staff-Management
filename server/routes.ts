@@ -17,6 +17,7 @@ import { db } from "./db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { enrichRoles, requireRole } from "./middleware/role-middleware";
+import { requireAdmin, requireEmployeeRole } from "./authMiddleware";
 
 import notificationRoutes from "./notification-routes";
 import changeRequestRoutes from "./change-request-routes";
@@ -1016,8 +1017,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Department routes - managers can view
-  app.get('/api/departments', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
+  // Department routes - managers can view, admins can modify
+  app.get('/api/departments', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+    // Allow admins or users with manager role to view departments
+    if (req.user?.isAdmin) {
+      next();
+    } else {
+      requireRole("manager")(req, res, next);
+    }
+  }, async (req: Request, res: Response) => {
     try {
       const departments = await storage.getDepartments();
       return res.json(departments);
@@ -1027,7 +1035,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/departments/:id', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
+  app.get('/api/departments/:id', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+    // Allow admins or users with manager role to view department details
+    if (req.user?.isAdmin) {
+      next();
+    } else {
+      requireRole("manager")(req, res, next);
+    }
+  }, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -1046,7 +1061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/departments', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
+  app.post('/api/departments', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
     try {
       const departmentData = req.body;
       const newDepartment = await storage.createDepartment(departmentData);
@@ -1057,7 +1072,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.patch('/api/departments/:id', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
+  app.patch('/api/departments/:id', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
     try {
       const departmentId = parseInt(req.params.id);
       if (isNaN(departmentId)) {
@@ -1078,7 +1093,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.delete('/api/departments/:id', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
+  app.delete('/api/departments/:id', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
     try {
       const departmentId = parseInt(req.params.id);
       if (isNaN(departmentId)) {
@@ -1108,8 +1123,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Position routes - managers can view
-  app.get('/api/positions', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
+  // Position routes - managers can view, admins can modify
+  app.get('/api/positions', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+    // Allow admins or users with manager role to view positions
+    if (req.user?.isAdmin) {
+      next();
+    } else {
+      requireRole("manager")(req, res, next);
+    }
+  }, async (req: Request, res: Response) => {
     try {
       const positions = await storage.getPositions();
       return res.json(positions);
@@ -1119,7 +1141,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/positions/:id', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
+  app.get('/api/positions/:id', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+    // Allow admins or users with manager role to view position details
+    if (req.user?.isAdmin) {
+      next();
+    } else {
+      requireRole("manager")(req, res, next);
+    }
+  }, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -1138,7 +1167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/positions', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
+  app.post('/api/positions', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
     try {
       const positionData = req.body;
       const newPosition = await storage.createPosition(positionData);
@@ -1149,8 +1178,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // System routes - managers can view
-  app.get('/api/systems', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
+  // System routes - managers can view, admins can manage
+  app.get('/api/systems', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+    // Allow admins or users with manager role to view systems
+    if (req.user?.isAdmin) {
+      next();
+    } else {
+      requireRole("manager")(req, res, next);
+    }
+  }, async (req: Request, res: Response) => {
     try {
       const systems = await storage.getSystems();
       return res.json(systems);
@@ -1161,7 +1197,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get a specific system by ID - managers can view
-  app.get('/api/systems/:id', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
+  app.get('/api/systems/:id', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+    // Allow admins or users with manager role to view system details
+    if (req.user?.isAdmin) {
+      next();
+    } else {
+      requireRole("manager")(req, res, next);
+    }
+  }, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -1181,7 +1224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Create a new system (admin only)
-  app.post('/api/systems', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
+  app.post('/api/systems', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
     try {
       // Check if the user is a global admin
       console.log('POST /api/systems - Session check:', {
