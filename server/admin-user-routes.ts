@@ -3,13 +3,11 @@ import { db } from './db';
 import { users, credentials } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-import { isAuthenticated } from './middleware/auth-middleware';
-import { requireAdmin } from './authMiddleware';
 
 const router = Router();
 
 // Get all users
-router.get('/admin/users', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
     const allUsers = await db.select().from(users);
     return res.json(allUsers);
@@ -20,7 +18,7 @@ router.get('/admin/users', isAuthenticated, requireAdmin, async (req: Request, r
 });
 
 // Update user properties (isEnabled, isAdmin)
-router.put('/admin/users/:id', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
+router.put('/:id', async (req: Request, res: Response) => {
   try {
     const userId = req.params.id;
     const { isEnabled, isAdmin } = req.body;
@@ -83,7 +81,7 @@ router.put('/admin/users/:id', isAuthenticated, requireAdmin, async (req: Reques
 });
 
 // Update user password
-router.post('/admin/users/:id/pass', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
+router.post('/:id/pass', async (req: Request, res: Response) => {
   try {
     const userId = req.params.id;
     const { newPassword } = req.body;

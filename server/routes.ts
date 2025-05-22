@@ -38,7 +38,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Mount API routes
   app.use('/api', changeRequestRoutes);
-  app.use('/api', adminUserRoutes);
+  
+  // Mount admin routes with proper middleware
+  app.use('/api/admin/users', isAuthenticated, requireAdmin, adminUserRoutes);
   
   // Emergency standalone login page
   app.get('/emergency-login', (req, res) => {
