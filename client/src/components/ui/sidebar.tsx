@@ -14,7 +14,8 @@ import {
   UserX,
   Menu,
   X,
-  Server
+  Server,
+  ClipboardCheck
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,11 @@ export function Sidebar({ user: defaultUser }: SidebarProps) {
     { href: "/settings", label: "Settings", icon: <Settings className="sidebar-icon" /> },
   ];
   
+  // Manager-level navigation items
+  const managerNavItems = [
+    { href: "/change-requests", label: "Change Approvals", icon: <ClipboardCheck className="sidebar-icon" /> },
+  ];
+  
   // Admin-only navigation items
   const adminNavItems = [
     { href: "/admin-dashboard", label: "Admin Dashboard", icon: <BarChart2 className="sidebar-icon" /> },
@@ -72,9 +78,15 @@ export function Sidebar({ user: defaultUser }: SidebarProps) {
     { href: "/ticket-templates", label: "Ticket Templates", icon: <Ticket className="sidebar-icon" /> },
   ];
   
+  // Check if user has a manager role
+  const userRoles = (user as any)?.roles || [];
+  const isManager = userRoles.includes("manager") || isAdmin;
+  
   // Combine based on user role
   const navItems = isAdmin 
-    ? [...baseNavItems, ...adminNavItems] 
+    ? [...baseNavItems, ...managerNavItems, ...adminNavItems] 
+    : isManager
+    ? [...baseNavItems, ...managerNavItems]
     : baseNavItems;
 
   // Mobile toggle button

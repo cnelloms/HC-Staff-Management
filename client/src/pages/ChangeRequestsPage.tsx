@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/PageHeader";
+import { PageHeader } from "../components/PageHeader";
 import ApprovalInbox from "@/components/ApprovalInbox";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
