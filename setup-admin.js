@@ -50,9 +50,12 @@ async function setupAdminUser() {
 
       const userId = adminUserResult.rows[0].id;
 
-      // Hash the password (default: 'admin123')
+      // Get the admin password from environment variable or use default
+      const adminPassword = process.env.DEFAULT_ADMIN_PWD || 'admin123';
+      
+      // Hash the password
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash('admin123', salt);
+      const hashedPassword = await bcrypt.hash(adminPassword, salt);
       
       // Create admin credentials
       await pool.query(`
@@ -63,7 +66,7 @@ async function setupAdminUser() {
       
       console.log("Admin user created successfully!");
       console.log("Username: admin");
-      console.log("Password: admin123");
+      console.log("Password: [SECURED] - Use the value from DEFAULT_ADMIN_PWD environment variable or the default");
     } else {
       console.log("Admin user already exists.");
     }
