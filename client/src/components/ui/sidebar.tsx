@@ -68,9 +68,15 @@ export function Sidebar({ user: defaultUser }: SidebarProps) {
     { href: "/change-requests", label: "Change Approvals", icon: <ClipboardCheck className="sidebar-icon" /> },
   ];
   
+  // User-specific navigation items
+  const userNavItems = [
+    { href: "/me", label: "My Profile", icon: <Users className="sidebar-icon" /> },
+  ];
+  
   // Admin-only navigation items
   const adminNavItems = [
     { href: "/admin-dashboard", label: "Admin Dashboard", icon: <BarChart2 className="sidebar-icon" /> },
+    { href: "/admin/requests", label: "Change Request Approvals", icon: <ClipboardCheck className="sidebar-icon" /> },
     { href: "/staff-import", label: "Import Staff", icon: <FileUp className="sidebar-icon" /> },
     { href: "/permissions", label: "Permissions", icon: <Shield className="sidebar-icon" /> },
     { href: "/user-management", label: "User Management", icon: <Users className="sidebar-icon" /> },
@@ -84,10 +90,10 @@ export function Sidebar({ user: defaultUser }: SidebarProps) {
   
   // Combine based on user role
   const navItems = isAdmin 
-    ? [...baseNavItems, ...managerNavItems, ...adminNavItems] 
+    ? [...userNavItems, ...baseNavItems, ...managerNavItems, ...adminNavItems] 
     : isManager
-    ? [...baseNavItems, ...managerNavItems]
-    : baseNavItems;
+    ? [...userNavItems, ...baseNavItems, ...managerNavItems]
+    : [...userNavItems, ...baseNavItems];
 
   // Mobile toggle button
   const MobileMenuToggle = () => (
