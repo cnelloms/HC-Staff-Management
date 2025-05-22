@@ -18,6 +18,7 @@ import bcrypt from "bcryptjs";
 import { enrichRoles, requireRole } from "./middleware/role-middleware";
 
 import notificationRoutes from "./notification-routes";
+import changeRequestRoutes from "./change-request-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
@@ -31,6 +32,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Apply role enrichment middleware after authentication
   app.use(enrichRoles);
+  
+  // Mount change request routes
+  app.use('/api', changeRequestRoutes);
   
   // Emergency standalone login page
   app.get('/emergency-login', (req, res) => {

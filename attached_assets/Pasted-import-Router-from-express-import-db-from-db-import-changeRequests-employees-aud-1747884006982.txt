@@ -1,0 +1,74 @@
+import { Router } from "express";
+import { db } from "./db";
+import { changeRequests, employees, auditLog } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { requireRole } from "./authorise";
+
+export const crRouter = Router();
+
+/** helper: does manager manage target? */
+async function manages(managerId: number, targetId: number) {
+  const [row] = await db.query.sql`
+    select 1
+    from employees e
+    join positions p on p.position_id = e.position_id
+    join positions m on m.position_id = p.reports_to_position_id
+    where m.associate_id = ${managerId}
+      and e.associate_id = ${targetId}
+    limit 1`;
+  return !!row;
+}
+
+/** create change request */
+crRouter.post("/employees/:id/requests", async (req, res) => {
+  const targetId = Number(req.params.id);
+  const me = req.user!;
+  const canSelf = me.id === targetId;
+  const canMgr  = me.roles.includes("manager") && await manages(me.id, targetId);
+  if (!canSelf && !canMgr) return res.sendStatus(403);
+
+  const { payload } = req.body;         // TODO: Zod validate
+  const [cr] = await db
+      .insert(changeRequests)
+      .values({ targetEmployeeId: targetId, requesterEmployeeId: me.id, payload })
+      .returning();
+  res.status(201).json(cr);
+});
+
+/** list pending requests */
+crRouter.get("/change_requests", requireRole("admin"), async (_req, res) => {
+  const rows = await db
+      .select()
+      .from(changeRequests)
+      .where(eq(changeRequests.status, "pending"));
+  res.json(rows);
+});
+
+/** approve / reject */
+crRouter.patch("/change_requests/:id", requireRole("admin"), async (req, res) => {
+  const status = req.body.status;                  // "approved"|"rejected"
+  if (!["approved", "rejected"].includes(status)) return res.sendStatus(422);
+
+  const [cr] = await db
+      .update(changeRequests)
+      .set({ status, approvedById: req.user!.id })
+      .where(eq(changeRequests.id, Number(req.params.id)))
+      .returning();
+
+  if (status === "approved") {
+    // apply diff to employees
+    await db.update(employees)
+      .set(cr.payload as any)
+      .where(eq(employees.associateId, cr.targetEmployeeId));
+
+    // write audit log
+    await db.insert(auditLog).values({
+      table: "employees",
+      rowId: cr.targetEmployeeId,
+      action: "update",
+      diff:   cr.payload,
+      actedBy: req.user!.id
+    });
+  }
+  res.json(cr);
+});

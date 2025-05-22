@@ -70,6 +70,7 @@ app.use((req, res, next) => {
 
 // Mount the API routes
 app.use('/api/kv', keyValueRouter);
+// Change request routes will be mounted in registerRoutes
 
 (async () => {
   const server = await registerRoutes(app);
