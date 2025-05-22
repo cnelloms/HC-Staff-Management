@@ -37,7 +37,7 @@ import OrgStructurePage from "@/pages/org-structure";
 import SystemsPage from "@/pages/systems";
 import AdminDashboardPage from "@/pages/admin-dashboard";
 import ChangeRequestsPage from "@/pages/ChangeRequestsPage";
-import ApprovalInbox from "@/pages/ApprovalInbox";
+import ApprovalInbox from "./pages/ApprovalInbox";
 
 function Router() {
   const [isLoading, setIsLoading] = useState(true);
