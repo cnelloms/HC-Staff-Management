@@ -154,7 +154,7 @@ export default function LoginPage() {
                 type="button" 
                 variant="outline" 
                 className="w-full"
-                onClick={() => window.location.href = "/api/login"}
+                onClick={() => window.location.href = "/api/replit/login"}
               >
                 <img 
                   src="https://replit.com/public/images/mark.png" 
