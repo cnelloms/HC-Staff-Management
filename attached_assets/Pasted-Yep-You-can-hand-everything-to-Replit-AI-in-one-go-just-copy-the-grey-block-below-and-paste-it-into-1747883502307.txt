@@ -1,0 +1,302 @@
+Yep! You can hand everything to Replit AI in one go—just copy the grey block below and paste it into the Replit AI chat for your HC-Staff-Management repl.
+Replit AI will:
+	1.	extend the database schema,
+	2.	generate & apply the migration,
+	3.	add the new Express middleware and routes,
+	4.	add the React pages,
+	5.	update the router,
+	6.	rebuild the front-end.
+
+After it finishes, run:
+
+npx drizzle-kit generate      # writes the SQL migration  
+npm run db:push               # applies it to your Postgres
+npm run dev                   # start everything
+
+(Replit AI will remind you, but keep the commands handy.)
+
+⸻
+
+📋 Copy-paste everything between the lines into Replit AI
+
+You are an expert TypeScript / Node architect.
+Update my existing HC-Staff-Management repo as follows.
+DO NOT create duplicate files—patch the ones that already exist.
+
+────────────────────────────────────────
+1️⃣  DATABASE SCHEMA  (shared/schema.ts)
+────────────────────────────────────────
+▪ Import the pg-core helpers if not already present.
+▪ Append two new tables:
+
+```ts
+export const changeRequests = pgTable("change_requests", {
+  id: serial("id").primaryKey(),
+  targetEmployeeId:   integer("target_employee_id").notNull(),
+  requesterEmployeeId:integer("requester_employee_id").notNull(),
+  payload:   jsonb("payload").notNull(),          // diff object
+  status:    text("status").default("pending").notNull(), // pending/approved/rejected
+  approvedById: integer("approved_by_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const auditLog = pgTable("audit_log", {
+  id: serial("id").primaryKey(),
+  table:  text("table").notNull(),
+  rowId:  integer("row_id").notNull(),
+  action: text("action").notNull(),              // insert/update/delete
+  diff:   jsonb("diff").notNull(),
+  actedBy:integer("acted_by").notNull(),
+  actedAt:timestamp("acted_at").defaultNow()
+});
+
+────────────────────────────────────────
+2️⃣  AUTHORISATION  (server/authorise.ts)
+────────────────────────────────────────
+Create this new file:
+
+import type { Request, Response, NextFunction } from "express";
+import { db } from "./db";
+import { employeeRoles, roles } from "@shared/schema";
+import { eq } from "drizzle-orm";
+
+/** fetch role names for a user */
+async function fetchRoles(employeeId: number) {
+  const rows = await db
+    .select({ name: roles.name })
+    .from(employeeRoles)
+    .leftJoin(roles, eq(employeeRoles.roleId, roles.id))
+    .where(eq(employeeRoles.employeeId, employeeId));
+  return rows.map(r => r.name);
+}
+
+/** middleware that injects req.user.roles */
+export async function enrichRoles(req: Request, _res: Response, next: NextFunction) {
+  if (req.user && !req.user.roles) {
+    req.user.roles = await fetchRoles(req.user.id);
+  }
+  next();
+}
+
+/** guard factory */
+export function requireRole(role: string) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user?.roles?.includes(role)) return res.sendStatus(403);
+    next();
+  };
+}
+
+Add export { enrichRoles, requireRole }; at the bottom.
+
+────────────────────────────────────────
+3️⃣  CHANGE-REQUEST ROUTER  (server/changeRequestRoutes.ts)
+────────────────────────────────────────
+Create a new Express router:
+
+import { Router } from "express";
+import { db } from "./db";
+import { changeRequests, employees, auditLog } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { requireRole } from "./authorise";
+
+export const crRouter = Router();
+
+/** helper: does manager manage target? */
+async function manages(managerId: number, targetId: number) {
+  const [row] = await db.query.sql`
+    select 1
+    from employees e
+    join positions p on p.position_id = e.position_id
+    join positions m on m.position_id = p.reports_to_position_id
+    where m.associate_id = ${managerId}
+      and e.associate_id = ${targetId}
+    limit 1`;
+  return !!row;
+}
+
+/** create change request */
+crRouter.post("/employees/:id/requests", async (req, res) => {
+  const targetId = Number(req.params.id);
+  const me = req.user!;
+  const canSelf = me.id === targetId;
+  const canMgr  = me.roles.includes("manager") && await manages(me.id, targetId);
+  if (!canSelf && !canMgr) return res.sendStatus(403);
+
+  const { payload } = req.body;         // TODO: Zod validate
+  const [cr] = await db
+      .insert(changeRequests)
+      .values({ targetEmployeeId: targetId, requesterEmployeeId: me.id, payload })
+      .returning();
+  res.status(201).json(cr);
+});
+
+/** list pending requests */
+crRouter.get("/change_requests", requireRole("admin"), async (_req, res) => {
+  const rows = await db
+      .select()
+      .from(changeRequests)
+      .where(eq(changeRequests.status, "pending"));
+  res.json(rows);
+});
+
+/** approve / reject */
+crRouter.patch("/change_requests/:id", requireRole("admin"), async (req, res) => {
+  const status = req.body.status;                  // "approved"|"rejected"
+  if (!["approved", "rejected"].includes(status)) return res.sendStatus(422);
+
+  const [cr] = await db
+      .update(changeRequests)
+      .set({ status, approvedById: req.user!.id })
+      .where(eq(changeRequests.id, Number(req.params.id)))
+      .returning();
+
+  if (status === "approved") {
+    // apply diff to employees
+    await db.update(employees)
+      .set(cr.payload as any)
+      .where(eq(employees.associateId, cr.targetEmployeeId));
+
+    // write audit log
+    await db.insert(auditLog).values({
+      table: "employees",
+      rowId: cr.targetEmployeeId,
+      action: "update",
+      diff:   cr.payload,
+      actedBy: req.user!.id
+    });
+  }
+  res.json(cr);
+});
+
+────────────────────────────────────────
+4️⃣  SERVER BOOTSTRAP PATCH  (server/index.ts)
+────────────────────────────────────────
+▪ import { enrichRoles, requireRole } from "./authorise";
+▪ import { crRouter } from "./changeRequestRoutes";
+▪ app.use(enrichRoles);  (⟵ before protected routes)
+▪ app.use(crRouter);     (⟵ after other routers)
+
+Also protect existing routes:
+
+app.get("/employees", requireRole("manager"), listEmployees);
+app.patch("/employees/:id", requireRole("admin"), updateEmployee);
+
+────────────────────────────────────────
+5️⃣  REACT PAGES (client/)
+────────────────────────────────────────
+Create src/pages/ApprovalInbox.tsx
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+export default function ApprovalInbox() {
+  const qc = useQueryClient();
+  const { data: requests = [] } = useQuery({
+    queryKey: ["requests"],
+    queryFn: () => fetch("/change_requests").then(r => r.json())
+  });
+
+  const act = (id: number, status: "approved" | "rejected") =>
+    fetch(`/change_requests/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status })
+    });
+
+  const mutate = useMutation({ mutationFn: (args:[number,string]) => act(...args as any),
+                               onSuccess: () => qc.invalidateQueries(["requests"]) });
+
+  return (
+    <div className="p-6">
+      <h1 className="text-xl font-bold mb-4">Pending Change Requests</h1>
+      <table className="min-w-full border">
+        <thead><tr><th>ID</th><th>Target</th><th>Requester</th><th>Actions</th></tr></thead>
+        <tbody>
+        {requests.map((r:any) => (
+          <tr key={r.id} className="border-t">
+            <td>{r.id}</td>
+            <td>{r.targetEmployeeId}</td>
+            <td>{r.requesterEmployeeId}</td>
+            <td>
+              <button onClick={() => mutate.mutate([r.id,"approved"])}>✅</button>
+              <button onClick={() => mutate.mutate([r.id,"rejected"])}>❌</button>
+            </td>
+          </tr>
+        ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+Create src/pages/MyProfile.tsx
+
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+
+export default function MyProfile() {
+  const { data: me } = useQuery({
+    queryKey: ["me"],
+    queryFn: () => fetch("/employees/me").then(r => r.json())
+  });
+  const [mobile, setMobile] = useState("");
+
+  if (!me) return null;
+
+  const submit = async () => {
+    await fetch(`/employees/${me.associateId}/requests`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ payload: { workMobile: mobile } })
+    });
+    alert("Change submitted for approval!");
+  };
+
+  return (
+    <div className="p-6">
+      <h1 className="text-xl font-bold mb-4">My Profile</h1>
+      <p>Name: {me.preferredFirstName} {me.lastName}</p>
+      <p>Mobile: {me.workMobile}</p>
+      <input value={mobile} onChange={e => setMobile(e.target.value)}
+             placeholder="New mobile" className="border p-2 mr-2"/>
+      <button onClick={submit} className="px-3 py-1 bg-blue-600 text-white rounded">
+        Request Change
+      </button>
+    </div>
+  );
+}
+
+Patch src/App.tsx (or whatever router file) to add:
+
+import ApprovalInbox from "./pages/ApprovalInbox";
+import MyProfile from "./pages/MyProfile";
+
+<Routes>
+  {/* …existing routes… */}
+  <Route path="/admin/requests" element={<ApprovalInbox />} />
+  <Route path="/me"            element={<MyProfile />} />
+</Routes>
+
+────────────────────────────────────────
+6️⃣  POST-PATCH REMINDER
+────────────────────────────────────────
+After code writes finish, PLEASE run:
+
+npx drizzle-kit generate   # creates migration
+npm run db:push            # applies migration
+npm run dev                # local test
+
+Stop once the dev server starts cleanly.
+
+---
+
+Paste the full block above into Replit AI’s chat, hit **Enter**, and let it churn.  
+When it’s done, run the three shell commands shown in step 6 to migrate and start the app.  
+That’s it—you’ll have:
+
+* **/me** – staff self-service profile  
+* **/admin/requests** – admin approval inbox  
+* Field-level audit logging  
+* Role checks coming from the database.
+
+If anything in Replit AI’s output errors out, just tell me what line or message you see and we’ll nip it in the bud. Happy prompting! 🎉
