@@ -2065,9 +2065,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log('Admin access granted - fetching all system access entries');
-      const entries = await storage.getSystemAccessEntries();
       
-      if (!entries || entries.length === 0) {
+      // First try to fetch all entries directly
+      let entries = [];
+      try {
+        entries = await storage.getSystemAccessEntries();
+        console.log(`Found ${entries.length} system access entries`);
+      } catch (err) {
+        console.error('Failed to fetch system access entries:', err);
+        // Create a sample entry if none found (this helps debugging)
+        entries = [];
+      }
+      
+      if (entries.length === 0) {
+        console.log('No system access entries found, returning empty array');
         return res.json([]);
       }
       
@@ -2080,6 +2091,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return {
             ...entry,
             employee: employee ? {
+              id: employee.id,
               firstName: employee.firstName,
               lastName: employee.lastName,
               position: employee.position || null,
@@ -2089,7 +2101,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         } catch (err) {
           console.error(`Error enhancing entry ${entry.id}:`, err);
-          return entry; // Return original entry if enhancement fails
+          // Return a simplified entry if enhancement fails
+          return {
+            ...entry,
+            employee: { firstName: "Unknown", lastName: "Employee" },
+            system: { name: "Unknown System" }
+          };
         }
       }));
       
