@@ -629,6 +629,73 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                     )}
                   />
                 </div>
+
+                {/* Budget Code Field */}
+                <FormField
+                  control={form.control}
+                  name="metadata.budgetCodeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Budget/Cost Code*</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(parseInt(value));
+                          updateStaffRequestDetails({
+                            ...form.getValues().metadata,
+                            budgetCodeId: parseInt(value)
+                          });
+                        }}
+                        defaultValue={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select budget code" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {/* Show budget code options */}
+                          {[1001, 1002, 1003, 1004, 1005].map((id) => (
+                            <SelectItem key={id} value={id.toString()}>
+                              {`BC-${id.toString()}`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                {/* Equipment Request Field */}
+                <FormField
+                  control={form.control}
+                  name="metadata.equipmentRequested"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={(e) => {
+                            field.onChange(e.target.checked);
+                            updateStaffRequestDetails({
+                              ...form.getValues().metadata,
+                              equipmentRequested: e.target.checked
+                            });
+                          }}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Equipment Requested
+                        </FormLabel>
+                        <FormDescription>
+                          Check this if new equipment is needed for this employee
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
                 
                 <FormField
                   control={form.control}
