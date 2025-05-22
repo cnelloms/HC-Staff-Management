@@ -6,6 +6,7 @@ import keyValueRouter from "./key-value-routes";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
+import { isAuthenticated } from "./middleware/auth-middleware";
 
 const app = express();
 app.use(express.json());
@@ -71,6 +72,27 @@ app.use((req, res, next) => {
 // Mount the API routes
 app.use('/api/kv', keyValueRouter);
 // Change request routes will be mounted in registerRoutes
+
+// Profile endpoint
+app.get('/api/profile', isAuthenticated, (req: Request, res: Response) => {
+  console.log('PROFILE →', req.user);
+  if (!req.user) {
+    return res.status(404).json({ message: 'No profile found' });
+  }
+  
+  // Extract only the fields we want to expose
+  const user = req.user as any;
+  const profile = {
+    id: user.id,
+    firstName: user.firstName || user.first_name,
+    lastName: user.lastName || user.last_name,
+    email: user.email,
+    isAdmin: user.isAdmin || false,
+    isEnabled: user.isEnabled !== undefined ? user.isEnabled : true
+  };
+  
+  return res.json(profile);
+});
 
 (async () => {
   const server = await registerRoutes(app);
