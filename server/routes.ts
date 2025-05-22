@@ -388,6 +388,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('User authenticated with direct login:', req.session.directUser);
         const userId = req.session.directUser.id;
         
+        // Special case for admin user
+        if (req.session.directUser.username === 'admin') {
+          console.log('Admin user detected in auth/user endpoint');
+          
+          // Find admin user by isAdmin flag
+          const adminUsers = await db.select().from(users).where(eq(users.isAdmin, true)).limit(1);
+          
+          if (adminUsers.length > 0) {
+            const adminUser = adminUsers[0];
+            userProfile = {
+              id: adminUser.id,
+              firstName: adminUser.firstName || 'Admin',
+              lastName: adminUser.lastName || 'User',
+              email: adminUser.email,
+              username: 'admin',
+              isAdmin: true,
+              authProvider: 'direct',
+              employeeId: adminUser.employeeId
+            };
+            
+            // Return early with admin profile
+            return res.json(userProfile);
+          }
+        }
+        
         // Get the user record from the database to include any additional info
         const user = await storage.getUser(userId);
         
