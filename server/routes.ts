@@ -1233,7 +1233,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // System routes - managers can view, admins can manage
   app.get('/api/systems', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
     // Allow admins or users with manager role to view systems
-    if (req.user?.isAdmin) {
+    // Check for admin status from multiple authentication methods
+    const isDirectAdmin = req.session?.directUser?.isAdmin === true;
+    const isReplitAdmin = req.user?.isAdmin === true;
+    
+    // If admin through any method, proceed
+    if (isDirectAdmin || isReplitAdmin) {
       next();
     } else {
       requireRole("manager")(req, res, next);
@@ -1251,7 +1256,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get a specific system by ID - managers can view
   app.get('/api/systems/:id', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
     // Allow admins or users with manager role to view system details
-    if (req.user?.isAdmin) {
+    // Check for admin status from multiple authentication methods
+    const isDirectAdmin = req.session?.directUser?.isAdmin === true;
+    const isReplitAdmin = req.user?.isAdmin === true;
+    
+    // If admin through any method, proceed
+    if (isDirectAdmin || isReplitAdmin) {
       next();
     } else {
       requireRole("manager")(req, res, next);
