@@ -37,6 +37,7 @@ import OrgStructurePage from "@/pages/org-structure";
 import SystemsPage from "@/pages/systems";
 import AdminDashboardPage from "@/pages/admin-dashboard";
 import ChangeRequestsPage from "@/pages/ChangeRequestsPage";
+import ApprovalInbox from "@/pages/ApprovalInbox";
 
 function Router() {
   const [isLoading, setIsLoading] = useState(true);
@@ -180,6 +181,10 @@ function Router() {
         {() => <AdminRoute><AdminDashboardPage /></AdminRoute>}
       </Route>
       
+      <Route path="/admin/requests">
+        {() => <AdminRoute><ApprovalInbox /></AdminRoute>}
+      </Route>
+      
       <Route path="/change-requests">
         {() => <ChangeRequestsPage />}
       </Route>
@@ -193,6 +198,10 @@ function Router() {
       </Route>
       
       <Route path="/my-profile">
+        {() => <MyProfile />}
+      </Route>
+      
+      <Route path="/me">
         {() => <MyProfile />}
       </Route>
       
