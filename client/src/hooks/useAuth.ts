@@ -64,11 +64,21 @@ export function useAuth() {
   }, []);
   
   // Try to get user from server
-  const { data: userData, isLoading: isServerLoading } = useQuery({
+  const { data: userData, isLoading: isServerLoading, error: authError } = useQuery({
     queryKey: ["/api/auth/user"],
-    retry: false, // Don't retry automatically
-    refetchOnWindowFocus: false, // Don't refetch on window focus
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1, // Retry once in case of temporary network issue
+    refetchOnWindowFocus: true, // Refetch on window focus to detect session timeouts
+    staleTime: 2 * 60 * 1000, // 2 minutes - more frequent checking for auth changes
+    onError: (error: any) => {
+      // If we get a 401 error (unauthorized), clear the local storage
+      if (error?.response?.status === 401 || error?.message?.includes('Unauthorized')) {
+        console.log('Authentication error detected, clearing local session');
+        localStorage.removeItem("auth_user");
+        localStorage.removeItem("auth_employee");
+        setLocalUser(null);
+        setLocalEmployee(null);
+      }
+    }
   });
   
   // Get employee data if we have a user with employeeId
