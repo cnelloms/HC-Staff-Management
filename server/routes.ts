@@ -349,21 +349,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cookies: req.headers.cookie
       });
       
-      // Check if cookie exists but session is not loaded - wait for store
+      // If session is having problems but a cookie exists, let's handle it properly
       if (req.headers.cookie && req.headers.cookie.includes('staff_mgmt_sid=') && !req.session.directUser) {
-        console.log('Cookie exists but session not loaded yet, waiting...');
-        // Give the session store a moment to load
-        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log('Cookie exists but no user in session yet');
         
-        // If still not loaded after waiting, try regenerating the session
-        if (!req.session.directUser) {
-          console.log('Session still not loaded, regenerating...');
-          req.session.regenerate((err) => {
-            if (err) {
-              console.error('Error regenerating session:', err);
-            }
-          });
-        }
+        // Instead of regenerating the session which can cause issues, we'll
+        // simply return unauthorized and let the client handle re-login
+        return res.status(401).json({ message: 'Session expired, please login again' });
       }
       
       // Check if user is authenticated through direct login
