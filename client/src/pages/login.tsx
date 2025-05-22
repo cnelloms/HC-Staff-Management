@@ -86,86 +86,94 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 md:mb-8">
           <h1 className="text-2xl font-bold text-primary">HC Staff</h1>
           <p className="text-sm text-muted-foreground">Management System</p>
         </div>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Sign in</CardTitle>
+        <Card className="shadow-lg border-t-4 border-t-primary">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl md:text-2xl">Sign in</CardTitle>
             <CardDescription>
-              Enter your username and password to access the system
+              Choose your preferred authentication method
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleDirectLogin} className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+            <Tabs defaultValue="direct" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="direct">Username & Password</TabsTrigger>
+                <TabsTrigger value="replit">Replit</TabsTrigger>
+              </TabsList>
               
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter your username"
-                />
-              </div>
+              <TabsContent value="direct">
+                <form onSubmit={handleDirectLogin} className="space-y-4">
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="Enter your username"
+                      className="h-10"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      className="h-10"
+                    />
+                  </div>
+                  
+                  <Button type="submit" className="w-full h-10 mt-2" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      "Sign in"
+                    )}
+                  </Button>
+                </form>
+              </TabsContent>
               
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                />
-              </div>
-              
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  "Sign in"
-                )}
-              </Button>
-              
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-              
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full flex items-center justify-center bg-white hover:bg-gray-50 border-gray-300 text-gray-800"
-                onClick={() => window.location.href = "/api/replit/login"}
-              >
-                <span className="flex items-center">
+              <TabsContent value="replit">
+                <div className="text-center space-y-4 py-4">
                   <img 
                     src="https://replit.com/public/images/logo-small.png" 
                     alt="Replit Logo" 
-                    className="h-5 w-5 mr-2"
+                    className="h-12 w-12 mx-auto mb-2"
                   />
-                  Sign in with Replit
-                </span>
-              </Button>
-            </form>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Continue with your Replit account for secure, quick access
+                  </p>
+                  
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="w-full h-10 flex items-center justify-center bg-white hover:bg-gray-50 border-gray-300 text-gray-800"
+                    onClick={() => window.location.href = "/api/replit/login"}
+                  >
+                    <span className="flex items-center">
+                      Sign in with Replit
+                    </span>
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>
