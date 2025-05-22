@@ -42,7 +42,9 @@ import {
   Briefcase,
   Clock,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Settings,
+  Ticket as TicketIcon
 } from "lucide-react";
 
 export default function EmployeeProfile() {
@@ -330,18 +332,20 @@ export default function EmployeeProfile() {
                       {activities.map((activity: Activity) => {
                         // Select the appropriate icon based on activity type
                         let ActivityIcon = Clock;
-                        if (activity.activityType === 'profile_update') {
+                        const activityType = activity.activityType || 'general';
+                        
+                        if (activityType === 'profile_update') {
                           ActivityIcon = User;
-                        } else if (activity.activityType === 'system_access') {
+                        } else if (activityType === 'system_access') {
                           ActivityIcon = Settings;
-                        } else if (activity.activityType === 'ticket') {
+                        } else if (activityType === 'ticket') {
                           ActivityIcon = TicketIcon;
-                        } else if (activity.activityType === 'change_request') {
+                        } else if (activityType === 'change_request') {
                           ActivityIcon = Edit;
                         }
                         
                         // Format the activity type for display
-                        const formattedType = activity.activityType
+                        const formattedType = activityType
                           .replace(/_/g, ' ')
                           .split(' ')
                           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
