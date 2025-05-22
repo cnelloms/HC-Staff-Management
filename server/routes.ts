@@ -1455,7 +1455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get all system access entries (authenticated users)
-  app.get('/api/system-access', isAuthenticated, requireRole('system_admin'), async (req: Request, res: Response) => {
+  app.get('/api/system-access', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
     try {
       console.log('GET /api/system-access endpoint accessed');
       console.log('Session info:', JSON.stringify(req.session));
