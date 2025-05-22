@@ -4,6 +4,17 @@ import { employeeRoles, roles } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import 'express-session';
 
+// Add session property for direct auth
+declare module 'express-session' {
+  interface SessionData {
+    directUser?: {
+      id: string;
+      username: string;
+      isAdmin: boolean;
+    };
+  }
+}
+
 // Add roles property for type checking
 declare module 'express' {
   interface Request {

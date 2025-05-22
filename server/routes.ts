@@ -984,7 +984,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update employee (admin only)
-  app.patch('/api/employees/:id', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
+  app.patch('/api/employees/:id', isAuthenticated, async (req: Request, res: Response) => {
+    // Check admin status directly - don't rely on the middleware
+    const isAdmin = req.session?.directUser?.isAdmin === true || req.user?.isAdmin === true;
+    
+    // Allow the update if admin or if it's a self-update
+    const isSelfUpdate = req.session?.directUser?.id && 
+                         parseInt(req.params.id) === req.user?.employeeId;
+    
+    if (!isAdmin && !isSelfUpdate) {
+      return res.status(403).json({ message: 'Required admin privileges or self-update permission' });
+    }
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
