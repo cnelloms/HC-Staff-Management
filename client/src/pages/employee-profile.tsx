@@ -7,6 +7,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { EmployeeOrgChart } from "@/components/staff/employee-org-chart";
 import { SystemAccessTab } from "@/components/access/system-access-tab";
+import { useAuth } from "@/hooks/useAuth";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,7 +45,8 @@ import {
   Trash2,
   AlertTriangle,
   Settings,
-  Ticket as TicketIcon
+  Ticket as TicketIcon,
+  LogOut
 } from "lucide-react";
 
 export default function EmployeeProfile() {
@@ -55,6 +57,8 @@ export default function EmployeeProfile() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showOffboardDialog, setShowOffboardDialog] = useState(false);
+  const { user, isAdmin } = useAuth();
 
   const { data: employee, isLoading } = useQuery<Employee>({
     queryKey: [`/api/employees/${employeeId}`],
@@ -71,7 +75,7 @@ export default function EmployeeProfile() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async (status: 'active' | 'inactive' | 'onboarding') => {
+    mutationFn: async (status: 'active' | 'inactive' | 'onboarding' | 'offboarded') => {
       return apiRequest("PATCH", `/api/employees/${employeeId}`, { status });
     },
     onSuccess: () => {
@@ -81,6 +85,7 @@ export default function EmployeeProfile() {
         title: "Status updated",
         description: "Employee status has been updated successfully.",
       });
+      setShowOffboardDialog(false);
     },
     onError: (error) => {
       toast({
@@ -90,6 +95,22 @@ export default function EmployeeProfile() {
       });
     },
   });
+  
+  const offboardEmployee = () => {
+    updateStatusMutation.mutate('offboarded');
+    
+    // Create an activity log for the offboarding
+    apiRequest("POST", `/api/employees/${employeeId}/activities`, {
+      activityType: "profile_update",
+      description: `Employee offboarded by ${user?.firstName} ${user?.lastName}`,
+      metadata: {
+        status: "offboarded",
+        changedBy: user?.id
+      }
+    }).catch(error => {
+      console.error("Failed to log offboarding activity:", error);
+    });
+  };
   
   // Helper function to format activity timestamps
   const formatTimestamp = (timestamp: string | Date) => {
@@ -192,6 +213,43 @@ export default function EmployeeProfile() {
                 </>
               ) : (
                 "Delete Employee"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Offboard Confirmation Dialog */}
+      <AlertDialog open={showOffboardDialog} onOpenChange={setShowOffboardDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <LogOut className="h-5 w-5 text-amber-500" />
+              Offboard Employee
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to offboard {employee.firstName} {employee.lastName}? This will:
+              <ul className="list-disc ml-6 mt-2 space-y-1">
+                <li>Mark the employee as offboarded in the system</li>
+                <li>Initiate system access revocation</li>
+                <li>Trigger equipment return process</li>
+                <li>Create an activity log of the offboarding action</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={offboardEmployee}
+              className="bg-amber-500 text-white hover:bg-amber-600"
+            >
+              {updateStatusMutation.isPending ? (
+                <>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent"></div>
+                  Processing...
+                </>
+              ) : (
+                "Confirm Offboarding"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
