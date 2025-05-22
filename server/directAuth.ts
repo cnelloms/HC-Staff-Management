@@ -3,7 +3,7 @@ import { Express, Request, Response, NextFunction } from 'express';
 import { storage } from './storage';
 import { db } from './db';
 import { eq } from 'drizzle-orm';
-import { credentials, authSettings } from '@shared/schema';
+import { credentials, authSettings, users } from '@shared/schema';
 import 'express-session';
 
 // Extend the express-session typing to include direct login fields
@@ -95,11 +95,14 @@ export function setupDirectAuth(app: Express) {
         const adminUsers = await db.select().from(users).where(eq(users.isAdmin, true)).limit(1);
         if (adminUsers.length > 0) {
           user = adminUsers[0];
+          console.log("Found admin user by flag:", user);
           
           // Also update the credential to point to the correct user ID for future logins
-          await db.update(credentials)
-            .set({ userId: user.id })
-            .where(eq(credentials.id, userCredentials.id));
+          if (user) {
+            await db.update(credentials)
+              .set({ userId: user.id })
+              .where(eq(credentials.id, userCredentials.id));
+          }
         }
       }
       
