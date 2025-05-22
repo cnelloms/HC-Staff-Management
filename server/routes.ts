@@ -1306,7 +1306,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Update a system (admin only)
-  app.patch('/api/systems/:id', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
+  app.patch('/api/systems/:id', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
     try {
       // Check if the user is a global admin
       console.log('PATCH /api/systems/:id - Session check:', {
@@ -1345,7 +1345,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Delete a system (admin only)
-  app.delete('/api/systems/:id', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
+  app.delete('/api/systems/:id', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
     try {
       // Check if the user is a global admin
       console.log('DELETE /api/systems/:id - Session check:', {
