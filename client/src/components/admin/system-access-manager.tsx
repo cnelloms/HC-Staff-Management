@@ -469,7 +469,7 @@ export function SystemAccessManager() {
 
         <div className="flex flex-wrap gap-2">
           <Select 
-            onValueChange={(value) => setEmployeeFilter(value ? parseInt(value) : null)}
+            onValueChange={(value) => value === "all" ? setEmployeeFilter(null) : setEmployeeFilter(parseInt(value))}
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by employee" />
@@ -485,7 +485,7 @@ export function SystemAccessManager() {
           </Select>
 
           <Select 
-            onValueChange={(value) => setSystemFilter(value ? parseInt(value) : null)}
+            onValueChange={(value) => value === "all" ? setSystemFilter(null) : setSystemFilter(parseInt(value))}
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by system" />
@@ -501,13 +501,13 @@ export function SystemAccessManager() {
           </Select>
 
           <Select 
-            onValueChange={(value) => setStatusFilter(value || null)}
+            onValueChange={(value) => value === "all" ? setStatusFilter(null) : setStatusFilter(value)}
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Statuses</SelectItem>
+              <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="revoked">Revoked</SelectItem>
