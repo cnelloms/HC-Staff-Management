@@ -40,8 +40,10 @@ export async function enrichRoles(req: Request, _res: Response, next: NextFuncti
 /** guard factory */
 export function requireRole(role: string) {
   return (req: Request, res: Response, next: NextFunction) => {
-    // Always allow admin users to bypass role checks
-    if (req.user?.isAdmin === true) {
+    // Check for admin status in multiple places
+    // 1. In the req.user object (Replit auth)
+    // 2. In the session (direct auth)
+    if (req.user?.isAdmin === true || req.session?.directUser?.isAdmin === true) {
       return next();
     }
     
