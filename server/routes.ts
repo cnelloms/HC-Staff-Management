@@ -526,54 +526,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all users
-  app.get('/api/users', isAuthenticated, requireRole('user_manager'), async (req: Request, res: Response) => {
-    try {
-      // Role-based access control is now handled by the requireRole middleware
-      // This route requires the 'user_manager' role
-      
-      // Get all users from the database
-      const allUsers = await db.select({
-        id: users.id,
-        firstName: users.firstName,
-        lastName: users.lastName,
-        email: users.email,
-        profileImageUrl: users.profileImageUrl,
-        isAdmin: users.isAdmin,
-        employeeId: users.employeeId,
-        authProvider: users.authProvider
-      }).from(users);
-      
-      // Get all credentials to check if users have direct auth and if they're enabled
-      const allCredentials = await db.select().from(credentials);
-      
-      // Merge the data to provide complete user information
-      const userList = allUsers.map(user => {
-        const userCredentials = allCredentials.find(cred => cred.userId === user.id);
-        return {
-          id: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          username: userCredentials?.username || null,
-          authProvider: user.authProvider || 'direct',
-          isAdmin: user.isAdmin || false,
-          isEnabled: userCredentials?.isEnabled !== false, // Default to true if not specified
-          profileImageUrl: user.profileImageUrl
-        };
-      });
-      
-      if (allUsers.length === 0) {
-        // If no users found, return an appropriate error
-        return res.status(404).json({ 
-          message: "No users found in the system" 
+  app.get('/api/users', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+    // Allow access for admin users or users with user_manager role
+    if (req.user?.isAdmin === true || req.user?.roles?.includes('user_manager')) {
+      try {
+        // Admin or user_manager role is required for this endpoint
+        
+        // Get all users from the database
+        const allUsers = await db.select({
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          email: users.email,
+          profileImageUrl: users.profileImageUrl,
+          isAdmin: users.isAdmin,
+          employeeId: users.employeeId,
+          authProvider: users.authProvider
+        }).from(users);
+        
+        // Get all credentials to check if users have direct auth and if they're enabled
+        const allCredentials = await db.select().from(credentials);
+        
+        // Merge the data to provide complete user information
+        const userList = allUsers.map(user => {
+          const userCredentials = allCredentials.find(cred => cred.userId === user.id);
+          return {
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            username: userCredentials?.username || null,
+            authProvider: user.authProvider || 'direct',
+            isAdmin: user.isAdmin || false,
+            isEnabled: userCredentials?.isEnabled !== false, // Default to true if not specified
+            profileImageUrl: user.profileImageUrl
+          };
         });
+        
+        if (allUsers.length === 0) {
+          // If no users found, return an appropriate error
+          return res.status(404).json({ 
+            message: "No users found in the system" 
+          });
+        }
+        
+        // Return the user list
+        return res.json(userList);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        return res.status(500).json({ message: 'Failed to fetch users' });
       }
-      
-      // Return the user list
-      return res.json(userList);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      return res.status(500).json({ message: 'Failed to fetch users' });
+    } else {
+      // User doesn't have the required permissions
+      return res.status(403).json({ message: 'Forbidden: You do not have permission to access this resource' });
     }
   });
 
