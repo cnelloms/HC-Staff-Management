@@ -355,6 +355,19 @@ export default function EmployeeProfile() {
                     Reactivate
                   </Button>
                 )}
+                
+                {/* Offboard Button - visible to managers and admins for active employees */}
+                {employee.status === 'active' && (isAdmin || (user?.employeeId === employee.managerId)) && (
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowOffboardDialog(true)}
+                    disabled={updateStatusMutation.isPending}
+                    className="border-amber-500 text-amber-500 hover:bg-amber-50 hover:text-amber-600"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Offboard Employee
+                  </Button>
+                )}
               </div>
             </div>
           </div>
