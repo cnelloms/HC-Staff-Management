@@ -332,7 +332,14 @@ export const authSettings = pgTable("auth_settings", {
   updatedById: varchar("updated_by_id").references(() => users.id),
 });
 
-export const insertCredentialSchema = createInsertSchema(credentials).pick({
+export const insertCredentialSchema = createInsertSchema(credentials)
+.omit({
+  passwordHash: true
+})
+.extend({
+  password: z.string()
+})
+.pick({
   userId: true,
   username: true,
   password: true,
@@ -367,12 +374,8 @@ export const keyValueStore = pgTable("key_value_store", {
   return {
     namespaceKeyUserIdx: index("namespace_key_user_idx").on(
       table.namespace, 
-      table.key, 
-      table.userId
-    ),
-    // Unique combinations of namespace+key+userId
-    uniqueNamespaceKeyUserIdx: uniqueIndex("unique_namespace_key_user_idx")
-      .on(table.namespace, table.key, table.userId)
+      table.key
+    )
   };
 });
 
@@ -418,3 +421,48 @@ export const insertNotificationSchema = createInsertSchema(notifications).pick({
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+// Change Requests table
+export const changeRequests = pgTable("change_requests", {
+  id: serial("id").primaryKey(),
+  targetEmployeeId: integer("target_employee_id").notNull(),
+  requesterEmployeeId: integer("requester_employee_id").notNull(),
+  payload: jsonb("payload").notNull(),          // diff object
+  status: text("status").default("pending").notNull(), // pending/approved/rejected
+  approvedById: integer("approved_by_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const insertChangeRequestSchema = createInsertSchema(changeRequests).pick({
+  targetEmployeeId: true,
+  requesterEmployeeId: true,
+  payload: true,
+  status: true,
+  approvedById: true,
+});
+
+// Audit Log table
+export const auditLog = pgTable("audit_log", {
+  id: serial("id").primaryKey(),
+  table: text("table").notNull(),
+  rowId: integer("row_id").notNull(),
+  action: text("action").notNull(),              // insert/update/delete
+  diff: jsonb("diff").notNull(),
+  actedBy: integer("acted_by").notNull(),
+  actedAt: timestamp("acted_at").defaultNow()
+});
+
+export const insertAuditLogSchema = createInsertSchema(auditLog).pick({
+  table: true,
+  rowId: true,
+  action: true,
+  diff: true,
+  actedBy: true,
+});
+
+export type ChangeRequest = typeof changeRequests.$inferSelect;
+export type InsertChangeRequest = z.infer<typeof insertChangeRequestSchema>;
+
+export type AuditLog = typeof auditLog.$inferSelect;
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
