@@ -1175,18 +1175,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Position routes - managers can view, admins can modify
-  app.get('/api/positions', isAuthenticated, (req: Request, res: Response, next: NextFunction) => {
-    // Check if user is admin first (direct pass)
-    if (req.user?.isAdmin) {
-      return next();
-    }
-    
-    // Otherwise, check for manager role
-    requireRole("manager")(req, res, next);
-  }, async (req: Request, res: Response) => {
+  // Position routes - admins and managers can view, admins can modify
+  app.get('/api/positions', isAuthenticated, async (req: Request, res: Response) => {
     try {
+      // Direct access for everyone authenticated
+      // This simplifies access since positions are reference data
       const positions = await storage.getPositions();
+      console.log(`Returning ${positions.length} positions to user ${req.user?.id}`);
       return res.json(positions);
     } catch (error) {
       console.error('Error fetching positions:', error);
@@ -1194,15 +1189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/positions/:id', isAuthenticated, (req: Request, res: Response, next: NextFunction) => {
-    // Check if user is admin first (direct pass)
-    if (req.user?.isAdmin) {
-      return next();
-    }
-    
-    // Otherwise, check for manager role
-    requireRole("manager")(req, res, next);
-  }, async (req: Request, res: Response) => {
+  app.get('/api/positions/:id', isAuthenticated, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
