@@ -1259,6 +1259,75 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
   }
+  // Activity tracking and retrieval functions 
+  async getRecentActivities(limit = 10): Promise<any[]> {
+    return await db.select()
+      .from(activities)
+      .orderBy(desc(activities.timestamp))
+      .limit(limit);
+  }
+  
+  async getEmployeeActivities(employeeId: number, limit = 10): Promise<any[]> {
+    try {
+      // Fetch activities where this employee is the actor
+      const employeeActivities = await db.select()
+        .from(activities)
+        .where(eq(activities.employeeId, employeeId))
+        .orderBy(desc(activities.timestamp))
+        .limit(limit);
+        
+      // Get change requests related to this employee
+      const changeRequestsList = await db.select()
+        .from(changeRequests)
+        .where(eq(changeRequests.employeeId, employeeId))
+        .orderBy(desc(changeRequests.createdAt))
+        .limit(limit);
+      
+      // Format change requests to match activity format
+      const formattedChangeRequests = await Promise.all(changeRequestsList.map(async (request) => {
+        // Get the requester's name
+        const requester = await this.getEmployeeById(request.requestedBy);
+        const requesterName = requester ? 
+          `${requester.firstName} ${requester.lastName}` : 
+          "Unknown user";
+          
+        return {
+          id: `cr-${request.id}`, // Prefix to distinguish from regular activities
+          employeeId: request.employeeId,
+          activityType: 'change_request',
+          description: `${requesterName} requested to change ${request.field} from "${request.currentValue || 'empty'}" to "${request.requestedValue}"`,
+          timestamp: request.createdAt,
+          metadata: {
+            status: request.status,
+            reason: request.reason,
+            field: request.field
+          }
+        };
+      }));
+      
+      // Combine and sort all activities by timestamp
+      const allActivities = [...employeeActivities, ...formattedChangeRequests]
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, limit);
+      
+      return allActivities;
+    } catch (error) {
+      console.error(`Error fetching activities for employee ${employeeId}:`, error);
+      return [];
+    }
+  }
+  
+  async recordActivity(activity: any): Promise<any> {
+    try {
+      const [newActivity] = await db.insert(activities)
+        .values(activity)
+        .returning();
+      return newActivity;
+    } catch (error) {
+      console.error("Error recording activity:", error);
+      return null;
+    }
+  }
 }
 
 // Export the database storage implementation

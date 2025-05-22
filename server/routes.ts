@@ -970,6 +970,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'Failed to fetch employee' });
     }
   });
+  
+  // Get recent activities for a specific employee
+  app.get('/api/employees/:id/activities', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid employee ID' });
+      }
+      
+      // Get limit from query params (default to 10)
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      
+      // Get employee's recent activities
+      const activities = await storage.getEmployeeActivities(id, limit);
+      
+      // Return the activities, if none are found return an empty array
+      return res.json(activities || []);
+    } catch (error) {
+      console.error(`Error fetching activities for employee ${req.params.id}:`, error);
+      return res.status(500).json({ message: 'Failed to fetch employee activities' });
+    }
+  });
 
   // Create new employee (admin only)
   app.post('/api/employees', isAdmin, async (req: Request, res: Response) => {
