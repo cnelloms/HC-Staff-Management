@@ -785,7 +785,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get employee by ID
-  app.get('/api/employees/:id', async (req: Request, res: Response) => {
+  app.get('/api/employees/:id', isAuthenticated, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -817,7 +817,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update employee (admin only)
-  app.patch('/api/employees/:id', async (req: Request, res: Response) => {
+  app.patch('/api/employees/:id', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -869,7 +869,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Delete employee (admin only)
-  app.delete('/api/employees/:id', async (req: Request, res: Response) => {
+  app.delete('/api/employees/:id', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
