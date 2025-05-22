@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
+import { useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +18,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -32,6 +35,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { Employee } from "@/types";
 
 interface StaffFormProps {
@@ -57,9 +67,18 @@ const employeeFormSchema = z.object({
     required_error: "Please select a department.",
   }),
   managerId: z.coerce.number().optional(),
+  reportingManagerId: z.coerce.number().optional(),
+  budgetCodeId: z.coerce.number({
+    required_error: "Please select a budget/cost code.",
+  }),
   status: z.enum(["active", "inactive", "onboarding"], {
     required_error: "Please select a status.",
   }),
+  equipmentRequested: z.boolean().default(false),
+  systemAccess: z.array(z.object({
+    systemId: z.coerce.number(),
+    accessLevel: z.enum(["read", "write", "admin"])
+  })).default([]),
   avatar: z.string().optional(),
 });
 
@@ -80,6 +99,19 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
   const { data: employees = [] } = useQuery<any[]>({
     queryKey: ['/api/employees'],
   });
+  
+  const { data: budgetCodes = [] } = useQuery<any[]>({
+    queryKey: ['/api/budget-codes'],
+  });
+  
+  const { data: systems = [] } = useQuery<any[]>({
+    queryKey: ['/api/systems'],
+  });
+  
+  // For handling the selected systems in the form
+  const [selectedSystems, setSelectedSystems] = useState<Array<{systemId: number, accessLevel: string}>>(
+    defaultValues?.systemAccess || []
+  );
 
   const form = useForm<z.infer<typeof employeeFormSchema>>({
     resolver: zodResolver(employeeFormSchema),
@@ -91,10 +123,22 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
       position: defaultValues?.position || "",
       departmentId: defaultValues?.departmentId,
       managerId: defaultValues?.managerId,
+      reportingManagerId: defaultValues?.reportingManagerId || defaultValues?.managerId, // Default to same as manager
+      budgetCodeId: defaultValues?.budgetCodeId,
       status: defaultValues?.status || "active",
+      equipmentRequested: defaultValues?.equipmentRequested || false,
+      systemAccess: defaultValues?.systemAccess || [],
       avatar: defaultValues?.avatar || "",
     },
   });
+  
+  // When manager changes, set reporting manager to same value if it's not already set
+  const watchedManagerId = form.watch("managerId");
+  useEffect(() => {
+    if (watchedManagerId && !form.getValues("reportingManagerId")) {
+      form.setValue("reportingManagerId", watchedManagerId);
+    }
+  }, [watchedManagerId, form]);
 
   const createMutation = useMutation({
     mutationFn: async (values: z.infer<typeof employeeFormSchema>) => {

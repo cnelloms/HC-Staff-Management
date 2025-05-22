@@ -37,6 +37,23 @@ export const insertDepartmentSchema = createInsertSchema(departments).pick({
   businessUnit: true,
 });
 
+// Budget/Cost Code table
+export const budgetCodes = pgTable("budget_codes", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  description: text("description"),
+  active: boolean("active").default(true),
+});
+
+export const insertBudgetCodeSchema = createInsertSchema(budgetCodes).pick({
+  code: true,
+  description: true,
+  active: true,
+});
+
+export type BudgetCode = typeof budgetCodes.$inferSelect;
+export type InsertBudgetCode = typeof budgetCodes.$inferInsert;
+
 // Employee table
 export const employees = pgTable("employees", {
   id: serial("id").primaryKey(),
@@ -47,8 +64,11 @@ export const employees = pgTable("employees", {
   position: text("position").notNull(),
   departmentId: integer("department_id").notNull(),
   managerId: integer("manager_id"),
+  reportingManagerId: integer("reporting_manager_id"),
+  budgetCodeId: integer("budget_code_id"),
   hireDate: timestamp("hire_date").notNull(),
   status: text("status").default("active").notNull(), // active, inactive, onboarding
+  equipmentRequested: boolean("equipment_requested").default(false),
   avatar: text("avatar"),
 });
 
@@ -60,8 +80,11 @@ export const insertEmployeeSchema = createInsertSchema(employees).pick({
   position: true,
   departmentId: true,
   managerId: true,
+  reportingManagerId: true,
+  budgetCodeId: true,
   hireDate: true,
   status: true,
+  equipmentRequested: true,
   avatar: true,
 });
 
