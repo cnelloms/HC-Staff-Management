@@ -1888,9 +1888,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid employee ID or role ID' });
       }
       
+      // Get the user's employee ID or use admin ID if not available
+      const assignedBy = req.user?.employeeId || 
+                        (req.session?.directUser?.id === 'admin123' ? 123 : employeeId); // Fallback to a default admin ID
+      
       const employeeRole = await storage.addRoleToEmployee({
         employeeId,
-        roleId
+        roleId,
+        assignedBy
       });
       
       return res.json(employeeRole);
@@ -1901,7 +1906,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Remove role from employee - admin only
-  app.delete('/api/employees/:employeeId/roles/:roleId', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
+  app.delete('/api/employees/:employeeId/roles/:roleId', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
     try {
       const employeeId = parseInt(req.params.employeeId);
       const roleId = parseInt(req.params.roleId);
