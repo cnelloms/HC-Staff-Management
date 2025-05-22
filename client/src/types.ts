@@ -106,6 +106,13 @@ export interface Employee {
   position: string;
   departmentId: number;
   managerId?: number;
+  reportingManagerId?: number;
+  budgetCodeId?: number;
+  equipmentRequested?: boolean;
+  systemAccessRequests?: Array<{
+    systemId: number;
+    accessLevel: "read" | "write" | "admin";
+  }>;
   hireDate: string;
   status: "active" | "inactive" | "onboarding";
   avatar?: string;
@@ -118,7 +125,16 @@ export interface Employee {
     name: string;
     position: string;
   };
-  systemAccess?: SystemAccess[];
+  reportingManager?: {
+    id: number;
+    name: string;
+    position: string;
+  };
+  budgetCode?: {
+    id: number;
+    code: string;
+    description?: string;
+  };
   tickets?: Ticket[];
   activities?: Activity[];
 }

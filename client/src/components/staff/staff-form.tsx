@@ -75,7 +75,7 @@ const employeeFormSchema = z.object({
     required_error: "Please select a status.",
   }),
   equipmentRequested: z.boolean().default(false),
-  systemAccess: z.array(z.object({
+  systemAccessRequests: z.array(z.object({
     systemId: z.coerce.number(),
     accessLevel: z.enum(["read", "write", "admin"])
   })).default([]),
@@ -110,7 +110,7 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
   
   // For handling the selected systems in the form
   const [selectedSystems, setSelectedSystems] = useState<Array<{systemId: number, accessLevel: string}>>(
-    defaultValues?.systemAccess || []
+    defaultValues?.systemAccessRequests || []
   );
 
   const form = useForm<z.infer<typeof employeeFormSchema>>({
@@ -127,7 +127,7 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
       budgetCodeId: defaultValues?.budgetCodeId,
       status: defaultValues?.status || "active",
       equipmentRequested: defaultValues?.equipmentRequested || false,
-      systemAccess: defaultValues?.systemAccess || [],
+      systemAccessRequests: defaultValues?.systemAccessRequests || [],
       avatar: defaultValues?.avatar || "",
     },
   });
@@ -364,7 +364,7 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
                 name="managerId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Manager</FormLabel>
+                    <FormLabel>Hiring Manager</FormLabel>
                     <Select
                       onValueChange={(value) => {
                         if (value === "none") {
@@ -377,7 +377,7 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a manager (optional)" />
+                          <SelectValue placeholder="Select a hiring manager (optional)" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -395,8 +395,87 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      The employee's direct manager.
+                      The manager who hired the employee.
                     </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="reportingManagerId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Reporting Manager</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        if (value === "none") {
+                          field.onChange(null);
+                        } else {
+                          field.onChange(parseInt(value));
+                        }
+                      }}
+                      value={field.value?.toString() || "none"}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a reporting manager (optional)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">No Manager</SelectItem>
+                        {Array.isArray(employees) && employees
+                          .filter((e: any) => e.id !== employeeId && e.status === 'active')
+                          .map((employee: any) => (
+                            <SelectItem 
+                              key={employee.id} 
+                              value={employee.id.toString()}
+                            >
+                              {employee.firstName} {employee.lastName}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      The manager the employee reports to (defaults to hiring manager).
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="budgetCodeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Budget/Cost Code</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(parseInt(value));
+                      }}
+                      value={field.value?.toString() || ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a budget code" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Array.isArray(budgetCodes) && budgetCodes
+                          .filter((code: any) => code.active)
+                          .map((code: any) => (
+                            <SelectItem 
+                              key={code.id} 
+                              value={code.id.toString()}
+                            >
+                              {code.code} - {code.description}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -428,6 +507,95 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
               />
             </div>
 
+            <FormField
+              control={form.control}
+              name="equipmentRequested"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Equipment Request
+                    </FormLabel>
+                    <FormDescription>
+                      Check this if the employee needs equipment to be allocated.
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
+            
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium">System Access Requests</h3>
+                <p className="text-sm text-muted-foreground">
+                  Select the systems this employee needs access to and their access level.
+                </p>
+              </div>
+              <div className="space-y-4">
+                {Array.isArray(systems) && systems.map((system: any) => (
+                  <div key={system.id} className="flex flex-row items-center space-x-2 rounded-md border p-4">
+                    <Checkbox 
+                      id={`system-${system.id}`}
+                      checked={selectedSystems.some(s => s.systemId === system.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          const updatedSystems = [...selectedSystems, {
+                            systemId: system.id,
+                            accessLevel: "read"
+                          }];
+                          setSelectedSystems(updatedSystems);
+                          form.setValue("systemAccessRequests", updatedSystems);
+                        } else {
+                          const updatedSystems = selectedSystems.filter(
+                            s => s.systemId !== system.id
+                          );
+                          setSelectedSystems(updatedSystems);
+                          form.setValue("systemAccessRequests", updatedSystems);
+                        }
+                      }}
+                    />
+                    <div className="flex-1">
+                      <label htmlFor={`system-${system.id}`} className="text-sm font-medium">
+                        {system.name}
+                      </label>
+                      <p className="text-xs text-muted-foreground">
+                        {system.description || system.category}
+                      </p>
+                    </div>
+                    {selectedSystems.some(s => s.systemId === system.id) && (
+                      <Select
+                        value={selectedSystems.find(s => s.systemId === system.id)?.accessLevel || "read"}
+                        onValueChange={(value) => {
+                          const updatedSystems = selectedSystems.map(s => 
+                            s.systemId === system.id 
+                              ? { ...s, accessLevel: value as "read" | "write" | "admin" } 
+                              : s
+                          );
+                          setSelectedSystems(updatedSystems);
+                          form.setValue("systemAccessRequests", updatedSystems);
+                        }}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue placeholder="Access Level" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="read">Read</SelectItem>
+                          <SelectItem value="write">Write</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            
             <FormField
               control={form.control}
               name="avatar"
