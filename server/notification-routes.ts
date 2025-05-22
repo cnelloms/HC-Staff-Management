@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { notificationService } from "./notification-service";
-import { isAuthenticated } from "./replitAuth";
+import { isAuthenticated } from "./middleware/auth-middleware";
 import { z } from "zod";
 
 const router = Router();

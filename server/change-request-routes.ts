@@ -3,7 +3,7 @@ import { db } from "./db";
 import { changeRequests, employees, auditLog } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { requireRole } from "./middleware/role-middleware";
-import { isAuthenticated } from "./replitAuth";
+import { isAuthenticated } from "./middleware/auth-middleware";
 
 export const crRouter = Router();
 
