@@ -1879,7 +1879,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Add role to employee - admin only
-  app.post('/api/employees/:employeeId/roles', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
+  app.post('/api/employees/:employeeId/roles', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
     try {
       const employeeId = parseInt(req.params.employeeId);
       const { roleId } = req.body;
