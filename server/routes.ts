@@ -1088,11 +1088,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log("Creating activity record:", activityData);
           
           try {
-            // Try to insert directly into the activities table
-            const [newActivity] = await db.insert(activities).values(activityData).returning();
+            // Try to insert directly into the activities table using prepared schema
+            const [newActivity] = await db.insert(activities).values({
+              employeeId: id,
+              activityType: 'profile_update',
+              description: `${actorName} updated ${changedFields.join(', ')}`,
+              timestamp: new Date(),
+              metadata: JSON.stringify({
+                changedFields,
+                changedBy: actorId
+              })
+            }).returning();
+            
             console.log("Activity recorded successfully:", newActivity);
           } catch (error) {
             console.error("Failed to record activity:", error);
+            
+            // Fallback method using storage service
+            try {
+              await storage.recordActivity({
+                employeeId: id,
+                activityType: 'profile_update',
+                description: `${actorName} updated ${changedFields.join(', ')}`,
+                timestamp: new Date(),
+                metadata: {
+                  changedFields,
+                  changedBy: actorId
+                }
+              });
+              console.log("Activity recorded via storage service");
+            } catch (fallbackError) {
+              console.error("Both activity recording methods failed:", fallbackError);
+            }
           }
         }
       }
