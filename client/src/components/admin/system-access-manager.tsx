@@ -106,7 +106,9 @@ export function SystemAccessManager() {
           throw new Error('Failed to fetch system access entries');
         }
         
-        return await response.json();
+        const data = await response.json();
+        console.log('System access data fetched successfully:', data);
+        return data || []; // Ensure we return an array even if the response is null
       } catch (err) {
         console.error('Error fetching system access:', err);
         toast({
@@ -117,7 +119,8 @@ export function SystemAccessManager() {
         throw err;
       }
     },
-    retry: 1
+    retry: 2,
+    retryDelay: 1000
   });
 
   // Fetch all employees for the dropdown
@@ -210,6 +213,8 @@ export function SystemAccessManager() {
       }
     },
     onSuccess: () => {
+      // Update both endpoints
+      queryClient.invalidateQueries({ queryKey: ['/api/system-access-admin'] });
       queryClient.invalidateQueries({ queryKey: ['/api/system-access'] });
       
       toast({
@@ -417,13 +422,13 @@ export function SystemAccessManager() {
   };
 
   // Force proper array handling even if data is missing
-  const safeAccessEntries = Array.isArray(filteredAccessEntries) ? filteredAccessEntries : [];
+  const safeAccessEntries = Array.isArray(filteredEntries) ? filteredEntries : [];
   const safeEmployees = Array.isArray(employees) ? employees : [];
   const safeSystems = Array.isArray(systems) ? systems : [];
 
   // Debug output
   console.log("Access entries data:", accessEntries);
-  console.log("Filtered entries:", filteredAccessEntries);
+  console.log("Filtered entries:", filteredEntries);
   console.log("Is loading:", isLoading);
   console.log("Is error:", isError);
 
@@ -508,7 +513,25 @@ export function SystemAccessManager() {
         <div className="flex items-center justify-center p-8">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
         </div>
-      ) : !filteredEntries || filteredEntries.length === 0 ? (
+      ) : isError ? (
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-8 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+            <AlertCircle className="h-6 w-6 text-red-600" />
+          </div>
+          <h3 className="mt-4 text-lg font-medium">Error Loading Access Data</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            There was a problem loading the system access data. Please try refreshing the page.
+          </p>
+          <Button
+            className="mt-4"
+            onClick={() => {
+              queryClient.invalidateQueries({ queryKey: ['/api/system-access-admin'] });
+            }}
+          >
+            Retry
+          </Button>
+        </div>
+      ) : !safeAccessEntries || safeAccessEntries.length === 0 ? (
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-8 text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
             <Server className="h-6 w-6 text-muted-foreground" />

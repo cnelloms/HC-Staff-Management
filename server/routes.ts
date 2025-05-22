@@ -2052,17 +2052,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Endpoint to get all system access entries (used by admin dashboard)
-  app.get('/api/system-access-admin', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
+  app.get('/api/system-access-admin', async (req: Request, res: Response) => {
     try {
-      // Check if the user is a global admin
-      console.log('GET /api/system-access-admin - Session check:', {
-        hasSession: !!req.session,
-        directUser: req.session?.directUser,
-        isAdmin: req.session?.directUser?.isAdmin,
-        replitAdmin: req.user?.isAdmin
-      });
-      
-      // Check admin status from multiple authentication methods
+      // Check if the user is an admin through any auth method
       const isDirectAdmin = req.session?.directUser?.isAdmin === true;
       const isReplitAdmin = req.user?.isAdmin === true;
       
@@ -2075,21 +2067,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Admin access granted - fetching all system access entries');
       const entries = await storage.getSystemAccessEntries();
       
+      if (!entries || entries.length === 0) {
+        return res.json([]);
+      }
+      
       // Enhance access entries with employee and system data
       const enhancedEntries = await Promise.all(entries.map(async (entry) => {
-        const employee = await storage.getEmployeeById(entry.employeeId);
-        const system = await storage.getSystemById(entry.systemId);
-        
-        return {
-          ...entry,
-          employee: employee ? {
-            firstName: employee.firstName,
-            lastName: employee.lastName,
-            position: employee.position || null,
-            department: employee.departmentId ? await storage.getDepartmentById(employee.departmentId) : null,
-          } : null,
-          system: system || null
-        };
+        try {
+          const employee = await storage.getEmployeeById(entry.employeeId);
+          const system = await storage.getSystemById(entry.systemId);
+          
+          return {
+            ...entry,
+            employee: employee ? {
+              firstName: employee.firstName,
+              lastName: employee.lastName,
+              position: employee.position || null,
+              department: employee.departmentId ? await storage.getDepartmentById(employee.departmentId) : null,
+            } : null,
+            system: system || null
+          };
+        } catch (err) {
+          console.error(`Error enhancing entry ${entry.id}:`, err);
+          return entry; // Return original entry if enhancement fails
+        }
       }));
       
       return res.json(enhancedEntries);
