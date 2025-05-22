@@ -479,24 +479,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all users
-  app.get('/api/users', async (req: Request, res: Response) => {
+  app.get('/api/users', isAuthenticated, requireRole('user_manager'), async (req: Request, res: Response) => {
     try {
-      // Check for admin access directly from the session
-      const directAdminAccess = req.session?.directUser?.isAdmin === true;
-      
-      // Print more debug info about the authentication state
-      console.log('Admin check - directUser:', req.session?.directUser);
-      
-      // For Sarah Johnson, we know she is the main admin user with id = 1
-      // So we'll make sure she has access without additional checks
-      const userIdFromSession = req.session?.directUser?.id;
-      const isSarahJohnson = userIdFromSession === 'direct_admin_1747736221666';
-      
-      // Combine all access checks
-      const isAdmin = directAdminAccess || isSarahJohnson;
-      
-      // Allow Sarah Johnson to access this endpoint during development
-      // In a production environment, we would use proper role-based controls
+      // Role-based access control is now handled by the requireRole middleware
+      // This route requires the 'user_manager' role
       
       // Get all users from the database
       const allUsers = await db.select({
@@ -529,10 +515,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
       
-      if (allUsers.length === 0 && (!isSarahJohnson && !directAdminAccess)) {
-        // If no users and not admin, return a clear error
-        return res.status(403).json({ 
-          message: "Admin access required or no users found" 
+      if (allUsers.length === 0) {
+        // If no users found, return an appropriate error
+        return res.status(404).json({ 
+          message: "No users found in the system" 
         });
       }
       
@@ -1233,7 +1219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get all system access entries (authenticated users)
-  app.get('/api/system-access', async (req: Request, res: Response) => {
+  app.get('/api/system-access', isAuthenticated, requireRole('system_admin'), async (req: Request, res: Response) => {
     try {
       console.log('GET /api/system-access endpoint accessed');
       console.log('Session info:', JSON.stringify(req.session));
@@ -1590,7 +1576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Role routes
-  app.get('/api/roles', async (req: Request, res: Response) => {
+  app.get('/api/roles', isAuthenticated, async (req: Request, res: Response) => {
     try {
       const roles = await storage.getRoles();
       return res.json(roles);
@@ -1600,7 +1586,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/roles', async (req: Request, res: Response) => {
+  app.post('/api/roles', isAuthenticated, requireRole('role_manager'), async (req: Request, res: Response) => {
     try {
       const roleData = req.body;
       const newRole = await storage.createRole(roleData);
@@ -1611,7 +1597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/roles/:id', async (req: Request, res: Response) => {
+  app.delete('/api/roles/:id', isAuthenticated, requireRole('role_manager'), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -1631,7 +1617,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Role Permission routes
-  app.get('/api/roles/:roleId/permissions', async (req: Request, res: Response) => {
+  app.get('/api/roles/:roleId/permissions', isAuthenticated, async (req: Request, res: Response) => {
     try {
       const roleId = parseInt(req.params.roleId);
       if (isNaN(roleId)) {
@@ -1646,7 +1632,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/roles/:roleId/permissions', async (req: Request, res: Response) => {
+  app.post('/api/roles/:roleId/permissions', isAuthenticated, requireRole('role_manager'), async (req: Request, res: Response) => {
     try {
       const roleId = parseInt(req.params.roleId);
       const { permissionId } = req.body;
@@ -1667,7 +1653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/roles/:roleId/permissions/:permissionId', async (req: Request, res: Response) => {
+  app.delete('/api/roles/:roleId/permissions/:permissionId', isAuthenticated, requireRole('role_manager'), async (req: Request, res: Response) => {
     try {
       const roleId = parseInt(req.params.roleId);
       const permissionId = parseInt(req.params.permissionId);
