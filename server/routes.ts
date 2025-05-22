@@ -887,8 +887,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Employee routes
   // Get all employees - manager access required
   app.get('/api/employees', isAuthenticated, async (req: Request, res: Response) => {
+    // Check for admin privileges in multiple locations
+    const isUserAdmin = req.user?.isAdmin === true || req.session?.directUser?.isAdmin === true;
+    const hasManagerRole = req.user?.roles?.includes("manager");
+    
     // Allow access if user is admin or has manager role
-    if (!req.user?.isAdmin && (!req.user?.roles || !req.user?.roles.includes("manager"))) {
+    if (!isUserAdmin && !hasManagerRole) {
+      console.log("User lacks admin/manager permission:", {
+        user: req.user,
+        session: req.session?.directUser,
+        isAdmin: isUserAdmin,
+        hasManagerRole
+      });
       return res.status(403).json({ message: 'Forbidden: Admin or manager role required' });
     }
     try {
@@ -1348,8 +1358,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Get system access entries for an employee - managers can view
   app.get('/api/employees/:employeeId/systems', isAuthenticated, async (req: Request, res: Response) => {
+    // Check for admin privileges in multiple locations
+    const isUserAdmin = req.user?.isAdmin === true || req.session?.directUser?.isAdmin === true;
+    const hasManagerRole = req.user?.roles?.includes("manager");
+    
     // Allow access if user is admin or has manager role
-    if (!req.user?.isAdmin && (!req.user?.roles || !req.user?.roles.includes("manager"))) {
+    if (!isUserAdmin && !hasManagerRole) {
       return res.status(403).json({ message: 'Forbidden: Admin or manager role required' });
     }
     try {
@@ -1842,8 +1856,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Employee Role routes - manager can view
   app.get('/api/employees/:employeeId/roles', isAuthenticated, async (req: Request, res: Response) => {
+    // Check for admin privileges in multiple locations
+    const isUserAdmin = req.user?.isAdmin === true || req.session?.directUser?.isAdmin === true;
+    const hasManagerRole = req.user?.roles?.includes("manager");
+    
     // Allow access if user is admin or has manager role
-    if (!req.user?.isAdmin && (!req.user?.roles || !req.user?.roles.includes("manager"))) {
+    if (!isUserAdmin && !hasManagerRole) {
       return res.status(403).json({ message: 'Forbidden: Admin or manager role required' });
     }
     try {
@@ -1921,8 +1939,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard routes - manager access required
   app.get('/api/dashboard/stats', isAuthenticated, async (req: Request, res: Response) => {
     try {
+      // Check for admin privileges in multiple locations
+      const isUserAdmin = req.user?.isAdmin === true || req.session?.directUser?.isAdmin === true;
+      const hasManagerRole = req.user?.roles?.includes("manager");
+      
       // Allow access if user is admin or has manager role
-      if (!req.user?.isAdmin && (!req.user?.roles || !req.user?.roles.includes("manager"))) {
+      if (!isUserAdmin && !hasManagerRole) {
         return res.status(403).json({ message: 'Forbidden: Admin or manager role required' });
       }
       
@@ -1994,8 +2016,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   app.get('/api/dashboard/recent-activities', isAuthenticated, async (req: Request, res: Response) => {
+    // Check for admin privileges in multiple locations
+    const isUserAdmin = req.user?.isAdmin === true || req.session?.directUser?.isAdmin === true;
+    const hasManagerRole = req.user?.roles?.includes("manager");
+    
     // Allow access if user is admin or has manager role
-    if (!req.user?.isAdmin && (!req.user?.roles || !req.user?.roles.includes("manager"))) {
+    if (!isUserAdmin && !hasManagerRole) {
       return res.status(403).json({ message: 'Forbidden: Admin or manager role required' });
     }
     try {
