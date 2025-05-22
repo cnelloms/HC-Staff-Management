@@ -697,6 +697,110 @@ Note: All tasks must be manually marked as complete by the assignee. When all ta
                   )}
                 />
                 
+                {/* System Access Request */}
+                <div className="space-y-3 border rounded-md p-4">
+                  <h4 className="font-medium">System Access Requests</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Select which systems the new employee needs access to:
+                  </p>
+                  
+                  <div className="space-y-4">
+                    {Array.isArray(systems) && systems.map((system: any) => (
+                      <div key={system.id} className="flex flex-row items-center space-x-2 rounded-md border p-4">
+                        <FormField
+                          control={form.control}
+                          name={`metadata.systemAccessRequests.${system.id}`}
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center space-x-2">
+                              <FormControl>
+                                <input
+                                  type="checkbox"
+                                  checked={field.value || false}
+                                  onChange={(e) => {
+                                    // Get current metadata
+                                    const metadata = form.getValues().metadata || {};
+                                    
+                                    // Initialize systemAccessRequests array if it doesn't exist
+                                    if (!metadata.systemAccessRequests) {
+                                      metadata.systemAccessRequests = [];
+                                    }
+                                    
+                                    // Find if this system is already in the array
+                                    const existingIndex = metadata.systemAccessRequests.findIndex(
+                                      (s: any) => s.systemId === system.id
+                                    );
+                                    
+                                    // Update systemAccessRequests array
+                                    if (e.target.checked && existingIndex === -1) {
+                                      // Add new system access request
+                                      metadata.systemAccessRequests.push({
+                                        systemId: system.id,
+                                        accessLevel: "read"
+                                      });
+                                    } else if (!e.target.checked && existingIndex !== -1) {
+                                      // Remove system access request
+                                      metadata.systemAccessRequests.splice(existingIndex, 1);
+                                    }
+                                    
+                                    // Update form value
+                                    field.onChange(e.target.checked);
+                                    form.setValue("metadata", metadata);
+                                    updateStaffRequestDetails(metadata);
+                                  }}
+                                />
+                              </FormControl>
+                              <div className="flex-1">
+                                <FormLabel>
+                                  {system.name}
+                                </FormLabel>
+                                <FormDescription>
+                                  {system.description || "Access to this system"}
+                                </FormDescription>
+                              </div>
+                              
+                              {field.value && (
+                                <Select
+                                  value={
+                                    (form.getValues().metadata?.systemAccessRequests || [])
+                                      .find((s: any) => s.systemId === system.id)?.accessLevel || "read"
+                                  }
+                                  onValueChange={(value) => {
+                                    // Get current metadata
+                                    const metadata = form.getValues().metadata || {};
+                                    
+                                    // Find this system in the array
+                                    const existingIndex = (metadata.systemAccessRequests || []).findIndex(
+                                      (s: any) => s.systemId === system.id
+                                    );
+                                    
+                                    // Update access level
+                                    if (existingIndex !== -1) {
+                                      metadata.systemAccessRequests[existingIndex].accessLevel = value;
+                                    }
+                                    
+                                    // Update form value
+                                    form.setValue("metadata", metadata);
+                                    updateStaffRequestDetails(metadata);
+                                  }}
+                                >
+                                  <SelectTrigger className="w-32">
+                                    <SelectValue placeholder="Access Level" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="read">Read</SelectItem>
+                                    <SelectItem value="write">Write</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
                 <FormField
                   control={form.control}
                   name="metadata.additionalNotes"
