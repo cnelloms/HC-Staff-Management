@@ -1042,8 +1042,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // System routes
-  app.get('/api/systems', async (req: Request, res: Response) => {
+  // System routes - managers can view
+  app.get('/api/systems', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
     try {
       const systems = await storage.getSystems();
       return res.json(systems);
@@ -1053,8 +1053,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get a specific system by ID
-  app.get('/api/systems/:id', async (req: Request, res: Response) => {
+  // Get a specific system by ID - managers can view
+  app.get('/api/systems/:id', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -1360,8 +1360,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Update a system access entry
-  app.patch('/api/system-access/:id', async (req: Request, res: Response) => {
+  // Update a system access entry - admin only
+  app.patch('/api/system-access/:id', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
     try {
       // Check session status
       if (!req.session || !req.session.directUser) {
@@ -1458,8 +1458,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Delete a system access entry
-  app.delete('/api/system-access/:id', async (req: Request, res: Response) => {
+  // Delete a system access entry - admin only
+  app.delete('/api/system-access/:id', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
     try {
       console.log('Attempting to delete system access with ID:', req.params.id);
       
