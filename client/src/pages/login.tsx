@@ -153,15 +153,17 @@ export default function LoginPage() {
               <Button 
                 type="button" 
                 variant="outline" 
-                className="w-full"
+                className="w-full flex items-center justify-center bg-white hover:bg-gray-50 border-gray-300 text-gray-800"
                 onClick={() => window.location.href = "/api/replit/login"}
               >
-                <img 
-                  src="https://replit.com/public/images/mark.png" 
-                  alt="Replit Logo" 
-                  className="h-4 w-4 mr-2"
-                />
-                Sign in with Replit
+                <span className="flex items-center">
+                  <img 
+                    src="https://replit.com/public/images/logo-small.png" 
+                    alt="Replit Logo" 
+                    className="h-5 w-5 mr-2"
+                  />
+                  Sign in with Replit
+                </span>
               </Button>
             </form>
           </CardContent>
