@@ -773,8 +773,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/users/:userId', deleteUser);
   
   // Employee routes
-  // Get all employees 
-  app.get('/api/employees', async (req: Request, res: Response) => {
+  // Get all employees - manager access required
+  app.get('/api/employees', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
     try {
       const employees = await storage.getEmployees();
       return res.json(employees);
@@ -909,8 +909,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Department routes
-  app.get('/api/departments', async (req: Request, res: Response) => {
+  // Department routes - managers can view
+  app.get('/api/departments', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
     try {
       const departments = await storage.getDepartments();
       return res.json(departments);
@@ -920,7 +920,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/departments/:id', async (req: Request, res: Response) => {
+  app.get('/api/departments/:id', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -1678,8 +1678,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Employee Role routes
-  app.get('/api/employees/:employeeId/roles', async (req: Request, res: Response) => {
+  // Employee Role routes - manager can view
+  app.get('/api/employees/:employeeId/roles', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
     try {
       const employeeId = parseInt(req.params.employeeId);
       if (isNaN(employeeId)) {
@@ -1694,8 +1694,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Add role to employee
-  app.post('/api/employees/:employeeId/roles', async (req: Request, res: Response) => {
+  // Add role to employee - admin only
+  app.post('/api/employees/:employeeId/roles', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
     try {
       const employeeId = parseInt(req.params.employeeId);
       const { roleId } = req.body;
@@ -1716,8 +1716,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Remove role from employee
-  app.delete('/api/employees/:employeeId/roles/:roleId', async (req: Request, res: Response) => {
+  // Remove role from employee - admin only
+  app.delete('/api/employees/:employeeId/roles/:roleId', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
     try {
       const employeeId = parseInt(req.params.employeeId);
       const roleId = parseInt(req.params.roleId);
