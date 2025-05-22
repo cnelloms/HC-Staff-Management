@@ -475,7 +475,7 @@ export function SystemAccessManager() {
               <SelectValue placeholder="Filter by employee" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Employees</SelectItem>
+              <SelectItem value="all">All Employees</SelectItem>
               {employees?.map((employee: any) => (
                 <SelectItem key={employee.id} value={employee.id.toString()}>
                   {employee.firstName} {employee.lastName}
@@ -491,7 +491,7 @@ export function SystemAccessManager() {
               <SelectValue placeholder="Filter by system" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Systems</SelectItem>
+              <SelectItem value="all">All Systems</SelectItem>
               {systems?.map((system: any) => (
                 <SelectItem key={system.id} value={system.id.toString()}>
                   {system.name}
