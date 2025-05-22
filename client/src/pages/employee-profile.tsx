@@ -57,6 +57,12 @@ export default function EmployeeProfile() {
   const { data: employee, isLoading } = useQuery<Employee>({
     queryKey: [`/api/employees/${employeeId}`],
   });
+  
+  // Fetch employee activities
+  const { data: activities = [], isLoading: isLoadingActivities } = useQuery<Activity[]>({
+    queryKey: [`/api/employees/${employeeId}/activities`],
+    enabled: !!employeeId,
+  });
 
   const updateStatusMutation = useMutation({
     mutationFn: async (status: 'active' | 'inactive' | 'onboarding') => {
@@ -78,6 +84,32 @@ export default function EmployeeProfile() {
       });
     },
   });
+  
+  // Helper function to format activity timestamps
+  const formatTimestamp = (timestamp: string | Date) => {
+    try {
+      const date = new Date(timestamp);
+      // If it's today, show relative time (e.g., "2 hours ago")
+      const today = new Date();
+      if (date.toDateString() === today.toDateString()) {
+        return `Today, ${format(date, 'h:mm a')}`;
+      }
+      // If it's yesterday, show "Yesterday"
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (date.toDateString() === yesterday.toDateString()) {
+        return `Yesterday, ${format(date, 'h:mm a')}`;
+      }
+      // If it's this year, show month and day
+      if (date.getFullYear() === today.getFullYear()) {
+        return format(date, 'MMM d, h:mm a');
+      }
+      // Otherwise show full date
+      return format(date, 'MMM d, yyyy h:mm a');
+    } catch (error) {
+      return 'Unknown date';
+    }
+  };
   
   const deleteEmployeeMutation = useMutation({
     mutationFn: async () => {
@@ -125,9 +157,7 @@ export default function EmployeeProfile() {
     );
   }
 
-  const formatTimestamp = (timestamp: string) => {
-    return format(new Date(timestamp), 'MMM d, yyyy h:mm a');
-  };
+  // The improved formatTimestamp function is already defined above
 
   return (
     <>
@@ -280,29 +310,70 @@ export default function EmployeeProfile() {
               <Card>
                 <CardHeader>
                   <CardTitle>Recent Activity</CardTitle>
-                  <CardDescription>Latest actions and updates for this employee</CardDescription>
+                  <CardDescription>Latest actions, changes and update requests for this employee</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {employee.activities && employee.activities.length > 0 ? (
+                  {isLoadingActivities ? (
                     <div className="space-y-4">
-                      {employee.activities.map((activity: Activity) => (
-                        <div key={activity.id} className="flex items-start space-x-4">
-                          <div className="rounded-full bg-primary/10 p-2">
-                            <Clock className="h-4 w-4 text-primary" />
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-sm">
-                              <span className="font-medium">{activity.activityType.replace('_', ' ').toUpperCase()}</span>: {activity.description}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatTimestamp(activity.timestamp)}
-                            </p>
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex items-start space-x-4 animate-pulse">
+                          <div className="rounded-full bg-muted p-2 h-8 w-8"></div>
+                          <div className="space-y-2 flex-1">
+                            <div className="h-4 bg-muted rounded w-3/4"></div>
+                            <div className="h-3 bg-muted rounded w-1/4"></div>
                           </div>
                         </div>
                       ))}
                     </div>
+                  ) : activities && activities.length > 0 ? (
+                    <div className="space-y-4">
+                      {activities.map((activity: Activity) => {
+                        // Select the appropriate icon based on activity type
+                        let ActivityIcon = Clock;
+                        if (activity.activityType === 'profile_update') {
+                          ActivityIcon = User;
+                        } else if (activity.activityType === 'system_access') {
+                          ActivityIcon = Settings;
+                        } else if (activity.activityType === 'ticket') {
+                          ActivityIcon = TicketIcon;
+                        } else if (activity.activityType === 'change_request') {
+                          ActivityIcon = Edit;
+                        }
+                        
+                        // Format the activity type for display
+                        const formattedType = activity.activityType
+                          .replace(/_/g, ' ')
+                          .split(' ')
+                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                          .join(' ');
+                        
+                        return (
+                          <div key={activity.id} className="flex items-start space-x-4">
+                            <div className="rounded-full bg-primary/10 p-2">
+                              <ActivityIcon className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-sm">
+                                <span className="font-medium">{formattedType}</span>: {activity.description}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatTimestamp(activity.timestamp)}
+                              </p>
+                              {activity.metadata?.status && (
+                                <p className="text-xs">
+                                  <StatusBadge 
+                                    status={activity.metadata.status} 
+                                    label={activity.metadata.status.charAt(0).toUpperCase() + activity.metadata.status.slice(1)} 
+                                  />
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   ) : (
-                    <p className="text-muted-foreground text-center py-4">No recent activity</p>
+                    <p className="text-muted-foreground text-center py-4">No recent activity found for this employee</p>
                   )}
                 </CardContent>
               </Card>
