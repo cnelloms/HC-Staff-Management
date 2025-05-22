@@ -27,11 +27,11 @@ import {
   Settings,
   Shield,
   ExternalLink,
-  User,
+  UserIcon,
   AlertTriangle
 } from "lucide-react";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell
 } from "recharts";
 import { 
@@ -401,7 +401,7 @@ export default function AdminDashboardPage() {
                           <h3 className="text-2xl font-bold mt-1">{dashboardStats?.loginEvents || 0}</h3>
                         </div>
                         <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-                          <User className="h-5 w-5 text-green-600 dark:text-green-400" />
+                          <UserIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
                         </div>
                       </div>
                     </CardContent>
