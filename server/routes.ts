@@ -744,11 +744,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
       
-      // For now, return hardcoded settings
+      // Get actual settings from database
+      const [settings] = await db.query.authSettings.findMany({
+        limit: 1,
+        orderBy: (settings, { desc }) => [desc(settings.id)]
+      });
+      
       return res.json({
-        directLoginEnabled: true,
-        microsoftLoginEnabled: false, // Microsoft login is coming soon
-        replitLoginEnabled: false // Replit login is not enabled
+        directLoginEnabled: settings?.directLoginEnabled ?? true,
+        microsoftLoginEnabled: settings?.microsoftLoginEnabled ?? false,
+        replitLoginEnabled: settings?.replitLoginEnabled ?? true
       });
     } catch (error) {
       console.error('Error fetching auth settings:', error);
@@ -770,12 +775,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
       
-      // For now, just return success with hardcoded values
-      return res.json({
-        directLoginEnabled: directLoginEnabled ?? true,
-        microsoftLoginEnabled: false, // Always false, Microsoft login is coming soon
-        replitLoginEnabled: false // Always false, Replit login is not enabled
-      });
+      // Update settings in the database
+      const [updatedSettings] = await db.insert(authSettings)
+        .values({
+          directLoginEnabled: directLoginEnabled ?? true,
+          microsoftLoginEnabled: microsoftLoginEnabled ?? false,
+          replitLoginEnabled: replitLoginEnabled ?? true,
+          updatedById: req.session?.directUser?.id || (req.user as any)?.id || null
+        })
+        .returning();
+        
+      return res.json(updatedSettings);
     } catch (error) {
       console.error('Error updating auth settings:', error);
       return res.status(500).json({ message: 'Failed to update auth settings' });
