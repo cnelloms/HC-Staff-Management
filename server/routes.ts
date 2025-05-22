@@ -21,6 +21,7 @@ import { requireAdmin, requireEmployeeRole } from "./authMiddleware";
 
 import notificationRoutes from "./notification-routes";
 import changeRequestRoutes from "./change-request-routes";
+import adminUserRoutes from "./admin-user-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up Replit authentication
