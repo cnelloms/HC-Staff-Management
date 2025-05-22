@@ -372,9 +372,10 @@ export const keyValueStore = pgTable("key_value_store", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => {
   return {
-    namespaceKeyUserIdx: index("namespace_key_user_idx").on(
+    namespaceKeyUserIdx: uniqueIndex("namespace_key_user_idx").on(
       table.namespace, 
-      table.key
+      table.key,
+      table.userId
     )
   };
 });
@@ -425,22 +426,25 @@ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 // Change Requests table
 export const changeRequests = pgTable("change_requests", {
   id: serial("id").primaryKey(),
-  targetEmployeeId: integer("target_employee_id").notNull(),
-  requesterEmployeeId: integer("requester_employee_id").notNull(),
-  payload: jsonb("payload").notNull(),          // diff object
-  status: text("status").default("pending").notNull(), // pending/approved/rejected
+  employeeId: integer("employee_id").notNull(),
+  requestedBy: integer("requested_by").notNull(),
+  requestType: text("request_type").notNull(), // profile, system_access, role, etc.
+  field: text("field").notNull(), // Specific field being changed
+  currentValue: text("current_value"), // Current field value
+  requestedValue: text("requested_value").notNull(), // Requested new value
+  reason: text("reason"), // Optional reason for change
+  status: text("status").default("pending").notNull(), // pending, approved, rejected
   approvedById: integer("approved_by_id"),
-  createdAt: timestamp("created_at").defaultNow(),
+  approvedAt: timestamp("approved_at"),
+  rejectedReason: text("rejected_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
-export const insertChangeRequestSchema = createInsertSchema(changeRequests).pick({
-  targetEmployeeId: true,
-  requesterEmployeeId: true,
-  payload: true,
-  status: true,
-  approvedById: true,
-});
+export const insertChangeRequestSchema = createInsertSchema(changeRequests);
+
+export type ChangeRequest = typeof changeRequests.$inferSelect;
+export type InsertChangeRequest = z.infer<typeof insertChangeRequestSchema>;
 
 // Audit Log table
 export const auditLog = pgTable("audit_log", {
