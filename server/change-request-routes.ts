@@ -87,13 +87,44 @@ crRouter.post("/employees/:id/requests", isAuthenticated, async (req, res) => {
   }
 });
 
-/** list pending requests */
-crRouter.get("/change_requests", isAuthenticated, requireRole("admin"), async (_req, res) => {
+/** list pending requests - managers can view requests for their team, admins see all */
+crRouter.get("/change_requests", isAuthenticated, requireRole("manager"), async (req, res) => {
   try {
-    const rows = await db
-        .select()
-        .from(changeRequests)
-        .where(eq(changeRequests.status, "pending"));
+    // Check if user is admin or manager
+    const isAdmin = req.user?.isAdmin === true;
+    const myEmployeeId = req.user?.employeeId;
+    
+    if (!myEmployeeId) {
+      return res.status(403).json({ message: "Your user account is not linked to an employee record" });
+    }
+    
+    let rows;
+    
+    if (isAdmin) {
+      // Admins see all pending requests
+      rows = await db
+          .select()
+          .from(changeRequests)
+          .where(eq(changeRequests.status, "pending"));
+    } else {
+      // Get all employees this user manages
+      const managedEmployees = await db.query.employees.findMany({
+        where: (fields, { eq }) => eq(fields.managerId, myEmployeeId)
+      });
+      
+      const managedIds = managedEmployees.map(emp => emp.id);
+      
+      // Managers only see pending requests for their direct reports
+      rows = await db
+          .select()
+          .from(changeRequests)
+          .where((fields, { and, eq, inArray }) => 
+            and(
+              eq(fields.status, "pending"),
+              inArray(fields.targetEmployeeId, managedIds)
+            )
+          );
+    }
     
     res.json(rows);
   } catch (error) {
@@ -102,23 +133,51 @@ crRouter.get("/change_requests", isAuthenticated, requireRole("admin"), async (_
   }
 });
 
-/** approve / reject */
-crRouter.patch("/change_requests/:id", isAuthenticated, requireRole("admin"), async (req, res) => {
+/** approve / reject - managers can approve for their team, admins can approve all */
+crRouter.patch("/change_requests/:id", isAuthenticated, requireRole("manager"), async (req, res) => {
   const status = req.body.status;
   if (!["approved", "rejected"].includes(status)) {
     return res.status(422).json({ message: "Status must be 'approved' or 'rejected'" });
   }
 
   try {
+    // Check authentication and role
     if (!req.user?.employeeId) {
       return res.status(401).json({ message: "Unauthorized access" });
     }
     
+    const myEmployeeId = req.user.employeeId;
+    const isAdmin = req.user.isAdmin === true;
+    
+    // Get the change request first
+    const changeRequest = await db.query.changeRequests.findFirst({
+      where: (fields, { eq }) => eq(fields.id, Number(req.params.id))
+    });
+    
+    if (!changeRequest) {
+      return res.status(404).json({ message: "Change request not found" });
+    }
+    
+    // Check if user has permission to approve/reject
+    // Admins can approve/reject any request
+    // Managers can only approve/reject requests for employees they manage
+    const targetEmployeeId = changeRequest.targetEmployeeId;
+    
+    if (!isAdmin) {
+      const isManager = await manages(myEmployeeId, targetEmployeeId);
+      if (!isManager) {
+        return res.status(403).json({ 
+          message: "You don't have permission to approve/reject this change request" 
+        });
+      }
+    }
+    
+    // Update the change request status
     const [cr] = await db
         .update(changeRequests)
         .set({ 
           status, 
-          approvedById: req.user.employeeId,
+          approvedById: myEmployeeId,
           updatedAt: new Date()
         })
         .where(eq(changeRequests.id, Number(req.params.id)))

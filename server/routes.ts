@@ -1074,7 +1074,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Create a new system (admin only)
-  app.post('/api/systems', async (req: Request, res: Response) => {
+  app.post('/api/systems', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
     try {
       // Check if the user is a global admin
       console.log('POST /api/systems - Session check:', {
@@ -1104,7 +1104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Update a system (admin only)
-  app.patch('/api/systems/:id', async (req: Request, res: Response) => {
+  app.patch('/api/systems/:id', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
     try {
       // Check if the user is a global admin
       console.log('PATCH /api/systems/:id - Session check:', {
@@ -1143,7 +1143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Delete a system (admin only)
-  app.delete('/api/systems/:id', async (req: Request, res: Response) => {
+  app.delete('/api/systems/:id', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
     try {
       // Check if the user is a global admin
       console.log('DELETE /api/systems/:id - Session check:', {
@@ -1188,8 +1188,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get system access entries for an employee
-  app.get('/api/employees/:employeeId/systems', async (req: Request, res: Response) => {
+  // Get system access entries for an employee - managers can view
+  app.get('/api/employees/:employeeId/systems', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
     try {
       const employeeId = parseInt(req.params.employeeId);
       if (isNaN(employeeId)) {
@@ -1752,8 +1752,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Dashboard routes
-  app.get('/api/dashboard/stats', async (req: Request, res: Response) => {
+  // Dashboard routes - manager access required
+  app.get('/api/dashboard/stats', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
     try {
       const stats = await storage.getDashboardStats();
       return res.json(stats);
@@ -1763,8 +1763,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Endpoint to get system access statistics
-  app.get('/api/dashboard/access-stats', async (req: Request, res: Response) => {
+  // Endpoint to get system access statistics - manager access required
+  app.get('/api/dashboard/access-stats', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
     try {
       const stats = await storage.getSystemAccessStats();
       return res.json(stats);
@@ -1775,7 +1775,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Endpoint to get all system access entries (used by admin dashboard)
-  app.get('/api/system-access-admin', async (req: Request, res: Response) => {
+  app.get('/api/system-access-admin', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
     try {
       // Check if the user is a global admin
       console.log('GET /api/system-access-admin - Session check:', {
@@ -1817,7 +1817,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get('/api/dashboard/recent-activities', async (req: Request, res: Response) => {
+  app.get('/api/dashboard/recent-activities', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
     try {
       // Get the limit from query params or default to 10
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
