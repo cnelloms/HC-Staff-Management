@@ -1907,8 +1907,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard routes - manager access required
-  app.get('/api/dashboard/stats', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
+  app.get('/api/dashboard/stats', isAuthenticated, async (req: Request, res: Response) => {
     try {
+      // Allow access if user is admin or has manager role
+      if (!req.user?.isAdmin && (!req.user?.roles || !req.user?.roles.includes("manager"))) {
+        return res.status(403).json({ message: 'Forbidden: Admin or manager role required' });
+      }
+      
       const stats = await storage.getDashboardStats();
       return res.json(stats);
     } catch (error) {
@@ -1917,9 +1922,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Endpoint to get system access statistics - manager access required
-  app.get('/api/dashboard/access-stats', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
+  // Endpoint to get system access statistics - manager or admin access required
+  app.get('/api/dashboard/access-stats', isAuthenticated, async (req: Request, res: Response) => {
     try {
+      // Allow access if user is admin or has manager role
+      if (!req.user?.isAdmin && (!req.user?.roles || !req.user?.roles.includes("manager"))) {
+        return res.status(403).json({ message: 'Forbidden: Admin or manager role required' });
+      }
+      
       const stats = await storage.getSystemAccessStats();
       return res.json(stats);
     } catch (error) {
@@ -1971,7 +1981,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get('/api/dashboard/recent-activities', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
+  app.get('/api/dashboard/recent-activities', isAuthenticated, async (req: Request, res: Response) => {
+    // Allow access if user is admin or has manager role
+    if (!req.user?.isAdmin && (!req.user?.roles || !req.user?.roles.includes("manager"))) {
+      return res.status(403).json({ message: 'Forbidden: Admin or manager role required' });
+    }
     try {
       // Get the limit from query params or default to 10
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
