@@ -5,13 +5,17 @@ import { Request, Response, NextFunction } from 'express';
  * Used to protect admin-only routes in the API
  */
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  // Check if the user exists and has admin privileges
-  if (!req.user?.isAdmin) {
-    return res.status(403).json({ message: 'Forbidden: Admin access required' });
+  // Check admin status from multiple authentication methods
+  const isDirectAdmin = req.session?.directUser?.isAdmin === true;
+  const isReplitAdmin = req.user?.isAdmin === true;
+  
+  // If admin through any method, proceed
+  if (isDirectAdmin || isReplitAdmin) {
+    return next();
   }
   
-  // User has admin privileges, proceed
-  next();
+  // No admin privileges found
+  return res.status(403).json({ message: 'Forbidden: Admin access required' });
 }
 
 /**

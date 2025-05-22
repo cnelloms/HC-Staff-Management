@@ -1913,8 +1913,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Add role to employee - admin only
-  app.post('/api/employees/:employeeId/roles', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
+  app.post('/api/employees/:employeeId/roles', isAuthenticated, async (req: Request, res: Response) => {
     try {
+      // Check if user is admin from both session and user object
+      const isDirectAdmin = req.session?.directUser?.isAdmin === true;
+      const isReplitAdmin = req.user?.isAdmin === true;
+      
+      if (!isDirectAdmin && !isReplitAdmin) {
+        return res.status(403).json({ message: 'Forbidden: Admin access required' });
+      }
+      
       const employeeId = parseInt(req.params.employeeId);
       const { roleId } = req.body;
       
@@ -1940,8 +1948,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Remove role from employee - admin only
-  app.delete('/api/employees/:employeeId/roles/:roleId', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
+  app.delete('/api/employees/:employeeId/roles/:roleId', isAuthenticated, async (req: Request, res: Response) => {
     try {
+      // Check if user is admin from both session and user object
+      const isDirectAdmin = req.session?.directUser?.isAdmin === true;
+      const isReplitAdmin = req.user?.isAdmin === true;
+      
+      if (!isDirectAdmin && !isReplitAdmin) {
+        return res.status(403).json({ message: 'Forbidden: Admin access required' });
+      }
+      
       const employeeId = parseInt(req.params.employeeId);
       const roleId = parseInt(req.params.roleId);
       
