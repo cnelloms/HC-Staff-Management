@@ -15,6 +15,7 @@ import { deleteUser } from "./user-delete-route";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { enrichRoles, requireRole } from "./middleware/role-middleware";
 
 import notificationRoutes from "./notification-routes";
 
@@ -27,6 +28,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Set up direct authentication
   setupDirectAuth(app);
+  
+  // Apply role enrichment middleware after authentication
+  app.use(enrichRoles);
   
   // Emergency standalone login page
   app.get('/emergency-login', (req, res) => {
