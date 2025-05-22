@@ -1693,7 +1693,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Delete a system access entry - admin only
-  app.delete('/api/system-access/:id', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
+  app.delete('/api/system-access/:id', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
     try {
       console.log('Attempting to delete system access with ID:', req.params.id);
       
