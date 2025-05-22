@@ -133,6 +133,9 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
       // Then invalidate collections that might contain this employee
       queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
       
+      // Make sure to invalidate the activities for this employee
+      queryClient.invalidateQueries({ queryKey: [`/api/employees/${employeeId}/activities`] });
+      
       // If this employee is also a manager for others, those need to be refreshed too
       queryClient.invalidateQueries({ 
         predicate: (query) => {
