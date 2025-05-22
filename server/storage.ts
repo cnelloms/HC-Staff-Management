@@ -329,13 +329,30 @@ export class DatabaseStorage implements IStorage {
       )
     )];
     
-    // Create employee with tickets as a separate object to avoid type issues
-    const employeeWithTickets = {
+    // Check if employee has a manager and include manager data
+    let managerData = null;
+    if (employee.managerId) {
+      const [manager] = await db.select()
+        .from(employees)
+        .where(eq(employees.id, employee.managerId));
+      
+      if (manager) {
+        managerData = {
+          id: manager.id,
+          name: `${manager.firstName} ${manager.lastName}`,
+          position: manager.position
+        };
+      }
+    }
+    
+    // Create employee with tickets and manager as separate objects to avoid type issues
+    const employeeWithDetails = {
       ...employee,
-      tickets: employeeTickets
+      tickets: employeeTickets,
+      manager: managerData || { name: "No manager" }
     };
     
-    return employeeWithTickets;
+    return employeeWithDetails;
   }
 
   async createEmployee(employee: InsertEmployee): Promise<Employee> {

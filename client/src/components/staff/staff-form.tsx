@@ -126,15 +126,26 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
       // Get the updated employee data with ID
       const data = await response.json();
       
-      // Perform a more aggressive cache invalidation to ensure all components refresh
-      // Clear all employee-related queries from the cache
+      // More targeted approach to cache invalidation
+      // First, remove the specific employee from cache to force a fresh fetch
+      queryClient.removeQueries({ queryKey: [`/api/employees/${employeeId}`] });
+      
+      // Then invalidate collections that might contain this employee
       queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
-      queryClient.invalidateQueries({ queryKey: [`/api/employees/${employeeId}`] });
+      
+      // If this employee is also a manager for others, those need to be refreshed too
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          // This will match any query for a specific employee
+          return query.queryKey.length > 0 && 
+                 typeof query.queryKey[0] === 'string' && 
+                 query.queryKey[0].startsWith('/api/employees/');
+        }
+      });
       
       // Also invalidate any profile data that might be using this employee's data
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/employees/me'] });
-      queryClient.invalidateQueries(); // Force a full refresh of all data
       
       // Show success message
       toast({
@@ -142,11 +153,11 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
         description: "The employee has been successfully updated.",
       });
       
-      // Force a delay to ensure cache is fully updated before navigating
-      setTimeout(() => {
-        // Navigate to the correct profile page using the employee ID
-        navigate(`/employee/${employeeId}`);
-      }, 300);
+      // Force a refresh from server before navigating
+      await queryClient.refetchQueries({ queryKey: [`/api/employees/${employeeId}`] });
+      
+      // Navigate to the correct profile page using the employee ID
+      navigate(`/employee/${employeeId}`);
     },
     onError: (error) => {
       toast({

@@ -1014,7 +1014,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Get enhanced employee data with manager info included
-        const enhancedEmployee = await storage.getEmployeeWithManager(id);
+        const enhancedEmployee = await storage.getEmployeeById(id);
         
         // Sync the employee data back to any associated user accounts in the database
         const syncResult = await storage.syncEmployeeToUser(id);
