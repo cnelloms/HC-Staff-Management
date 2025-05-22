@@ -24,6 +24,8 @@ export interface IStorage {
   getPositionById(id: number): Promise<Position | undefined>;
   getPositionsByDepartment(departmentId: number): Promise<Position[]>;
   createPosition(position: InsertPosition): Promise<Position>;
+  updatePosition(id: number, position: Partial<InsertPosition>): Promise<Position | undefined>;
+  deletePosition(id: number): Promise<boolean>;
   
   // Department operations
   getDepartments(): Promise<Department[]>;
@@ -156,6 +158,45 @@ export class DatabaseStorage implements IStorage {
   async createPosition(position: InsertPosition): Promise<Position> {
     const [newPosition] = await db.insert(positions).values(position).returning();
     return newPosition;
+  }
+
+  async updatePosition(id: number, position: Partial<InsertPosition>): Promise<Position | undefined> {
+    const [updatedPosition] = await db
+      .update(positions)
+      .set(position)
+      .where(eq(positions.id, id))
+      .returning();
+    return updatedPosition || undefined;
+  }
+
+  async deletePosition(id: number): Promise<boolean> {
+    try {
+      // Check if the position has associated employees
+      const employeeResult = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(employees)
+        .where(eq(employees.positionId, id));
+      
+      const employeeCount = Number(employeeResult[0].count);
+      if (employeeCount > 0) {
+        throw new Error("Cannot delete position with associated employees");
+      }
+      
+      // Delete the position
+      await db.delete(positions).where(eq(positions.id, id));
+      
+      // Log the deletion as an activity
+      await db.insert(activities).values({
+        employeeId: 0, // System activity
+        activityType: 'position_deletion',
+        description: `Position (ID: ${id}) was deleted from the system`
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Error deleting position:", error);
+      throw error;
+    }
   }
 
   // Department operations

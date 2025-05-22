@@ -1229,6 +1229,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'Failed to create position' });
     }
   });
+  
+  // Update position
+  app.patch('/api/positions/:id', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid position ID' });
+      }
+      
+      const positionData = req.body;
+      const updatedPosition = await storage.updatePosition(id, positionData);
+      
+      if (!updatedPosition) {
+        return res.status(404).json({ message: 'Position not found' });
+      }
+      
+      return res.json(updatedPosition);
+    } catch (error) {
+      console.error('Error updating position:', error);
+      return res.status(500).json({ message: 'Failed to update position' });
+    }
+  });
+  
+  // Delete position
+  app.delete('/api/positions/:id', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid position ID' });
+      }
+      
+      const result = await storage.deletePosition(id);
+      return res.json({ success: result });
+    } catch (error: any) {
+      console.error('Error deleting position:', error);
+      return res.status(500).json({ 
+        message: error.message || 'Failed to delete position',
+        success: false 
+      });
+    }
+  });
 
   // System routes - managers can view, admins can manage
   app.get('/api/systems', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
