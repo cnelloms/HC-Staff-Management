@@ -608,7 +608,8 @@ function ChangePasswordForm({ userId }: { userId: string }) {
     setIsLoading(true);
     
     try {
-      const response = await fetch(`/api/users/${userId}/change-password`, {
+      // Use the admin route directly for more reliable password changes
+      const response = await fetch(`/api/admin/users/${userId}/pass`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
