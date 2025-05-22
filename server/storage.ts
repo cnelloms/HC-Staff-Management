@@ -171,11 +171,19 @@ export class DatabaseStorage implements IStorage {
 
   async deletePosition(id: number): Promise<boolean> {
     try {
-      // Check if the position has associated employees
+      // First, get the position to check if it exists and to get its title
+      const position = await this.getPositionById(id);
+      if (!position) {
+        throw new Error("Position not found");
+      }
+      
+      // Check if the position has associated employees by matching the position title
+      // Since the employee table stores position as a text field, not a foreign key
+      const positionTitle = position.title;
       const employeeResult = await db
         .select({ count: sql`COUNT(*)` })
         .from(employees)
-        .where(eq(employees.positionId, id));
+        .where(eq(employees.position, positionTitle));
       
       const employeeCount = Number(employeeResult[0].count);
       if (employeeCount > 0) {
@@ -189,7 +197,7 @@ export class DatabaseStorage implements IStorage {
       await db.insert(activities).values({
         employeeId: 0, // System activity
         activityType: 'position_deletion',
-        description: `Position (ID: ${id}) was deleted from the system`
+        description: `Position "${position.title}" (ID: ${id}) was deleted from the system`
       });
       
       return true;
