@@ -126,9 +126,15 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
       // Get the updated employee data with ID
       const data = await response.json();
       
-      // Invalidate both list and specific employee queries
+      // Perform a more aggressive cache invalidation to ensure all components refresh
+      // Clear all employee-related queries from the cache
       queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
       queryClient.invalidateQueries({ queryKey: [`/api/employees/${employeeId}`] });
+      
+      // Also invalidate any profile data that might be using this employee's data
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/employees/me'] });
+      queryClient.invalidateQueries(); // Force a full refresh of all data
       
       // Show success message
       toast({
@@ -136,8 +142,11 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
         description: "The employee has been successfully updated.",
       });
       
-      // Navigate to the correct profile page using the employee ID
-      navigate(`/employee/${employeeId}`);
+      // Force a delay to ensure cache is fully updated before navigating
+      setTimeout(() => {
+        // Navigate to the correct profile page using the employee ID
+        navigate(`/employee/${employeeId}`);
+      }, 300);
     },
     onError: (error) => {
       toast({
