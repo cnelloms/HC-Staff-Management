@@ -976,6 +976,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'Failed to update department' });
     }
   });
+  
+  app.delete('/api/departments/:id', isAdmin, async (req: Request, res: Response) => {
+    try {
+      const departmentId = parseInt(req.params.id);
+      if (isNaN(departmentId)) {
+        return res.status(400).json({ message: 'Invalid department ID' });
+      }
+      
+      // Get the department first to check if it exists
+      const department = await storage.getDepartmentById(departmentId);
+      if (!department) {
+        return res.status(404).json({ message: 'Department not found' });
+      }
+      
+      // Attempt to delete the department
+      await storage.deleteDepartment(departmentId);
+      
+      return res.json({ success: true, message: 'Department deleted successfully' });
+    } catch (error: any) {
+      console.error('Error deleting department:', error);
+      // Return specific error message if it's a constraint error
+      if (error.message && (
+        error.message.includes('associated employees') || 
+        error.message.includes('associated positions')
+      )) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: 'Failed to delete department' });
+    }
+  });
 
   // Position routes
   app.get('/api/positions', async (req: Request, res: Response) => {

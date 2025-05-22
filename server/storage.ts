@@ -185,6 +185,44 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updatedDepartment || undefined;
   }
+  
+  async deleteDepartment(id: number): Promise<boolean> {
+    try {
+      // Check if the department has associated employees or positions
+      const [employeeCount] = await db
+        .select({ count: count() })
+        .from(employees)
+        .where(eq(employees.departmentId, id));
+      
+      if (employeeCount.count > 0) {
+        throw new Error("Cannot delete department with associated employees");
+      }
+      
+      const [positionCount] = await db
+        .select({ count: count() })
+        .from(positions)
+        .where(eq(positions.departmentId, id));
+      
+      if (positionCount.count > 0) {
+        throw new Error("Cannot delete department with associated positions");
+      }
+      
+      // Delete the department
+      await db.delete(departments).where(eq(departments.id, id));
+      
+      // Log the deletion as an activity
+      await db.insert(activities).values({
+        employeeId: 0, // System activity
+        activityType: 'department_deletion',
+        description: `Department (ID: ${id}) was deleted from the system`
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Error deleting department:", error);
+      throw error;
+    }
+  }
 
   // Employee operations
   async getEmployees(): Promise<Employee[]> {
