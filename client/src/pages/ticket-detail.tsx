@@ -187,12 +187,20 @@ export default function TicketDetail() {
               {ticket.status === 'open' && !ticket.assigneeId && currentUser && (
                 <Button 
                   onClick={() => {
-                    updateTicketMutation.mutate({ 
-                      status: 'in_progress',
-                      assigneeId: currentUser.id
-                    });
-                    setStatus('in_progress');
-                    setAssigneeId(currentUser.id.toString());
+                    if (currentUser && currentUser.id) {
+                      updateTicketMutation.mutate({ 
+                        status: 'in_progress',
+                        assigneeId: currentUser.id
+                      });
+                      setStatus('in_progress');
+                      setAssigneeId(currentUser.id.toString());
+                    } else {
+                      toast({
+                        title: "Error",
+                        description: "Could not determine your user ID. Please try again or contact support.",
+                        variant: "destructive",
+                      });
+                    }
                     
                     toast({
                       title: "Ticket accepted",
