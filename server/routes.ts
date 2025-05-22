@@ -1059,11 +1059,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (existingEmployee) {
         // Identify what fields were changed
         const changedFields = [];
+        const fieldChanges = {};
+        
+        // Map field keys to human-readable names
+        const fieldNames = {
+          firstName: "First Name",
+          lastName: "Last Name",
+          email: "Email",
+          phone: "Phone Number",
+          position: "Job Title",
+          departmentId: "Department",
+          managerId: "Manager",
+          status: "Status",
+          avatar: "Profile Picture"
+        };
+        
         for (const key in employeeData) {
           if (existingEmployee.hasOwnProperty(key) && 
               employeeData[key] !== undefined && 
               existingEmployee[key] !== employeeData[key]) {
-            changedFields.push(key);
+            
+            // Store the field name for the activity log
+            changedFields.push(fieldNames[key] || key);
+            
+            // Store before/after values for detailed logging
+            fieldChanges[key] = {
+              from: existingEmployee[key],
+              to: employeeData[key]
+            };
           }
         }
         
@@ -1073,31 +1096,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const actor = actorId ? await storage.getEmployeeById(actorId) : null;
           const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'System';
           
+          // Get more descriptive information for department and manager changes
+          let enhancedDescription = `${actorName} updated ${changedFields.join(', ')}`;
+          let enhancedMetadata = {
+            changedFields,
+            changedBy: actorId,
+            changes: fieldChanges
+          };
+          
+          // For department changes, get the department names
+          if (fieldChanges.departmentId) {
+            try {
+              const oldDept = await storage.getDepartmentById(fieldChanges.departmentId.from);
+              const newDept = await storage.getDepartmentById(fieldChanges.departmentId.to);
+              
+              if (oldDept && newDept) {
+                enhancedDescription = `${actorName} changed Department from '${oldDept.name}' to '${newDept.name}'`;
+                enhancedMetadata.departmentChange = {
+                  from: oldDept.name,
+                  to: newDept.name
+                };
+              }
+            } catch (err) {
+              console.log("Could not get department details:", err);
+            }
+          }
+          
+          // For manager changes, get the manager names
+          if (fieldChanges.managerId) {
+            try {
+              const oldManager = fieldChanges.managerId.from ? 
+                await storage.getEmployeeById(fieldChanges.managerId.from) : null;
+              const newManager = fieldChanges.managerId.to ? 
+                await storage.getEmployeeById(fieldChanges.managerId.to) : null;
+              
+              const oldManagerName = oldManager ? `${oldManager.firstName} ${oldManager.lastName}` : 'None';
+              const newManagerName = newManager ? `${newManager.firstName} ${newManager.lastName}` : 'None';
+              
+              enhancedDescription = `${actorName} changed Manager from '${oldManagerName}' to '${newManagerName}'`;
+              enhancedMetadata.managerChange = {
+                from: oldManagerName,
+                to: newManagerName
+              };
+            } catch (err) {
+              console.log("Could not get manager details:", err);
+            }
+          }
+          
+          // Special description for job title changes
+          if (fieldChanges.position) {
+            enhancedDescription = `${actorName} changed Job Title from '${fieldChanges.position.from}' to '${fieldChanges.position.to}'`;
+          }
+          
           // Record an activity for the profile update
           const activityData = {
             employeeId: id,
             activityType: 'profile_update',
-            description: `${actorName} updated ${changedFields.join(', ')}`,
+            description: enhancedDescription,
             timestamp: new Date(),
-            metadata: {
-              changedFields,
-              changedBy: actorId
-            }
+            metadata: enhancedMetadata
           };
           
-          console.log("Creating activity record:", activityData);
+          console.log("Creating enhanced activity record:", activityData);
           
           try {
             // Try to insert directly into the activities table using prepared schema
             const [newActivity] = await db.insert(activities).values({
               employeeId: id,
               activityType: 'profile_update',
-              description: `${actorName} updated ${changedFields.join(', ')}`,
+              description: enhancedDescription,
               timestamp: new Date(),
-              metadata: JSON.stringify({
-                changedFields,
-                changedBy: actorId
-              })
+              metadata: JSON.stringify(enhancedMetadata)
             }).returning();
             
             console.log("Activity recorded successfully:", newActivity);
