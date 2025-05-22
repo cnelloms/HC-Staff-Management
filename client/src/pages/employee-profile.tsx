@@ -61,9 +61,10 @@ export default function EmployeeProfile() {
   });
   
   // Fetch employee activities
-  const { data: activities = [], isLoading: isLoadingActivities } = useQuery<Activity[]>({
+  const { data: activities = [], isLoading: isLoadingActivities, refetch: refetchActivities } = useQuery<Activity[]>({
     queryKey: [`/api/employees/${employeeId}/activities`],
     enabled: !!employeeId,
+    refetchInterval: 5000, // Auto-refresh activities every 5 seconds to catch new updates
   });
 
   const updateStatusMutation = useMutation({
