@@ -94,7 +94,8 @@ router.post('/:id/pass', async (req: Request, res: Response) => {
     // Check if user exists and get credentials
     const userCredentials = await db.select()
       .from(credentials)
-      .where(eq(credentials.userId, userId));
+      .where(eq(credentials.userId, userId))
+      .limit(1);
     
     if (userCredentials.length === 0) {
       return res.status(404).json({ message: 'User credentials not found' });
@@ -104,13 +105,13 @@ router.post('/:id/pass', async (req: Request, res: Response) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
     
-    // Update the credentials
+    // Update the credentials - using the credential ID to be more precise
     await db.update(credentials)
       .set({
         passwordHash: hashedPassword,
         updatedAt: new Date()
       })
-      .where(eq(credentials.userId, userId));
+      .where(eq(credentials.id, userCredentials[0].id));
     
     return res.json({ message: 'Password updated successfully' });
   } catch (error) {
