@@ -392,25 +392,32 @@ export function SystemAccessManager() {
   };
 
   // Filter access entries based on search query and filters
-  const filteredEntries = accessEntries?.filter((entry: any) => {
-    // Check search query
-    const searchLower = searchQuery.toLowerCase();
-    const employeeName = `${entry.employee?.firstName || ''} ${entry.employee?.lastName || ''}`.toLowerCase();
-    const systemName = entry.system?.name?.toLowerCase() || '';
+  const filteredEntries = Array.isArray(accessEntries) ? accessEntries.filter((entry: any) => {
+    // Safety check for valid entry
+    if (!entry) return false;
     
-    const matchesSearch = 
-      employeeName.includes(searchLower) || 
-      systemName.includes(searchLower) ||
-      entry.status?.toLowerCase().includes(searchLower) ||
-      entry.accessLevel?.toLowerCase().includes(searchLower);
+    // Check search query
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      const employeeName = `${entry.employee?.firstName || ''} ${entry.employee?.lastName || ''}`.toLowerCase();
+      const systemName = entry.system?.name?.toLowerCase() || '';
+      
+      const matchesSearch = 
+        employeeName.includes(searchLower) || 
+        systemName.includes(searchLower) ||
+        (entry.status?.toLowerCase() || '').includes(searchLower) ||
+        (entry.accessLevel?.toLowerCase() || '').includes(searchLower);
+        
+      if (!matchesSearch) return false;
+    }
     
     // Check filters
     const matchesEmployeeFilter = employeeFilter ? entry.employeeId === employeeFilter : true;
     const matchesSystemFilter = systemFilter ? entry.systemId === systemFilter : true;
     const matchesStatusFilter = statusFilter ? entry.status === statusFilter : true;
     
-    return matchesSearch && matchesEmployeeFilter && matchesSystemFilter && matchesStatusFilter;
-  });
+    return matchesEmployeeFilter && matchesSystemFilter && matchesStatusFilter;
+  }) : [];
 
   // Handle loading states
   const isLoading = accessLoading || employeesLoading || systemsLoading;
