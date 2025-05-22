@@ -738,23 +738,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
       
+      // Get user credentials first
+      const userCredentials = await db.select()
+        .from(credentials)
+        .where(eq(credentials.userId, userId))
+        .limit(1);
+      
+      if (userCredentials.length === 0) {
+        return res.status(404).json({ message: "User credentials not found" });
+      }
+      
       // Hash the new password
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(newPassword, salt);
       
-      // Update the user's password
-      const [updatedCredential] = await db
-        .update(credentials)
+      // Update the user's password using credential ID to be more precise
+      await db.update(credentials)
         .set({
           passwordHash: passwordHash,
           updatedAt: new Date()
         })
-        .where(eq(credentials.userId, userId))
-        .returning();
-      
-      if (!updatedCredential) {
-        return res.status(404).json({ message: "User not found" });
-      }
+        .where(eq(credentials.id, userCredentials[0].id));
       
       return res.json({ message: "Password changed successfully" });
     } catch (error) {
