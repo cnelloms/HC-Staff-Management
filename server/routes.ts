@@ -1295,8 +1295,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isAdmin: req.session?.directUser?.isAdmin
       });
       
-      // Only allow access if the user is a direct login admin
-      if (!req.session?.directUser?.isAdmin) {
+      // Check admin status from multiple authentication methods
+      const isDirectAdmin = req.session?.directUser?.isAdmin === true;
+      const isReplitAdmin = req.user?.isAdmin === true;
+      
+      // Allow access if admin through any method
+      if (!isDirectAdmin && !isReplitAdmin) {
         console.log('Unauthorized access attempt to create system');
         return res.status(403).json({ message: 'Admin access required' });
       }
@@ -1325,8 +1329,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isAdmin: req.session?.directUser?.isAdmin
       });
       
-      // Only allow access if the user is a direct login admin
-      if (!req.session?.directUser?.isAdmin) {
+      // Check admin status from multiple authentication methods
+      const isDirectAdmin = req.session?.directUser?.isAdmin === true;
+      const isReplitAdmin = req.user?.isAdmin === true;
+      
+      // Allow access if admin through any method
+      if (!isDirectAdmin && !isReplitAdmin) {
         console.log('Unauthorized access attempt to update system');
         return res.status(403).json({ message: 'Admin access required' });
       }
@@ -1364,8 +1372,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isAdmin: req.session?.directUser?.isAdmin
       });
       
-      // Only allow access if the user is a direct login admin
-      if (!req.session?.directUser?.isAdmin) {
+      // Check admin status from multiple authentication methods
+      const isDirectAdmin = req.session?.directUser?.isAdmin === true;
+      const isReplitAdmin = req.user?.isAdmin === true;
+      
+      // Allow access if admin through any method
+      if (!isDirectAdmin && !isReplitAdmin) {
         console.log('Unauthorized access attempt to delete system');
         return res.status(403).json({ message: 'Admin access required' });
       }
