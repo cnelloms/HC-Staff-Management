@@ -36,8 +36,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Apply role enrichment middleware after authentication
   app.use(enrichRoles);
   
-  // Mount change request routes
+  // Mount API routes
   app.use('/api', changeRequestRoutes);
+  app.use('/api', adminUserRoutes);
   
   // Emergency standalone login page
   app.get('/emergency-login', (req, res) => {
