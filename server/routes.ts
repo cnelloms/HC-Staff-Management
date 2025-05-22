@@ -21,7 +21,7 @@ import { requireAdmin, requireEmployeeRole } from "./authMiddleware";
 
 import notificationRoutes from "./notification-routes";
 import changeRequestRoutes from "./change-request-routes";
-import adminUserRoutes from "./admin-user-routes";
+import adminRoutes from "./admin-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up Replit authentication
@@ -40,7 +40,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', changeRequestRoutes);
   
   // Mount admin routes with proper middleware
-  app.use('/api/admin/users', isAuthenticated, requireAdmin, adminUserRoutes);
+  app.use('/api/admin/users', isAuthenticated, requireAdmin, adminRoutes);
   
   // Emergency standalone login page
   app.get('/emergency-login', (req, res) => {
