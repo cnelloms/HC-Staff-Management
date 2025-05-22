@@ -202,7 +202,21 @@ export default function TicketTemplatesPage() {
 
   // Start editing a template
   const handleEditTemplate = (template: any) => {
-    setEditingTemplate({ ...template });
+    // Ensure template has all the required config properties before editing
+    const templateWithConfig = {
+      ...template,
+      config: {
+        requiredFields: template.config?.requiredFields || [],
+        checklist: template.config?.checklist || [],
+        titleTemplate: template.config?.titleTemplate || 
+          (template.type === 'new_staff_request' 
+            ? `New Staff Request: {{firstName}} {{lastName}} ({{position}})`
+            : `IT Support: {{issueCategory}} issue with {{deviceType}}`),
+        descriptionTemplate: template.config?.descriptionTemplate || '',
+        ...template.config
+      }
+    };
+    setEditingTemplate(templateWithConfig);
   };
 
   // Save template changes
@@ -804,7 +818,7 @@ function StaffRequestTemplateEditor({
           placeholder="Enter title template with {{placeholders}}"
         />
         <p className="text-sm text-muted-foreground">
-          Use {{firstName}}, {{lastName}}, {{position}}, {{department}} as placeholders
+          Use {`{{firstName}}, {{lastName}}, {{position}}, {{department}}`} as placeholders
         </p>
       </div>
       
@@ -817,8 +831,8 @@ function StaffRequestTemplateEditor({
           className="min-h-[200px]"
         />
         <p className="text-sm text-muted-foreground">
-          Available placeholders: {{firstName}}, {{lastName}}, {{position}}, {{department}}, 
-          {{manager}}, {{startDate}}, {{email}}, {{phone}}
+          Available placeholders: {`{{firstName}}, {{lastName}}, {{position}}, {{department}}, 
+          {{manager}}, {{startDate}}, {{email}}, {{phone}}`}
         </p>
       </div>
     </div>
@@ -1172,7 +1186,7 @@ function ITSupportTemplateEditor({
           placeholder="Enter title template with {{placeholders}}"
         />
         <p className="text-sm text-muted-foreground">
-          Use {{issueCategory}}, {{deviceType}}, {{urgency}} as placeholders
+          Use {`{{issueCategory}}, {{deviceType}}, {{urgency}}`} as placeholders
         </p>
       </div>
       
@@ -1185,8 +1199,8 @@ function ITSupportTemplateEditor({
           className="min-h-[200px]"
         />
         <p className="text-sm text-muted-foreground">
-          Available placeholders: {{issueCategory}}, {{deviceType}}, {{urgency}}, 
-          {{issueDetails}}, {{reproducibility}}, {{stepsTaken}}
+          Available placeholders: {`{{issueCategory}}, {{deviceType}}, {{urgency}}, 
+          {{issueDetails}}, {{reproducibility}}, {{stepsTaken}}`}
         </p>
       </div>
     </div>
