@@ -799,7 +799,7 @@ function StaffRequestTemplateEditor({
       <div className="space-y-4">
         <h3 className="text-lg font-medium">Title Template</h3>
         <Input 
-          value={template?.config?.titleTemplate || 'New Staff Request: {{firstName}} {{lastName}} ({{position}})'}
+          value={template?.config?.titleTemplate || `New Staff Request: {{firstName}} {{lastName}} ({{position}})`}
           onChange={(e) => updateField('config.titleTemplate', e.target.value)}
           placeholder="Enter title template with {{placeholders}}"
         />
