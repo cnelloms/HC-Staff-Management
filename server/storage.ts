@@ -1269,12 +1269,27 @@ export class DatabaseStorage implements IStorage {
   
   async getEmployeeActivities(employeeId: number, limit = 10): Promise<any[]> {
     try {
-      // Fetch activities where this employee is the actor
-      const employeeActivities = await db.select()
-        .from(activities)
-        .where(eq(activities.employeeId, employeeId))
-        .orderBy(desc(activities.timestamp))
-        .limit(limit);
+      console.log(`Fetching activities for employee ${employeeId}`);
+      
+      // Use a direct SQL query to ensure we get all activities
+      const activityResults = await db.execute(sql`
+        SELECT * FROM activities 
+        WHERE employee_id = ${employeeId}
+        ORDER BY timestamp DESC
+        LIMIT ${limit}
+      `);
+      
+      console.log(`Found ${activityResults.rows.length} activities for employee ${employeeId}`);
+      
+      // Map the raw results to the expected format
+      const employeeActivities = activityResults.rows.map(row => ({
+        id: row.id,
+        employeeId: row.employee_id,
+        activityType: row.activity_type,
+        description: row.description,
+        timestamp: row.timestamp,
+        metadata: row.metadata
+      }));
         
       // Get change requests related to this employee
       let changeRequestsList = [];

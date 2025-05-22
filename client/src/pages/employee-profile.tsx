@@ -60,11 +60,14 @@ export default function EmployeeProfile() {
     queryKey: [`/api/employees/${employeeId}`],
   });
   
-  // Fetch employee activities
+  // Fetch employee activities with forced refresh
   const { data: activities = [], isLoading: isLoadingActivities, refetch: refetchActivities } = useQuery<Activity[]>({
     queryKey: [`/api/employees/${employeeId}/activities`],
     enabled: !!employeeId,
     refetchInterval: 5000, // Auto-refresh activities every 5 seconds to catch new updates
+    refetchOnMount: true,  // Refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window gets focus
+    staleTime: 0, // Consider data always stale to force refreshes
   });
 
   const updateStatusMutation = useMutation({
