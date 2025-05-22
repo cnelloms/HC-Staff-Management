@@ -1277,11 +1277,17 @@ export class DatabaseStorage implements IStorage {
         .limit(limit);
         
       // Get change requests related to this employee
-      const changeRequestsList = await db.select()
-        .from(changeRequests)
-        .where(eq(changeRequests.employeeId, employeeId))
-        .orderBy(desc(changeRequests.createdAt))
-        .limit(limit);
+      let changeRequestsList = [];
+      try {
+        changeRequestsList = await db.select()
+          .from(changeRequests)
+          .where(eq(changeRequests.employeeId, employeeId))
+          .orderBy(desc(changeRequests.createdAt))
+          .limit(limit);
+      } catch (error) {
+        console.log("Note: Change requests table may not exist yet:", error);
+        // Continue without change requests
+      }
       
       // Format change requests to match activity format
       const formattedChangeRequests = await Promise.all(changeRequestsList.map(async (request) => {

@@ -1045,10 +1045,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Standard update for other fields
+      // Get the employee before updating for comparison
+      const existingEmployee = await storage.getEmployeeById(id);
+      
+      // Update the employee
       const updatedEmployee = await storage.updateEmployee(id, employeeData);
       
       if (!updatedEmployee) {
         return res.status(404).json({ message: 'Employee not found' });
+      }
+      
+      // Record activity about the update
+      if (existingEmployee) {
+        // Identify what fields were changed
+        const changedFields = [];
+        for (const key in employeeData) {
+          if (existingEmployee.hasOwnProperty(key) && 
+              employeeData[key] !== undefined && 
+              existingEmployee[key] !== employeeData[key]) {
+            changedFields.push(key);
+          }
+        }
+        
+        if (changedFields.length > 0) {
+          // Get the user who made the change
+          const actorId = req.session?.directUser?.employeeId || req.user?.employeeId || null;
+          const actor = actorId ? await storage.getEmployeeById(actorId) : null;
+          const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'System';
+          
+          // Record an activity for the profile update
+          const activityData = {
+            employeeId: id,
+            activityType: 'profile_update',
+            description: `${actorName} updated ${changedFields.join(', ')}`,
+            timestamp: new Date(),
+            metadata: {
+              changedFields,
+              changedBy: actorId
+            }
+          };
+          
+          console.log("Creating activity record:", activityData);
+          
+          try {
+            // Try to insert directly into the activities table
+            const [newActivity] = await db.insert(activities).values(activityData).returning();
+            console.log("Activity recorded successfully:", newActivity);
+          } catch (error) {
+            console.error("Failed to record activity:", error);
+          }
+        }
       }
       
       // Sync the employee data back to any associated user accounts in the database
