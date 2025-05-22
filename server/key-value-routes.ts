@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { kvService, KV_NAMESPACE } from './key-value-service';
-import { isAuthenticatedWithDirect as isAuthenticated, isAdmin } from './directAuth';
+import { isAuthenticated, isAdmin } from './middleware/auth-middleware';
 
 const router = express.Router();
 

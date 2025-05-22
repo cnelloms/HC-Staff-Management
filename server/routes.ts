@@ -8,9 +8,10 @@ import {
   insertPositionSchema, users, credentials
 } from "@shared/schema";
 import { z } from "zod";
-import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
-import { setupMicrosoftAuth, isMicrosoftAuthenticated } from "./microsoftAuth";
-import { setupDirectAuth, isAuthenticatedWithDirect, isAdmin as isDirectAdmin } from "./directAuth";
+import { setupReplitAuth } from "./replitAuth";
+import { setupMicrosoftAuth } from "./microsoftAuth";
+import { setupDirectAuth } from "./directAuth";
+import { isAuthenticated, isAdmin } from "./middleware/auth-middleware";
 import { deleteUser } from "./user-delete-route";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -21,8 +22,8 @@ import notificationRoutes from "./notification-routes";
 import changeRequestRoutes from "./change-request-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Set up authentication
-  await setupAuth(app);
+  // Set up Replit authentication
+  await setupReplitAuth(app);
   
   // Set up Microsoft authentication if enabled
   setupMicrosoftAuth(app);
@@ -805,7 +806,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new employee (admin only)
-  app.post('/api/employees', isDirectAdmin, async (req: Request, res: Response) => {
+  app.post('/api/employees', isAdmin, async (req: Request, res: Response) => {
     try {
       const employeeData = insertEmployeeSchema.parse(req.body);
       const newEmployee = await storage.createEmployee(employeeData);
@@ -1906,7 +1907,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.patch('/api/ticket-templates/:id', isAuthenticatedWithDirect, async (req: Request, res: Response) => {
+  app.patch('/api/ticket-templates/:id', isAuthenticated, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
