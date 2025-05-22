@@ -983,18 +983,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update employee (admin only)
+  // Update employee (admin or self)
   app.patch('/api/employees/:id', isAuthenticated, async (req: Request, res: Response) => {
-    // Check admin status directly - don't rely on the middleware
-    const isAdmin = req.session?.directUser?.isAdmin === true || req.user?.isAdmin === true;
-    
-    // Allow the update if admin or if it's a self-update
-    const isSelfUpdate = req.session?.directUser?.id && 
-                         parseInt(req.params.id) === req.user?.employeeId;
-    
-    if (!isAdmin && !isSelfUpdate) {
-      return res.status(403).json({ message: 'Required admin privileges or self-update permission' });
-    }
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -1003,7 +993,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if user has permission to update this employee
       // The logged-in user can update their own profile, or an admin can update any profile
-      const isAdmin = req.session?.directUser?.isAdmin === true || (req.user as any)?.isAdmin === true;
+      const isAdmin = req.session?.directUser?.isAdmin === true || req.user?.isAdmin === true;
       const isSelfUpdate = req.session?.directUser?.id && await storage.isEmployeeLinkedToUser(id, req.session.directUser.id);
       
       if (!isAdmin && !isSelfUpdate) {
@@ -1046,7 +1036,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Delete employee (admin only)
-  app.delete('/api/employees/:id', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
+  app.delete('/api/employees/:id', isAuthenticated, async (req: Request, res: Response) => {
+    // Check admin status directly - don't rely on the middleware
+    const isAdmin = req.session?.directUser?.isAdmin === true || req.user?.isAdmin === true;
+    
+    if (!isAdmin) {
+      return res.status(403).json({ message: 'Admin privileges required to delete employees' });
+    }
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
