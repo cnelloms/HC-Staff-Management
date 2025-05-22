@@ -67,6 +67,7 @@ export function setupDirectAuth(app: Express) {
       console.log('User credentials found:', { 
         id: userCredentials.id,
         username: userCredentials.username,
+        userId: userCredentials.userId,
         hasPasswordHash: !!userCredentials.passwordHash,
         fields: Object.keys(userCredentials)
       });
@@ -86,7 +87,21 @@ export function setupDirectAuth(app: Express) {
       }
       
       // Get user from database
-      const user = await storage.getUser(userCredentials.userId);
+      let user = await storage.getUser(userCredentials.userId);
+      
+      // Special case for admin user if not found by ID
+      if (!user && userCredentials.username === 'admin') {
+        // Try to find admin user by querying for admin flag
+        const adminUsers = await db.select().from(users).where(eq(users.isAdmin, true)).limit(1);
+        if (adminUsers.length > 0) {
+          user = adminUsers[0];
+          
+          // Also update the credential to point to the correct user ID for future logins
+          await db.update(credentials)
+            .set({ userId: user.id })
+            .where(eq(credentials.id, userCredentials.id));
+        }
+      }
       
       if (!user) {
         return res.status(401).json({ message: 'User not found' });
