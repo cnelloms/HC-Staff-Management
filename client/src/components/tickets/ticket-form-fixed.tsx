@@ -212,6 +212,9 @@ New Staff Request Details:
 - Start Date: ${startDate}
 ${metadata.email ? `- Email: ${metadata.email}` : ''}
 ${metadata.phone ? `- Phone: ${metadata.phone}` : ''}
+${metadata.budgetCodeId ? `- Budget/Cost Code: ${metadata.budgetCodeId}` : ''}
+${metadata.equipmentRequested ? `- Equipment Requested: Yes` : '- Equipment Requested: No'}
+${metadata.systemAccessRequests && metadata.systemAccessRequests.length > 0 ? `- System Access Requested: Yes` : ''}
 
 Onboarding Tasks (IT Department):
 1. Create work email for new staff (with validation for email format)
