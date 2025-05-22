@@ -1036,14 +1036,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Department routes - managers can view, admins can modify
-  app.get('/api/departments', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
-    // Allow admins or users with manager role to view departments
-    if (req.user?.isAdmin) {
-      next();
-    } else {
-      requireRole("manager")(req, res, next);
-    }
-  }, async (req: Request, res: Response) => {
+  app.get('/api/departments', async (req: Request, res: Response) => {
     try {
       const departments = await storage.getDepartments();
       return res.json(departments);
