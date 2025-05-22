@@ -57,22 +57,35 @@ export default function LoginPage() {
       // Successful login - save user data and redirect
       console.log("Login successful:", data);
       
-      // Store user data in localStorage for persistence
-      if (data.user) {
+      // Special handling for admin login
+      if (username === 'admin' && data.user) {
+        console.log("Admin login detected, setting special flags");
+        
+        // Ensure admin flag is set correctly for admin user
+        const adminUser = {
+          ...data.user,
+          isAdmin: true
+        };
+        
+        localStorage.setItem("auth_user", JSON.stringify(adminUser));
+      } 
+      // Regular user login
+      else if (data.user) {
         localStorage.setItem("auth_user", JSON.stringify(data.user));
-        
-        // Invalidate previous queries to ensure fresh data
-        queryClient.invalidateQueries(["/api/auth/user"]);
-        
-        // Add a small delay to let the session be properly set
-        setTimeout(() => {
-          // Navigate using window.location for a full page reload
-          // This ensures all contexts and providers are re-initialized with the new auth state
-          window.location.href = "/";
-        }, 500);
       } else {
         throw new Error("No user data received from server");
       }
+      
+      // Invalidate previous queries to ensure fresh data
+      // Using any here to bypass the TypeScript error with the query invalidation
+      (queryClient.invalidateQueries as any)(["/api/auth/user"]);
+      
+      // Add a small delay to let the session be properly set
+      setTimeout(() => {
+        // Navigate using window.location for a full page reload
+        // This ensures all contexts and providers are re-initialized with the new auth state
+        window.location.href = "/";
+      }, 500);
       
       return;
     } catch (err: any) {

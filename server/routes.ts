@@ -5,7 +5,7 @@ import {
   insertDepartmentSchema, insertEmployeeSchema, insertSystemSchema, 
   insertSystemAccessSchema, insertTicketSchema, insertActivitySchema,
   insertPermissionSchema, insertRoleSchema, insertRolePermissionSchema, insertEmployeeRoleSchema,
-  insertPositionSchema, users, credentials
+  insertPositionSchema, users, credentials, authSettings
 } from "@shared/schema";
 import { z } from "zod";
 import { setupReplitAuth } from "./replitAuth";
