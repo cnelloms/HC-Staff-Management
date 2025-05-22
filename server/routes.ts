@@ -1065,7 +1065,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/departments', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
+  app.post('/api/departments', isAuthenticated, isAdmin, async (req: Request, res: Response) => {
     try {
       const departmentData = req.body;
       const newDepartment = await storage.createDepartment(departmentData);
@@ -1076,7 +1076,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.patch('/api/departments/:id', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
+  app.patch('/api/departments/:id', isAuthenticated, isAdmin, async (req: Request, res: Response) => {
     try {
       const departmentId = parseInt(req.params.id);
       if (isNaN(departmentId)) {
@@ -1097,7 +1097,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.delete('/api/departments/:id', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
+  app.delete('/api/departments/:id', isAuthenticated, isAdmin, async (req: Request, res: Response) => {
     try {
       const departmentId = parseInt(req.params.id);
       if (isNaN(departmentId)) {
