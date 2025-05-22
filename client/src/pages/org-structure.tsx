@@ -440,7 +440,7 @@ export default function OrgStructurePage() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">None</SelectItem>
+                                <SelectItem value="null">None</SelectItem>
                                 {employees.map((employee) => (
                                   <SelectItem key={employee.id} value={employee.id.toString()}>
                                     {employee.firstName} {employee.lastName}
@@ -605,7 +605,7 @@ export default function OrgStructurePage() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">None</SelectItem>
+                              <SelectItem value="null">None</SelectItem>
                               {employees.map((employee) => (
                                 <SelectItem key={employee.id} value={employee.id.toString()}>
                                   {employee.firstName} {employee.lastName}
