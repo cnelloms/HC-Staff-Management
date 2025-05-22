@@ -939,7 +939,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/departments', async (req: Request, res: Response) => {
+  app.post('/api/departments', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
     try {
       const departmentData = req.body;
       const newDepartment = await storage.createDepartment(departmentData);
@@ -950,7 +950,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.patch('/api/departments/:id', async (req: Request, res: Response) => {
+  app.patch('/api/departments/:id', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
     try {
       const departmentId = parseInt(req.params.id);
       if (isNaN(departmentId)) {
@@ -971,7 +971,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.delete('/api/departments/:id', isAdmin, async (req: Request, res: Response) => {
+  app.delete('/api/departments/:id', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
     try {
       const departmentId = parseInt(req.params.id);
       if (isNaN(departmentId)) {
@@ -1001,8 +1001,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Position routes
-  app.get('/api/positions', async (req: Request, res: Response) => {
+  // Position routes - managers can view
+  app.get('/api/positions', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
     try {
       const positions = await storage.getPositions();
       return res.json(positions);
@@ -1012,7 +1012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/positions/:id', async (req: Request, res: Response) => {
+  app.get('/api/positions/:id', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -1031,7 +1031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/positions', async (req: Request, res: Response) => {
+  app.post('/api/positions', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
     try {
       const positionData = req.body;
       const newPosition = await storage.createPosition(positionData);
@@ -1281,8 +1281,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Create a new system access entry
-  app.post('/api/system-access', async (req: Request, res: Response) => {
+  // Create a new system access entry - admin only
+  app.post('/api/system-access', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
     try {
       // Check session status
       if (!req.session || !req.session.directUser) {
