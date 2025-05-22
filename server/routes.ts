@@ -785,6 +785,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'Failed to fetch auth settings' });
     }
   });
+  
+  // Admin Password Reset Endpoint
+  app.post('/api/admin/reset-password', async (req: Request, res: Response) => {
+    try {
+      // This reset endpoint doesn't require authentication but uses a secret key
+      // It's specifically designed for emergency admin access recovery
+      
+      const { resetKey, newPassword } = req.body;
+      
+      if (!resetKey || !newPassword) {
+        return res.status(400).json({ message: "Reset key and new password are required" });
+      }
+      
+      // In production, use a strong environment variable for this key
+      // For this development example, we'll use a hardcoded key
+      const validResetKey = "admin-reset-2025"; // would normally be in environment variable
+      
+      if (resetKey !== validResetKey) {
+        // Return 200 with error message to prevent brute force attacks
+        return res.status(200).json({ success: false, message: "Invalid reset key" });
+      }
+      
+      // Find admin credentials
+      const adminCredentials = await db.query.credentials.findMany({
+        where: (credentials, { eq }) => eq(credentials.username, 'admin'),
+      });
+      
+      if (adminCredentials.length === 0) {
+        return res.status(404).json({ message: "Admin account not found" });
+      }
+      
+      const adminCredential = adminCredentials[0];
+      
+      // Hash the new password
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+      
+      // Update admin password
+      const [updatedCredential] = await db
+        .update(credentials)
+        .set({
+          passwordHash,
+          updatedAt: new Date()
+        })
+        .where(eq(credentials.id, adminCredential.id))
+        .returning();
+        
+      console.log("Admin password reset successfully");
+      
+      // Return success message
+      return res.json({ 
+        success: true, 
+        message: "Admin password has been reset successfully",
+        username: adminCredential.username 
+      });
+    } catch (error) {
+      console.error('Error resetting admin password:', error);
+      return res.status(500).json({ message: 'Failed to reset admin password' });
+    }
+  });
 
   // Update authentication settings
   app.post('/api/auth/settings', async (req: Request, res: Response) => {

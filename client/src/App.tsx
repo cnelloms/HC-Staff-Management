@@ -38,6 +38,7 @@ import SystemsPage from "@/pages/systems";
 import AdminDashboardPage from "@/pages/admin-dashboard";
 import ChangeRequestsPage from "@/pages/ChangeRequestsPage";
 import ApprovalInbox from "./pages/ApprovalInbox";
+import AdminPasswordReset from "@/pages/admin-password-reset";
 
 function Router() {
   const [isLoading, setIsLoading] = useState(true);
@@ -108,6 +109,8 @@ function Router() {
       return <DirectLoginPage />;
     } else if (path === '/test-login') {
       return <TestLoginPage />;
+    } else if (path === '/admin-password-reset') {
+      return <AdminPasswordReset />;
     }
     // Default to regular login
     return <DirectLoginPage />;
@@ -119,6 +122,7 @@ function Router() {
       <Route path="/emergency-login" component={EmergencyLoginPage} />
       <Route path="/direct-login" component={DirectLoginPage} />
       <Route path="/test-login" component={TestLoginPage} />
+      <Route path="/admin-password-reset" component={AdminPasswordReset} />
       
       {/* Protected Routes - require authentication */}
       <Route path="/">
