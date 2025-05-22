@@ -1294,13 +1294,28 @@ export class DatabaseStorage implements IStorage {
       // Get change requests related to this employee
       let changeRequestsList = [];
       try {
-        changeRequestsList = await db.select()
-          .from(changeRequests)
-          .where(eq(changeRequests.employeeId, employeeId))
-          .orderBy(desc(changeRequests.createdAt))
-          .limit(limit);
+        // Check if the changeRequests table exists before using it
+        const hasChangeRequests = await db.execute(sql`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = 'change_requests'
+          )
+        `);
+        
+        if (hasChangeRequests.rows[0]?.exists) {
+          // Use raw SQL to avoid reference errors
+          const changeRequestsResults = await db.execute(sql`
+            SELECT * FROM change_requests
+            WHERE employee_id = ${employeeId}
+            ORDER BY created_at DESC
+            LIMIT ${limit}
+          `);
+          
+          changeRequestsList = changeRequestsResults.rows || [];
+        }
       } catch (error) {
-        console.log("Note: Change requests table may not exist yet:", error);
+        console.log("Could not retrieve change requests:", error);
         // Continue without change requests
       }
       
