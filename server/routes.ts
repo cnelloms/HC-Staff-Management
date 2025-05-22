@@ -5,7 +5,7 @@ import {
   insertDepartmentSchema, insertEmployeeSchema, insertSystemSchema, 
   insertSystemAccessSchema, insertTicketSchema, insertActivitySchema,
   insertPermissionSchema, insertRoleSchema, insertRolePermissionSchema, insertEmployeeRoleSchema,
-  insertPositionSchema, users, credentials, authSettings
+  insertPositionSchema, users, credentials, authSettings, budgetCodes, activities
 } from "@shared/schema";
 import { z } from "zod";
 import { setupReplitAuth } from "./replitAuth";
@@ -1382,6 +1382,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching positions:', error);
       return res.status(500).json({ message: 'Failed to fetch positions' });
+    }
+  });
+  
+  // Budget code routes - all authenticated users can view
+  app.get('/api/budget-codes', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // Direct access for everyone authenticated since budget codes are reference data
+      const budgetCodesData = await db.select().from(budgetCodes).orderBy(budgetCodes.code);
+      return res.json(budgetCodesData);
+    } catch (error) {
+      console.error('Error fetching budget codes:', error);
+      return res.status(500).json({ message: 'Failed to fetch budget codes' });
     }
   });
 

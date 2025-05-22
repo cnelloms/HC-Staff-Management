@@ -109,8 +109,8 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
   });
   
   // For handling the selected systems in the form
-  const [selectedSystems, setSelectedSystems] = useState<Array<{systemId: number, accessLevel: string}>>(
-    defaultValues?.systemAccessRequests || []
+  const [selectedSystems, setSelectedSystems] = useState<Array<{systemId: number, accessLevel: "read" | "write" | "admin"}>>(
+    defaultValues?.systemAccessRequests as Array<{systemId: number, accessLevel: "read" | "write" | "admin"}> || []
   );
 
   const form = useForm<z.infer<typeof employeeFormSchema>>({
@@ -547,7 +547,7 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
                         if (checked) {
                           const updatedSystems = [...selectedSystems, {
                             systemId: system.id,
-                            accessLevel: "read"
+                            accessLevel: "read" as "read" | "write" | "admin"
                           }];
                           setSelectedSystems(updatedSystems);
                           form.setValue("systemAccessRequests", updatedSystems);
@@ -571,10 +571,12 @@ export function StaffForm({ employeeId, defaultValues }: StaffFormProps) {
                     {selectedSystems.some(s => s.systemId === system.id) && (
                       <Select
                         value={selectedSystems.find(s => s.systemId === system.id)?.accessLevel || "read"}
-                        onValueChange={(value) => {
+                        onValueChange={(value: string) => {
+                          // Cast the value to our specific access level type
+                          const accessLevel = value as "read" | "write" | "admin";
                           const updatedSystems = selectedSystems.map(s => 
                             s.systemId === system.id 
-                              ? { ...s, accessLevel: value as "read" | "write" | "admin" } 
+                              ? { ...s, accessLevel } 
                               : s
                           );
                           setSelectedSystems(updatedSystems);
