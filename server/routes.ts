@@ -1176,13 +1176,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Position routes - managers can view, admins can modify
-  app.get('/api/positions', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
-    // Allow admins or users with manager role to view positions
+  app.get('/api/positions', isAuthenticated, (req: Request, res: Response, next: NextFunction) => {
+    // Check if user is admin first (direct pass)
     if (req.user?.isAdmin) {
-      next();
-    } else {
-      requireRole("manager")(req, res, next);
+      return next();
     }
+    
+    // Otherwise, check for manager role
+    requireRole("manager")(req, res, next);
   }, async (req: Request, res: Response) => {
     try {
       const positions = await storage.getPositions();
@@ -1193,13 +1194,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/positions/:id', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
-    // Allow admins or users with manager role to view position details
+  app.get('/api/positions/:id', isAuthenticated, (req: Request, res: Response, next: NextFunction) => {
+    // Check if user is admin first (direct pass)
     if (req.user?.isAdmin) {
-      next();
-    } else {
-      requireRole("manager")(req, res, next);
+      return next();
     }
+    
+    // Otherwise, check for manager role
+    requireRole("manager")(req, res, next);
   }, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
