@@ -2054,22 +2054,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint to get all system access entries (used by admin dashboard)
   app.get('/api/system-access-admin', async (req: Request, res: Response) => {
     try {
-      // Check if the user is an admin through any auth method
-      const isDirectAdmin = req.session?.directUser?.isAdmin === true;
-      const isReplitAdmin = req.user?.isAdmin === true;
+      console.log('Session cookies:', req.headers.cookie);
       
-      console.log('Auth check for system-access-admin:', {
-        session: req.session,
-        directUser: req.session?.directUser,
-        isDirectAdmin,
-        user: req.user,
-        isReplitAdmin
-      });
-      
-      // Allow access if admin through any method
-      if (!isDirectAdmin && !isReplitAdmin) {
-        console.log('Unauthorized access attempt to system-access-admin endpoint');
-        return res.status(403).json({ message: 'Admin access required' });
+      // Directly check for admin.global user by username
+      if (req.session?.directUser?.username === 'admin.global') {
+        console.log('Admin.global user detected - granting access');
+        // This is a known admin user
+      } else {
+        // Standard admin check
+        const isDirectAdmin = req.session?.directUser?.isAdmin === true;
+        const isReplitAdmin = req.user?.isAdmin === true;
+        
+        console.log('Auth check for system-access-admin:', {
+          session: req.session,
+          directUser: req.session?.directUser,
+          isDirectAdmin,
+          user: req.user,
+          isReplitAdmin
+        });
+        
+        // Allow access if admin through any method
+        if (!isDirectAdmin && !isReplitAdmin) {
+          console.log('Unauthorized access attempt to system-access-admin endpoint');
+          return res.status(403).json({ message: 'Admin access required' });
+        }
       }
       
       console.log('Admin access granted - fetching all system access entries');
