@@ -1347,7 +1347,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get system access entries for an employee - managers can view
-  app.get('/api/employees/:employeeId/systems', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
+  app.get('/api/employees/:employeeId/systems', isAuthenticated, async (req: Request, res: Response) => {
+    // Allow access if user is admin or has manager role
+    if (!req.user?.isAdmin && (!req.user?.roles || !req.user?.roles.includes("manager"))) {
+      return res.status(403).json({ message: 'Forbidden: Admin or manager role required' });
+    }
     try {
       const employeeId = parseInt(req.params.employeeId);
       if (isNaN(employeeId)) {
@@ -1837,7 +1841,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Employee Role routes - manager can view
-  app.get('/api/employees/:employeeId/roles', isAuthenticated, requireRole("manager"), async (req: Request, res: Response) => {
+  app.get('/api/employees/:employeeId/roles', isAuthenticated, async (req: Request, res: Response) => {
+    // Allow access if user is admin or has manager role
+    if (!req.user?.isAdmin && (!req.user?.roles || !req.user?.roles.includes("manager"))) {
+      return res.status(403).json({ message: 'Forbidden: Admin or manager role required' });
+    }
     try {
       const employeeId = parseInt(req.params.employeeId);
       if (isNaN(employeeId)) {
