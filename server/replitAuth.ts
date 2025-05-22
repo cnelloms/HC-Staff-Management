@@ -177,13 +177,13 @@ export async function setupReplitAuth(app: Express) {
 // Helper to get employee ID for a user
 async function getEmployeeIdForUser(userId: string): Promise<number | null> {
   try {
-    const result = await db.execute<{id: number}>(
+    const result = await db.execute(
       `SELECT id FROM employees WHERE email = (SELECT email FROM users WHERE id = $1) LIMIT 1`, 
       [userId]
     );
     
-    if (result && result.length > 0) {
-      return result[0].id;
+    if (result && result.rows && result.rows.length > 0) {
+      return result.rows[0].id;
     }
     return null;
   } catch (error) {
