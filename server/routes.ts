@@ -2058,6 +2058,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isDirectAdmin = req.session?.directUser?.isAdmin === true;
       const isReplitAdmin = req.user?.isAdmin === true;
       
+      console.log('Auth check for system-access-admin:', {
+        session: req.session,
+        directUser: req.session?.directUser,
+        isDirectAdmin,
+        user: req.user,
+        isReplitAdmin
+      });
+      
       // Allow access if admin through any method
       if (!isDirectAdmin && !isReplitAdmin) {
         console.log('Unauthorized access attempt to system-access-admin endpoint');
