@@ -91,14 +91,24 @@ export function setupDirectAuth(app: Express) {
       
       // Special case for admin user if not found by ID
       if (!user && userCredentials.username === 'admin') {
-        // Try to find admin user by querying for admin flag
-        const adminUsers = await db.select().from(users).where(eq(users.isAdmin, true)).limit(1);
-        if (adminUsers.length > 0) {
-          user = adminUsers[0];
-          console.log("Found admin user by flag:", user);
-          
-          // Also update the credential to point to the correct user ID for future logins
-          if (user) {
+        console.log("Admin login attempt detected, trying to find admin user");
+        
+        // For admin, we specifically look for the correct user ID based on the credential
+        user = await db.query.users.findFirst({
+          where: (users, { eq }) => eq(users.id, userCredentials.userId)
+        });
+        
+        console.log("Found admin user by ID:", user);
+        
+        // If we still can't find the user, try by admin flag as fallback
+        if (!user) {
+          console.log("Admin user not found by ID, trying admin flag");
+          const adminUsers = await db.select().from(users).where(eq(users.isAdmin, true)).limit(1);
+          if (adminUsers.length > 0) {
+            user = adminUsers[0];
+            console.log("Found admin user by flag:", user);
+            
+            // Also update the credential to point to the correct user ID for future logins
             await db.update(credentials)
               .set({ userId: user.id })
               .where(eq(credentials.id, userCredentials.id));
