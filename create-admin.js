@@ -1,6 +1,6 @@
-import { db } from "./server/db.js";
-import bcrypt from "bcryptjs";
-import { users, credentials } from "./shared/schema.js";
+const { db } = require("./server/db");
+const bcrypt = require("bcryptjs");
+const { users, credentials } = require("./shared/schema");
 
 async function createAdminUser() {
   try {
@@ -78,6 +78,4 @@ async function createAdminUser() {
   }
 }
 
-createAdminUser().catch(error => {
-  console.error("Error in admin user creation:", error);
-});
+createAdminUser();
