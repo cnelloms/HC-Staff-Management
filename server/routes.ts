@@ -1595,7 +1595,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Update a system access entry - admin only
-  app.patch('/api/system-access/:id', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
+  app.patch('/api/system-access/:id', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
     try {
       // Check session status
       if (!req.session || !req.session.directUser) {
