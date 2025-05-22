@@ -367,6 +367,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Session expired, please login again' });
       }
       
+      // Define the user profile type definition
+      interface UserProfile {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string | null | undefined;
+        username?: string;
+        isAdmin: boolean;
+        authProvider: string;
+        employeeId: number | null | undefined;
+        department?: string;
+        position?: string;
+      }
+      
+      let userProfile: UserProfile | null = null;
+      
       // Check if user is authenticated through direct login
       if (req.session && req.session.directUser) {
         console.log('User authenticated with direct login:', req.session.directUser);
@@ -375,76 +391,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get the user record from the database to include any additional info
         const user = await storage.getUser(userId);
         
-        // Removed impersonation functionality as requested
-        
-        // Get employee data if available (as source of truth)
-        let employeeData = null;
-        // Define the user profile with proper type definitions
-        interface UserProfile {
-          id: string;
-          firstName: string;
-          lastName: string;
-          email: string | null | undefined;
-          username: string;
-          isAdmin: boolean;
-          authProvider: string;
-          employeeId: number | null | undefined;
-          department?: string;
-          position?: string;
-        }
-        
-        let userProfile: UserProfile = {
-          id: userId,
-          firstName: user?.firstName || 'User', 
-          lastName: user?.lastName || '',
-          email: user?.email,
-          username: req.session.directUser.username,
-          isAdmin: req.session.directUser.isAdmin === true,
-          authProvider: 'direct',
-          employeeId: user?.employeeId
-        };
-        
-        // If user has an associated employee record, get that data
-        if (user?.employeeId) {
-          const employee = await storage.getEmployeeById(user.employeeId);
-          if (employee) {
-            // Override with employee data (source of truth)
-            userProfile.firstName = employee.firstName;
-            userProfile.lastName = employee.lastName;
-            userProfile.email = employee.email;
-            userProfile.position = employee.position;
-            
-            // Get department info
-            if (employee.departmentId) {
-              const department = await storage.getDepartmentById(employee.departmentId);
-              if (department) {
-                userProfile.department = department.name;
-              }
-            }
-            
-            // Sync user profile with employee data if needed
-            if (user.firstName !== employee.firstName || 
-                user.lastName !== employee.lastName || 
-                user.email !== employee.email) {
-              // Update user profile with employee data (employee is source of truth)
-              await storage.syncUserFromEmployee(userId, user.employeeId);
-            }
-          }
-        }
-        
-        // Impersonation functionality has been removed as requested
-        
-        return res.json(userProfile);
-      } 
-      // Check if user is authenticated through Replit Auth
-      else if (req.isAuthenticated && req.isAuthenticated() && req.user && (req.user as any).claims) {
-        const userId = (req.user as any).claims.sub;
-        const user = await storage.getUser(userId);
         if (user) {
-          // Create a complete user profile with employee data if available
-          let userProfile = {...user, department: null, position: null};
+          userProfile = {
+            id: userId,
+            firstName: user.firstName || 'User', 
+            lastName: user.lastName || '',
+            email: user.email,
+            username: req.session.directUser.username,
+            isAdmin: req.session.directUser.isAdmin === true,
+            authProvider: 'direct',
+            employeeId: user.employeeId
+          };
           
-          // If user has an associated employee, get that data
+          // If user has an associated employee record, get that data
           if (user.employeeId) {
             const employee = await storage.getEmployeeById(user.employeeId);
             if (employee) {
@@ -461,18 +420,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   userProfile.department = department.name;
                 }
               }
+            }
+          }
+        }
+      } 
+      // Check if user is authenticated through Replit Auth
+      else if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+        console.log('User authenticated with Replit:', req.user);
+        
+        // Get user ID from Replit auth
+        const userId = (req.user as any).id || ((req.user as any).claims && (req.user as any).claims.sub);
+        
+        if (!userId) {
+          console.error('Failed to get user ID from Replit auth');
+          return res.status(401).json({ message: "Invalid authentication data" });
+        }
+        
+        // Get the user record from the database
+        const user = await storage.getUser(userId);
+        
+        if (user) {
+          userProfile = {
+            id: userId,
+            firstName: user.firstName || (req.user as any).firstName || 'User',
+            lastName: user.lastName || (req.user as any).lastName || '',
+            email: user.email || (req.user as any).email,
+            isAdmin: user.isAdmin === true || (req.user as any).isAdmin === true,
+            authProvider: 'replit',
+            employeeId: user.employeeId || (req.user as any).employeeId
+          };
+          
+          // If user has an associated employee, get that data
+          if (userProfile.employeeId) {
+            const employee = await storage.getEmployeeById(userProfile.employeeId);
+            if (employee) {
+              // Override with employee data (source of truth)
+              userProfile.firstName = employee.firstName;
+              userProfile.lastName = employee.lastName;
+              userProfile.email = employee.email;
+              userProfile.position = employee.position;
               
-              // Sync user profile with employee data if needed
-              if (user.firstName !== employee.firstName || 
-                  user.lastName !== employee.lastName || 
-                  user.email !== employee.email) {
-                await storage.syncUserFromEmployee(userId, user.employeeId);
+              // Get department info
+              if (employee.departmentId) {
+                const department = await storage.getDepartmentById(employee.departmentId);
+                if (department) {
+                  userProfile.department = department.name;
+                }
               }
             }
           }
-          
-          return res.json(userProfile);
+        } else {
+          // No database user found, create a profile from session data
+          userProfile = {
+            id: userId,
+            firstName: (req.user as any).firstName || 'Replit',
+            lastName: (req.user as any).lastName || 'User',
+            email: (req.user as any).email,
+            isAdmin: (req.user as any).isAdmin === true,
+            authProvider: 'replit',
+            employeeId: (req.user as any).employeeId
+          };
         }
+      }
+      
+      if (userProfile) {
+        return res.json(userProfile);
       }
       
       // If we get here, no valid authentication was found
