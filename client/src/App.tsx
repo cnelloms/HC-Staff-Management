@@ -39,6 +39,7 @@ import AdminDashboardPage from "@/pages/admin-dashboard";
 import ChangeRequestsPage from "@/pages/ChangeRequestsPage";
 import ApprovalInbox from "./pages/ApprovalInbox";
 import AdminPasswordReset from "@/pages/admin-password-reset";
+import AdminUsers from "@/pages/AdminUsers";
 
 function Router() {
   const [isLoading, setIsLoading] = useState(true);
@@ -187,6 +188,10 @@ function Router() {
       
       <Route path="/admin/requests">
         {() => <AdminRoute><ApprovalInbox /></AdminRoute>}
+      </Route>
+      
+      <Route path="/admin/users">
+        {() => <AdminRoute><AdminUsers /></AdminRoute>}
       </Route>
       
       <Route path="/change-requests">
