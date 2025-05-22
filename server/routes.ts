@@ -1001,6 +1001,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const employeeData = req.body;
+      
+      // Special handling for manager relationship
+      if (employeeData.managerId !== undefined) {
+        console.log(`Updating employee ${id} with manager ID ${employeeData.managerId}`);
+        
+        // If manager ID provided, ensure we populate manager data in the response
+        const updatedEmployee = await storage.updateEmployee(id, employeeData);
+        
+        if (!updatedEmployee) {
+          return res.status(404).json({ message: 'Employee not found' });
+        }
+        
+        // Get enhanced employee data with manager info included
+        const enhancedEmployee = await storage.getEmployeeWithManager(id);
+        
+        // Sync the employee data back to any associated user accounts in the database
+        const syncResult = await storage.syncEmployeeToUser(id);
+        
+        return res.json(enhancedEmployee || updatedEmployee);
+      }
+      
+      // Standard update for other fields
       const updatedEmployee = await storage.updateEmployee(id, employeeData);
       
       if (!updatedEmployee) {
