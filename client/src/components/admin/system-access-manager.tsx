@@ -416,6 +416,17 @@ export function SystemAccessManager() {
     return format(new Date(date), 'MMM d, yyyy');
   };
 
+  // Force proper array handling even if data is missing
+  const safeAccessEntries = Array.isArray(filteredAccessEntries) ? filteredAccessEntries : [];
+  const safeEmployees = Array.isArray(employees) ? employees : [];
+  const safeSystems = Array.isArray(systems) ? systems : [];
+
+  // Debug output
+  console.log("Access entries data:", accessEntries);
+  console.log("Filtered entries:", filteredAccessEntries);
+  console.log("Is loading:", isLoading);
+  console.log("Is error:", isError);
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
