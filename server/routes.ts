@@ -1514,10 +1514,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Create a new system access entry - admin only
-  app.post('/api/system-access', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
+  app.post('/api/system-access', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
     try {
       // Check session status
-      if (!req.session || !req.session.directUser) {
+      if (!req.session) {
         console.log('POST /api/system-access - No valid session found');
         return res.status(401).json({ message: 'Unauthorized - Please log in' });
       }
@@ -1526,8 +1526,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const validatedData = insertSystemAccessSchema.parse(req.body);
       
-      // Check if user is admin (direct login admin)
-      const isAdmin = req.session.directUser.isAdmin === true;
+      // Check admin status from multiple authentication methods
+      const isDirectAdmin = req.session?.directUser?.isAdmin === true;
+      const isReplitAdmin = req.user?.isAdmin === true;
+      const isAdmin = isDirectAdmin || isReplitAdmin;
       console.log('System access create - Admin check:', isAdmin);
       console.log('Session state:', JSON.stringify(req.session.directUser));
       
@@ -2050,17 +2052,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Endpoint to get all system access entries (used by admin dashboard)
-  app.get('/api/system-access-admin', isAuthenticated, requireRole("admin"), async (req: Request, res: Response) => {
+  app.get('/api/system-access-admin', isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
     try {
       // Check if the user is a global admin
       console.log('GET /api/system-access-admin - Session check:', {
         hasSession: !!req.session,
         directUser: req.session?.directUser,
-        isAdmin: req.session?.directUser?.isAdmin
+        isAdmin: req.session?.directUser?.isAdmin,
+        replitAdmin: req.user?.isAdmin
       });
       
-      // Only allow access if the user is a direct login admin
-      if (!req.session?.directUser?.isAdmin) {
+      // Check admin status from multiple authentication methods
+      const isDirectAdmin = req.session?.directUser?.isAdmin === true;
+      const isReplitAdmin = req.user?.isAdmin === true;
+      
+      // Allow access if admin through any method
+      if (!isDirectAdmin && !isReplitAdmin) {
         console.log('Unauthorized access attempt to system-access-admin endpoint');
         return res.status(403).json({ message: 'Admin access required' });
       }

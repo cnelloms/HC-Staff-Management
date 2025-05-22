@@ -90,20 +90,34 @@ export function SystemAccessManager() {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   // Fetch all system access entries - use system-access-admin endpoint for admin users
-  const { data: accessEntries, isLoading: accessLoading } = useQuery({
+  const { data: accessEntries, isLoading: accessLoading, isError, error } = useQuery({
     queryKey: ['/api/system-access-admin'],
     queryFn: async () => {
-      const response = await fetch('/api/system-access-admin', {
-        credentials: 'include', // Include cookies for authentication
-        headers: {
-          'Content-Type': 'application/json',
+      try {
+        const response = await fetch('/api/system-access-admin', {
+          credentials: 'include', // Include cookies for authentication
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (!response.ok) {
+          console.error('Failed to fetch system access:', await response.text());
+          throw new Error('Failed to fetch system access entries');
         }
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch system access entries. Error: ' + await response.text());
+        
+        return await response.json();
+      } catch (err) {
+        console.error('Error fetching system access:', err);
+        toast({
+          title: "Access Error",
+          description: "There was a problem loading the system access data. Please try refreshing the page.",
+          variant: "destructive"
+        });
+        throw err;
       }
-      return await response.json();
-    }
+    },
+    retry: 1
   });
 
   // Fetch all employees for the dropdown
