@@ -52,7 +52,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Trash, Plus, KeyRound, Users } from "lucide-react";
+import { Trash, Plus, KeyRound, Users, Loader2 } from "lucide-react";
 
 const employeeRoleFormSchema = z.object({
   employeeId: z.number({

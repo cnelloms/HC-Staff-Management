@@ -40,7 +40,15 @@ export async function enrichRoles(req: Request, _res: Response, next: NextFuncti
 /** guard factory */
 export function requireRole(role: string) {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user?.roles?.includes(role)) return res.sendStatus(403);
+    // Always allow admin users to bypass role checks
+    if (req.user?.isAdmin === true) {
+      return next();
+    }
+    
+    // Otherwise check for the specific role
+    if (!req.user?.roles?.includes(role)) {
+      return res.status(403).json({ message: `Required role '${role}' is missing` });
+    }
     next();
   };
 }
