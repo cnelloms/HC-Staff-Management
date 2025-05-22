@@ -24,6 +24,7 @@ import TicketDetail from "@/pages/ticket-detail";
 import EditTicket from "@/pages/edit-ticket";
 import NewEmployee from "@/pages/new-employee";
 import NewTicket from "@/pages/new-ticket";
+import MyProfile from "@/pages/my-profile";
 import Permissions from "@/pages/permissions";
 import StaffImportPage from "@/pages/staff-import";
 import SimpleLoginPage from "@/pages/simple-login";
@@ -189,6 +190,10 @@ function Router() {
       
       <Route path="/profile">
         {() => <UserProfile />}
+      </Route>
+      
+      <Route path="/my-profile">
+        {() => <MyProfile />}
       </Route>
       
       <Route path="/employee/new">
