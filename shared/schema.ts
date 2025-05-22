@@ -443,9 +443,6 @@ export const changeRequests = pgTable("change_requests", {
 
 export const insertChangeRequestSchema = createInsertSchema(changeRequests);
 
-export type ChangeRequest = typeof changeRequests.$inferSelect;
-export type InsertChangeRequest = z.infer<typeof insertChangeRequestSchema>;
-
 // Audit Log table
 export const auditLog = pgTable("audit_log", {
   id: serial("id").primaryKey(),
@@ -465,6 +462,7 @@ export const insertAuditLogSchema = createInsertSchema(auditLog).pick({
   actedBy: true,
 });
 
+// Change Request and Audit Log types
 export type ChangeRequest = typeof changeRequests.$inferSelect;
 export type InsertChangeRequest = z.infer<typeof insertChangeRequestSchema>;
 

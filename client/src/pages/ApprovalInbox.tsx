@@ -169,9 +169,8 @@ export default function ApprovalInbox() {
   return (
     <div className="container mx-auto py-6">
       <PageHeader
-        heading="Change Request Approvals"
-        subheading="Review and manage employee change requests"
-        icon={<UserCheck className="h-6 w-6" />}
+        title="Change Request Approvals"
+        description="Review and manage employee change requests"
       />
       
       <div className="mt-8">
