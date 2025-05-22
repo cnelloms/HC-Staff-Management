@@ -525,10 +525,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Current authenticated user endpoint
+  app.get('/api/auth/user', async (req: Request, res: Response) => {
+    const sessionExists = !!req.session;
+    const directUser = req.session?.directUser;
+    
+    console.log('Session in auth/user endpoint:', {
+      hasSession: sessionExists,
+      hasDirectUser: !!directUser,
+      sessionID: req.sessionID,
+      cookies: req.headers.cookie
+    });
+    
+    // Check for direct login
+    if (sessionExists && directUser) {
+      // Get the full user record
+      const user = await db.select().from(users).where(eq(users.id, directUser.id)).limit(1);
+      
+      if (user.length > 0) {
+        return res.json({
+          id: user[0].id,
+          firstName: user[0].firstName,
+          lastName: user[0].lastName,
+          email: user[0].email,
+          username: directUser.username,
+          isAdmin: directUser.isAdmin,
+          authProvider: 'direct',
+          employeeId: user[0].employeeId,
+          position: user[0].position
+        });
+      }
+    }
+    
+    // If we get here, no valid authentication was found
+    return res.status(401).json({ message: "Unauthorized" });
+  });
+  
   // Get all users
   app.get('/api/users', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
     // Allow access for admin users or users with user_manager role
-    if (req.user?.isAdmin === true || req.user?.roles?.includes('user_manager')) {
+    if (req.user?.isAdmin === true || req.session?.directUser?.isAdmin === true || req.user?.roles?.includes('user_manager')) {
       try {
         // Admin or user_manager role is required for this endpoint
         
