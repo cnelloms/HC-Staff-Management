@@ -16,7 +16,7 @@ import {
   permissions, roles, rolePermissions, employeeRoles, users
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, sql, desc, and, asc } from "drizzle-orm";
+import { eq, sql, desc, and, asc, count } from "drizzle-orm";
 
 export interface IStorage {
   // Position operations
@@ -189,21 +189,23 @@ export class DatabaseStorage implements IStorage {
   async deleteDepartment(id: number): Promise<boolean> {
     try {
       // Check if the department has associated employees or positions
-      const [employeeCount] = await db
-        .select({ count: count() })
+      const employeeResult = await db
+        .select({ count: sql`COUNT(*)` })
         .from(employees)
         .where(eq(employees.departmentId, id));
       
-      if (employeeCount.count > 0) {
+      const employeeCount = Number(employeeResult[0].count);
+      if (employeeCount > 0) {
         throw new Error("Cannot delete department with associated employees");
       }
       
-      const [positionCount] = await db
-        .select({ count: count() })
+      const positionResult = await db
+        .select({ count: sql`COUNT(*)` })
         .from(positions)
         .where(eq(positions.departmentId, id));
       
-      if (positionCount.count > 0) {
+      const positionCount = Number(positionResult[0].count);
+      if (positionCount > 0) {
         throw new Error("Cannot delete department with associated positions");
       }
       
